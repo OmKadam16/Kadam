@@ -79,7 +79,6 @@ watcher, SSE, or client code to reuse.
    |         +---- /__kadam/events  (SSE hub)                     |
    |         +---- /__kadam/client.js, /__kadam/client.css        |
    |         +---- /__kadam/status  (JSON, testing/debug)         |
-   |         +---- /__kadam/studio-map  (JSON, source navigation)|
    |                                                               |
    |  +-------------+      fs.watch(project, recursive)          |
    |  | Watcher     | ---> debounce/filter ---> rebuild queue      |
@@ -312,8 +311,7 @@ Content-Security-Policy: default-src 'self'; img-src 'self' data:;
   style-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'
 ```
 
-No CORS headers, no directory listings, and no source maps are emitted. The
-dev-only `/__kadam/studio-map` endpoint serves source locations from memory.
+No CORS headers, no directory listings, and no source maps are emitted.
 
 ### 5.3 HTML injection
 
@@ -515,12 +513,6 @@ interface StatusPayload {
 Initial state is delivered immediately on connect (no separate fetch needed),
 and `/__kadam/status` exposes the same JSON for tests and debugging.
 
-`/__kadam/studio-map` exposes the current build's node-to-source locations for
-development tooling. It is intentionally separate from production output and
-never returns source text or absolute paths. The optional `buildId` query is
-checked against the current build; a stale id returns `409`, and an initial
-failure returns `503` until a build succeeds.
-
 `SerializedDiagnostic` contains only `code`, `severity`, `message`, `file`
 (project-relative), `line`, `column`, `hint`, and related locations. No source
 text, environment data, or absolute paths.
@@ -640,7 +632,7 @@ overlay plus a "no successful build yet" note.
 | Threat | Mitigation |
 | --- | --- |
 | Directory traversal | Requests never touch the filesystem. Pure lookup in the output snapshot; reject NUL, backslash, `..`, malformed encoding before lookup. |
-| Source or secret disclosure | Only snapshot entries for HTML, CSS, and referenced assets are serveable. `kadam.json`, `.kdm`, `.env`, dotfiles, source maps, and `node_modules` are not in the snapshot and return 404 by construction. The separate `/__kadam/studio-map` endpoint exposes only project-relative spans, never file contents. |
+| Source or secret disclosure | Only snapshot entries for HTML, CSS,   and referenced assets are serveable. `kadam.json`, `.kdm`, `.env`, dotfiles, source maps, and `node_modules` are not in the snapshot and return 404 by construction. |
 | Symlink escape | Compiler-side asset/page containment already uses `realpath`; the server performs no disk reads, so serving cannot follow a link. |
 | Network exposure | Binds `127.0.0.1` by default. Remote binding requires `--host` and prints a warning. |
 | DNS rebinding | Validate the `Host` header against loopback names (`127.0.0.1`, `localhost`, `[::1]`) or the explicitly bound host; otherwise `403`. |
@@ -851,7 +843,6 @@ generated for the site itself.
 | --- | --- | --- |
 | `/__kadam/events` | GET | SSE stream (`status`, `css`, `reload`, `shutdown`) |
 | `/__kadam/status` | GET | Current build JSON for tests and debugging |
-| `/__kadam/studio-map` | GET | Current build's element-to-source map |
 | `/__kadam/client.js` | GET | Dev client script |
 | `/__kadam/client.css` | GET | Overlay stylesheet |
 

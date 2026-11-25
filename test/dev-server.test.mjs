@@ -174,37 +174,6 @@ test("development HTML matches build output apart from the client tag", async (t
   );
 });
 
-test("the studio map is build-bound and exposes project-relative spans", async (t) => {
-  const projectRoot = standardProject();
-  const server = await startServer(t, projectRoot);
-
-  const response = await httpGet(`${server.origin}/__kadam/studio-map?buildId=1`);
-  assert.equal(response.status, 200);
-  assert.match(response.headers["content-type"], /application\/json/);
-  assert.equal(response.headers["cache-control"], "no-store");
-
-  const map = JSON.parse(response.body);
-  assert.equal(map.buildId, 1);
-  assert.equal(map.pages.length, 2);
-  const home = map.pages.find((page) => page.route === "/");
-  assert.equal(home.sourceFile, "pages/home.kdm");
-  assert.equal(home.elements[0].nodeId, "home-headline1");
-  assert.equal(home.elements[0].span.start.line, 4);
-  assert.equal(home.elements[0].nameSpan.start.column, 5);
-  assert.ok(!response.body.includes(projectRoot));
-
-  const stale = await httpGet(`${server.origin}/__kadam/studio-map?buildId=99`);
-  assert.equal(stale.status, 409);
-  assert.equal(JSON.parse(stale.body).buildId, 1);
-
-  const head = await httpGet(`${server.origin}/__kadam/studio-map`, {
-    method: "HEAD",
-  });
-  assert.equal(head.status, 200);
-  assert.equal(head.bytes.length, 0);
-  assert.ok(Number(head.headers["content-length"]) > 0);
-});
-
 test("sources, manifests, environment files, and traversal are not exposed", async (t) => {
   const projectRoot = standardProject();
   writeFileSync(join(projectRoot, ".env"), "SECRET_TOKEN=do-not-leak\n", "utf8");
@@ -381,18 +350,11 @@ page "Home" {
   assert.equal(status.phase, "failure");
   assert.equal(status.served, "none");
 
-  const missingMap = await httpGet(`${server.origin}/__kadam/studio-map`);
-  assert.equal(missingMap.status, 503);
-
   writeProjectFile(projectRoot, "pages/home.kdm", HOME_PAGE);
   await server.rebuild();
   const recovered = await httpGet(`${server.origin}/`);
   assert.equal(recovered.status, 200);
   assert.match(recovered.body, /<title>Home<\/title>/);
-
-  const recoveredMap = await httpGet(`${server.origin}/__kadam/studio-map`);
-  assert.equal(recoveredMap.status, 200);
-  assert.equal(JSON.parse(recoveredMap.body).buildId, 1);
 });
 
 test("basePath prefixes pages and navigation while internal endpoints stay at the origin", async (t) => {

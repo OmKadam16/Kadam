@@ -84,5 +84,5 @@ covers the v0.1 surface and does not start M6.
   focusable solely to trigger a hover style.
 - Contrast checking is not automated; it depends on rendered colors.
 - Image loading strategy, cropping, and responsive art direction are deferred.
-- Components, the visual editor, and incremental compilation belong to later
-  milestones.
+- Components, multi-target emission, and incremental compilation belong to
+  later milestones.

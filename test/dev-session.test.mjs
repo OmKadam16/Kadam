@@ -41,51 +41,6 @@ test("the initial build produces a success status and watch paths", () => {
   ]);
 });
 
-test("the studio map exposes project-relative spans for the last good build", () => {
-  const projectRoot = standardProject();
-  const session = new DevSession({ projectRoot });
-  const outcome = session.build();
-  assert.equal(outcome.ok, true, JSON.stringify(outcome.diagnostics));
-
-  const map = session.studioMap;
-  assert.ok(map);
-  assert.equal(map.buildId, 1);
-  assert.equal(map.pages.length, 2);
-
-  const home = map.pages.find((page) => page.route === "/");
-  assert.ok(home);
-  assert.equal(home.title, "Home");
-  assert.equal(home.sourceFile, "pages/home.kdm");
-  assert.equal(home.elements.length, 2);
-
-  const headline = home.elements[0];
-  assert.equal(headline.nodeId, "home-headline1");
-  assert.equal(headline.name, "headline1");
-  assert.equal(headline.kind, "main heading");
-  assert.equal(headline.span.start.line, 4);
-  assert.equal(headline.span.start.column, 5);
-  assert.equal(headline.nameSpan.end.column, 14);
-  assert.ok(headline.span.end.offset > headline.span.start.offset);
-  assert.ok(!map.pages.some((page) => page.sourceFile.startsWith("/")));
-
-  writeProjectFile(
-    projectRoot,
-    "pages/home.kdm",
-    HOME_PAGE.replace("the text is 40px", "the text is 44px"),
-  );
-  session.build(["pages/home.kdm"]);
-  assert.equal(session.studioMap.buildId, 2);
-
-  writeProjectFile(
-    projectRoot,
-    "pages/home.kdm",
-    "kadam 0.1\n\npage \"Home\" {\n    broken1 {\n        a button\n    }\n}\n",
-  );
-  const broken = session.build(["pages/home.kdm"]);
-  assert.equal(broken.ok, false);
-  assert.equal(session.studioMap.buildId, 2);
-});
-
 test("source overrides compile in memory without writing and preserve last-good output", () => {
   const projectRoot = standardProject();
   const session = new DevSession({ projectRoot });
@@ -104,7 +59,6 @@ test("source overrides compile in memory without writing and preserve last-good 
   assert.equal(preview.ok, true, JSON.stringify(preview.diagnostics));
   assert.equal(preview.plan.kind, "reload");
   assert.match(homeHtml(session), /Preview/);
-  assert.equal(session.studioMap.buildId, 2);
   assert.equal(
     readFileSync(join(projectRoot, "pages/home.kdm"), "utf8"),
     HOME_PAGE,
@@ -122,7 +76,6 @@ test("source overrides compile in memory without writing and preserve last-good 
   assert.equal(broken.ok, false);
   assert.equal(broken.status.served, "last-success");
   assert.match(homeHtml(session), /Preview/);
-  assert.equal(session.studioMap.buildId, 2);
 
   session.clearSourceOverrides();
   const restored = session.build();

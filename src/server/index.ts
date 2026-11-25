@@ -11,11 +11,6 @@ export {
   type DevStatus,
   type SerializedDiagnostic,
   type SerializedLocation,
-  type SerializedSourcePosition,
-  type SerializedSourceSpan,
-  type StudioMapElement,
-  type StudioMapPage,
-  type StudioSourceMap,
 } from "./dev-session.js";
 export {
   contentTypeFor,

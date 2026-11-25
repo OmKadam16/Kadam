@@ -166,13 +166,13 @@ page "Home" {
 
                 cardTitle3 {
                     a minor heading
-                    the text says "Editor ready"
+                    the text says "CLI ready"
                     the text is 22px
                 }
 
                 cardBody3 {
                     a paragraph
-                    the text says "Every node carries a source span. The compiler stays independent from the future visual editor, so the same language powers the CLI and the canvas."
+                    the text says "Every node carries a source span. The compiler stays independent of editors and target runtimes, so the same language powers the CLI and every supported target."
                     the text is 16px
                 }
             }

@@ -24,7 +24,7 @@ There is no best-effort mode.
 - Produce semantic HTML, separate CSS, and minimal JavaScript.
 - Report errors with a file, line, column, and stable error code.
 - Provide a language foundation that supports reusable components, multiple
-  pages, a development server, and a visual editor.
+  pages, a development server, and CLI-first tooling.
 
 ### 1.2 Non-goals for v0.1
 
@@ -1489,7 +1489,7 @@ record, not a promise for a specific release:
 - User-authored HTML, CSS, or JavaScript escape hatches.
 - Per-slot parameters and fallback content that reads instance parameters.
 - Internationalization and localized text catalogs.
-- A standard component library and visual editor.
+- A standard component library and cross-language target adapters.
 
 Items that imply general programming or state must wait for a separate design
 decision. Adding them by accretion would undermine deterministic analysis and

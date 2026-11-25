@@ -5,10 +5,10 @@
 **Companion documents:** `docs/language-spec.md`, `docs/roadmap.md`,
 `docs/decisions.md`
 
-This document describes how a `.kdm` file becomes a static web page. It is
-written before the compiler exists so that module boundaries, data contracts,
-determinism requirements, and future editor needs are decided on purpose rather
-than discovered by accident.
+This document describes how a `.kdm` file becomes a static web page. It records
+module boundaries, data contracts, and determinism requirements for the current
+compiler. The repository is CLI-only; a browser editor is not part of this
+architecture.
 
 ---
 
@@ -19,13 +19,12 @@ The architecture is driven by these non-negotiable constraints:
 1. `.kdm` is the source of truth; generated output is disposable.
 2. Parsing and analysis are deterministic and contain no AI or network access.
 3. HTML, CSS, and JavaScript are emitted as separate files.
-4. The compiler is independent of the visual editor.
+4. The repository is CLI-only; no browser editor is bundled or required.
 5. Incremental recompilation must be possible from the first release.
 6. Every diagnostic identifies file, line, column, and a stable code.
 7. The implementation uses TypeScript and Node.js built-ins, with no runtime
    dependencies.
-8. Do not build the editor or the full language before the core pipeline is
-   proven.
+8. Do not build a UI or the full language before the core pipeline is proven.
 
 ---
 
@@ -88,7 +87,6 @@ src/
   runtime/                 Browser runtime, if and when needed
   server/                  Dev server, watcher, SSE live reload
   cli/                     Argument parsing and command orchestration
-  editor/                  Editor services consumed by Studio; inward only
   index.ts                 Public Node API for future clients
 ```
 
@@ -97,16 +95,15 @@ src/
 Imports point inward:
 
 ```text
-editor ──▶ server ──▶ compiler ──▶ core
-   │          │           │
-   └──────────┴───────────┴──▶ public API
+server ──▶ compiler ──▶ core
+   │           │
+   └───────────┴──────────▶ public API
 cli ─────────────────────▶ compiler, server, core
 runtime  (no compile-time imports from the toolchain)
 ```
 
-No module in `core` or `compiler` may import `server`, `cli`, or `editor`.
-No compiler path may import the visual editor. There is still no automated
-import-boundary test; it remains a review rule.
+No module in `core` or `compiler` may import `server` or `cli`. There is still
+no automated import-boundary test; it remains a review rule.
 
 ### 3.2 Why one package
 
@@ -534,35 +531,12 @@ predictable.
 
 ---
 
-## 8. Editor boundary and two-way editing
+## 8. Editor boundary
 
-The visual editor is the separate Studio client under `studio/`. The compiler
-must not grow editor dependencies, and the editor must not get privileged
-language behavior.
-
-The editor needs:
-
-1. **AST + spans** for outline, selection, and diagnostics.
-2. **In-memory source overrides** for unsaved buffers.
-3. **Stable node IDs** in generated HTML (`data-kdm-id`) plus a node-map file.
-4. **Source-preserving edits** so visual changes do not reformat the file.
-
-To support source-preserving edits, the lexer retains comments and whitespace
-trivia even though the parser ignores them. AST nodes carry full spans. The
-editor applies minimal text patches to the original source rather than
-reprinting the AST. A lossless concrete syntax tree (CST) may be added at M7
-without changing the AST or the language; the initial parser should store
-enough token/trivia information to make that migration possible.
-
-Two-way editing sequence:
-
-- **M7 alpha:** preview + inspector + click-to-source; visual changes apply to
-  source using spans (one-way from visuals to source).
-- **M8:** direct source editing updates the preview and inspector, with
-  conflict handling based on source offsets and reparse-on-change.
-
-The compiler remains usable headlessly even if the editor is absent, broken, or
-uninstalled.
+The browser editor was removed in the CLI-first reset. The repository contains
+no editor host, browser UI, embedded source editor, or editor-only server API.
+The compiler and development server remain independent of any future external
+language tooling.
 
 ---
 
@@ -716,7 +690,7 @@ This preserves the option to split without paying monorepo costs now.
 - No user-authored CSS/JS/HTML.
 - No general-purpose expression language.
 - No hot module replacement.
-- No visual editor in the compiler repository's critical path.
+- No visual editor or browser GUI in the repository.
 - No plugin system, package registry, or cloud renderer at M0.
 - No premature caching before the uncached pipeline is correct.
 

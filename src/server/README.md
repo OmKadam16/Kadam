@@ -12,8 +12,7 @@ output.
 - Stream build status, CSS updates, reloads, and shutdown over Server-Sent
   Events.
 - Preserve the last successful snapshot when a rebuild fails.
-- Serve a development-only element-to-source map keyed by build id.
-- Accept in-memory source overrides for unsaved previews without writing files.
+- Accept in-memory source overrides for previews without writing files.
 - Bind to `127.0.0.1` by default and resolve requests only against the snapshot.
 - Serve the development client, which renders a diagnostic overlay using DOM
   text nodes only.
@@ -22,8 +21,7 @@ output.
 
 ```text
 dev-server.ts    lifecycle, HTTP routing, SSE hub, security headers
-dev-session.ts   compileProject wrapper, last-good snapshot, build ids,
-                 studio source map
+dev-session.ts   compileProject wrapper, last-good snapshot, build ids
 watch.ts         recursive fs.watch + polling fallback, filtering, debounce
 update-plan.ts   pure snapshot hash and none/css/reload decision
 request.ts       pure URL resolution, MIME table, injection, static documents
@@ -42,9 +40,7 @@ await server.closed;
 
 `createDevServer` compiles once before listening. `server.rebuild()` recompiles
 and broadcasts; tests use it to avoid watcher timing. `server.close()` is
-idempotent. `GET /__kadam/studio-map` returns the current build's
-project-relative source map; an optional `buildId` query must match the current
-build (`409` otherwise).
+idempotent.
 
 `DevSession.setSourceOverrides(map)` replaces the in-memory source overlay for
 subsequent builds; `clearSourceOverrides()` returns to disk sources. Overrides
@@ -69,10 +65,9 @@ never write to disk and keep the last successful snapshot when they fail.
 
 - `test/dev-request.test.mjs` — pure resolver, MIME, injection.
 - `test/dev-update.test.mjs` — pure update planning.
-- `test/dev-session.test.mjs` — last-good snapshots, diagnostics, source-map
-  retention, and in-memory source overrides.
-- `test/dev-server.test.mjs` — HTTP, SSE, security, shutdown, ports, and the
-  studio map endpoint.
+- `test/dev-session.test.mjs` — last-good snapshots, diagnostics, and in-memory
+  source overrides.
+- `test/dev-server.test.mjs` — HTTP, SSE, security, shutdown, and ports.
 - `test/dev-cli.test.mjs` — `kadam dev` and `kadam check` end to end.
 - `test/dev-performance.test.mjs` — 50-page rebuild measurement.
 

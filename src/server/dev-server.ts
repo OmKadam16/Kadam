@@ -135,20 +135,6 @@ export async function createDevServer(
       sendJson(res, 200, session.status, headOnly);
       return;
     }
-    if (pathname === `${DEV_PREFIX}/studio-map`) {
-      const map = session.studioMap;
-      if (map === null) {
-        sendJson(res, 503, { error: "no successful build" }, headOnly);
-        return;
-      }
-      const requested = url.searchParams.get("buildId");
-      if (requested !== null && requested !== String(map.buildId)) {
-        sendJson(res, 409, { error: "stale build", buildId: map.buildId }, headOnly);
-        return;
-      }
-      sendJson(res, 200, map, headOnly);
-      return;
-    }
     if (pathname === `${DEV_PREFIX}/client.js`) {
       sendBody(res, 200, CLIENT_SCRIPT, "text/javascript; charset=utf-8", headOnly);
       return;

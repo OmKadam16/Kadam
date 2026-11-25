@@ -179,8 +179,8 @@ if (first === "build") {
 }
 
 console.error(
-  `kadam: '${args.join(" ")}' is not available in milestone M4.\n` +
-    "M4 provides build, check, dev, and parse. The site runtime itself is still JavaScript-free.\n" +
+  `kadam: '${args.join(" ")}' is not available.\n` +
+    "The CLI provides build, check, dev, and parse. Run kadam --help for usage.\n" +
     "See docs/roadmap.md for the implementation plan.",
 );
 process.exit(1);
@@ -410,7 +410,7 @@ function isDirectory(path: string): boolean {
 }
 
 function printHelp(): void {
-  console.log(`Kadam — a natural-language UI programming language
+  console.log(`Kadam — a deterministic natural-language language
 
 Usage:
   kadam <command> [options]
@@ -437,8 +437,8 @@ Options:
   -h, --help                          Print this help
 
 Status:
-  Milestone M4 (development server and live preview). Generated sites remain
-  JavaScript-free.
+  CLI-only distribution. The current compiler target is static web HTML/CSS.
+  General-purpose multi-target support is planned; see docs/multi-target.md.
 
 Documentation:
   README.md

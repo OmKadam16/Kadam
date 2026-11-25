@@ -1,6 +1,6 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Diagnostic, Severity } from "../core/diagnostics/diagnostic.js";
-import type { SourceFile, Span } from "../core/source/source-file.js";
+import type { SourceFile } from "../core/source/source-file.js";
 import { compileProject, type ProjectCompileOptions } from "../compiler/project.js";
 import type { KadamManifest } from "../compiler/manifest.js";
 import type { OutputFile } from "../compiler/compile.js";
@@ -34,38 +34,6 @@ export interface SerializedDiagnostic {
 export interface RouteSummary {
   readonly route: string;
   readonly title: string;
-}
-
-export interface SerializedSourcePosition {
-  readonly offset: number;
-  readonly line: number;
-  readonly column: number;
-}
-
-export interface SerializedSourceSpan {
-  readonly start: SerializedSourcePosition;
-  readonly end: SerializedSourcePosition;
-}
-
-export interface StudioMapElement {
-  readonly nodeId: string;
-  readonly name: string;
-  readonly kind: string;
-  readonly span: SerializedSourceSpan;
-  readonly nameSpan: SerializedSourceSpan;
-}
-
-export interface StudioMapPage {
-  readonly route: string;
-  readonly title: string;
-  /** Project-relative path; absolute paths never leave the process. */
-  readonly sourceFile: string;
-  readonly elements: readonly StudioMapElement[];
-}
-
-export interface StudioSourceMap {
-  readonly buildId: number;
-  readonly pages: readonly StudioMapPage[];
 }
 
 export interface DevStatus {
@@ -119,7 +87,6 @@ export class DevSession {
   #manifest: KadamManifest | null = null;
   #latestFiles: readonly OutputFile[] = [];
   #routes: readonly RouteSummary[] = [];
-  #studioMap: StudioSourceMap | null = null;
   #sourceOverrides: ReadonlyMap<string, string | Uint8Array> = new Map();
   #basePath = "";
   #outDir: string;
@@ -137,11 +104,6 @@ export class DevSession {
 
   get status(): DevStatus {
     return this.#status;
-  }
-
-  /** Development-only node-to-source map for the last successful build. */
-  get studioMap(): StudioSourceMap | null {
-    return this.#studioMap;
   }
 
   /** Replace the in-memory source overlay used by later builds. */
@@ -235,21 +197,6 @@ export class DevSession {
       route: page.route,
       title: page.title,
     }));
-    this.#studioMap = {
-      buildId: next.buildId,
-      pages: result.pages.map((page) => ({
-        route: page.route,
-        title: page.title,
-        sourceFile: projectRelative(page.sourceFile, this.projectRoot),
-        elements: page.sourceMap.map((element) => ({
-          nodeId: element.nodeId,
-          name: element.name,
-          kind: element.kind,
-          span: serializeSpan(element.span),
-          nameSpan: serializeSpan(element.nameSpan),
-        })),
-      })),
-    };
     this.#status = {
       buildId: next.buildId,
       phase: "success",
@@ -268,21 +215,6 @@ export class DevSession {
       sources: result.sources,
     };
   }
-}
-
-function serializeSpan(span: Span): SerializedSourceSpan {
-  return {
-    start: {
-      offset: span.start.offset,
-      line: span.start.line,
-      column: span.start.column,
-    },
-    end: {
-      offset: span.end.offset,
-      line: span.end.line,
-      column: span.end.column,
-    },
-  };
 }
 
 function serializeDiagnostic(

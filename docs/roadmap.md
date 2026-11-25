@@ -1,6 +1,6 @@
 # Kadam Roadmap
 
-**Current milestone:** M7 — visual editor alpha (M7.1 foundation implemented)
+**Current milestone:** M7 — general-purpose language core (planned; Studio removed)
 
 The roadmap is ordered by dependency, not by feature appeal. Each milestone has
 an exit criterion that is objectively testable. No milestone starts before the
@@ -18,12 +18,13 @@ M3  Layout, responsive design, multi-page projects
 M4  Development server + live preview
 M5  Motion and declarative interactions   (complete)
 M6  Reusable components (+ library seed)  (complete, M6.1)
-M7  Visual editor alpha + source mapping       (M7.1 foundation implemented)
-M8  Two-way editing + VS Code integration
+M7  General-purpose core + portable IR     (planned)
+M8  Target adapters + interop             (planned)
+M9  Broader targets + external tooling    (planned)
 ```
 
-The compiler never waits for the editor. The editor is always a client of an
-already working headless toolchain.
+The compiler is CLI-first. No browser editor is required at any milestone, and
+no target may change the language's core semantics.
 
 ---
 
@@ -263,67 +264,90 @@ component library beyond `examples/components/`.
 
 ---
 
-## M7 — Visual editor alpha
+## M7 — General-purpose language core (planned)
 
-**Goal:** inspect and modify an existing project through a visual surface while
-the source remains authoritative.
+**Goal:** evolve the existing declarative compiler into a typed, target-neutral
+core while preserving the working static-web target.
 
-**Implementation note:** the M7.1 Studio foundation is implemented in
-`studio/`. It includes a React + CodeMirror 6 browser shell, a loopback Node
-host with project bootstrap/tree/file/outline/inspect/check/edit/property/
-save/reload APIs, a same-origin `/__preview/` proxy over the existing dev
-server, a development-only selection bridge, click-to-source, device preview,
-diagnostics, and inspector editing for text, background, border, and corners.
-Seven host integration tests cover the APIs, unsaved preview, save conflicts,
-proxy streaming, and security boundaries. Component instance/definition
-navigation, the asset browser, completion/hover, tabs, and Playwright browser
-acceptance remain later slices.
+**Design constraint:** the browser editor has been removed. M7 is a language and
+compiler milestone, not a GUI milestone.
 
 Scope:
 
-- Browser-based editor shell.
-- Outline/inspector driven by the AST.
-- Click-to-source using `data-kdm-id` and the node map.
-- One-way visual editing: changes produce minimal source patches.
-- Live preview through the development server.
-- Diagnostic display and file navigation.
-- No arbitrary canvas, undo stack, or multi-user features yet.
+- Approve the v0.2 language spec for values, types, expressions, functions,
+  control flow, state, modules, errors, and effects.
+- Preserve the declarative UI subset as one layer of the language rather than
+  the whole language.
+- Define a portable core IR that contains no HTML, CSS, Python, TypeScript, or
+  framework-specific concepts.
+- Add explicit capability declarations so a target can reject unsupported
+  effects before emission.
+- Define `external` declarations and typed bindings for calling existing native
+  packages without embedding another language's parser.
+- Keep diagnostics, deterministic output, and source spans as hard requirements.
 
 **Exit criteria:**
 
-- Selecting a preview element opens its source location.
-- Editing a supported property updates the `.kdm` file and preview.
-- Comments and formatting outside the edited span are preserved.
-- Compiler remains fully usable through the CLI without the editor.
-- Editor cannot load or compile files outside the project root.
+- A pure core program can be parsed, validated, and lowered to the portable IR.
+- The current UI examples compile through the new core without output changes.
+- Every semantic rule is documented and has deterministic tests.
+- No target-specific syntax or framework names appear in the core IR.
+- `npm run check` remains green, and the CLI still works without any GUI.
 
-**Depends on:** M5, stable spans and source patching from M1.
+**Depends on:** M6, approval of the v0.2 language decisions.
 
 ---
 
-## M8 — Two-way editing and VS Code integration
+## M8 — Target adapters and interop (planned)
 
-**Goal:** make Kadam usable in both custom and standard development
-environments.
+**Goal:** make the target-neutral core useful in real projects by shipping the
+first two adapters and a reliable installation path.
 
 Scope:
 
-- Direct source edits update preview and inspector.
-- Undo/redo and conflict handling based on source offsets.
-- Language Server Protocol foundation: diagnostics, completion of templates,
-  hover documentation, go-to-definition for pages.
-- VS Code extension shell using the language server.
-- Packaging and installation documentation.
+- A stable target-adapter interface with capability checks, deterministic
+  emission, and conformance fixtures.
+- **TypeScript/Web adapter:** HTML/CSS plus TypeScript or React/Next-compatible
+  output where the program needs a client layer.
+- **Python adapter:** backend programs with Python-native modules, errors, and
+  packaging.
+- Generated bindings for approved `external` declarations. Kadam does not
+  parse Python, TypeScript, Rust, or Java source.
+- `install.sh` plus a publishable npm package exposing the `kadam` command.
+- Per-target integration tests that execute the generated output.
 
 **Exit criteria:**
 
-- Source and visual edits can alternate without corrupting the file.
-- LSP diagnostics match CLI diagnostics for the same source.
-- Completion suggests only canonical templates.
-- Extension can be installed from a local package and used on the example
-  project.
+- The same portable program compiles to TypeScript/Web and Python.
+- Both generated programs pass shared conformance fixtures.
+- Python and TypeScript outputs run with their native runtimes and no Kadam
+  runtime is required beyond generated support files.
+- Binding calls have compile-time type checks and runtime failure tests.
+- A clean machine can install the CLI with the documented bash command.
 
-**Depends on:** M7, public AST/diagnostic API stability.
+**Depends on:** M7, approved binding decisions, public IR stability.
+
+---
+
+## M9 — Broader targets and external tooling (planned)
+
+**Goal:** extend the adapter matrix without changing core semantics.
+
+Scope:
+
+- Rust and Java adapters after the M8 adapter contract is stable.
+- Language Server Protocol diagnostics, completion, and hover documentation.
+- Optional VS Code integration as a separate client.
+- Target capability reporting and a versioned support matrix.
+
+**Exit criteria:**
+
+- New adapters pass the same core conformance suite.
+- LSP diagnostics match CLI diagnostics for the same source.
+- Unsupported target features fail with an explicit capability diagnostic.
+- No editor or target is required to use the compiler.
+
+**Depends on:** M8, stable public AST/diagnostic APIs.
 
 ---
 
@@ -334,7 +358,8 @@ Scope:
 | English surface grows without bound | Parser complexity, ambiguity | Canonical templates only; CI overlap test; reject synonyms |
 | Built-in defaults are contested | Visual output churn | Approve Appendix A before M2; version default changes |
 | Page titles as references | Broken links on rename | Clear diagnostics; consider stable page IDs before 1.0 |
-| Two-way editing loses formatting | Editor trust | Spans/trivia from M1; minimal text patches; CST escape hatch |
+| "Compatible with every language" becomes an unbounded promise | Unshippable scope and false claims | Treat targets as explicit adapters with conformance tests; publish a supported matrix |
+| Backend semantics bolted onto a UI grammar | Incoherent language | Approve the typed v0.2 core before writing Python or TypeScript emitters |
 | Incremental cache hides bugs | Wrong output | Cold-build comparison in CI; hash keys, no mtimes |
 | Scope creeps into app framework | Unbounded design | Defer state/data/forms; require decision records |
 | Accessibility promised but not tested | User harm | Required-content rules and automated smoke tests from M2 |
@@ -353,7 +378,7 @@ Kadam 0.1 is complete when:
 3. Output is deterministic and JavaScript-free unless an approved interaction
    requires it.
 4. Errors carry stable codes and correct spans.
-5. CLI build/check/dev work without the editor installed.
+5. CLI build/check/dev work without any editor or GUI installed.
 6. The compiler has no AI, network, or model dependency.
 7. Security, accessibility, and incremental-build checks pass.
 
@@ -361,12 +386,12 @@ Kadam 0.1 is complete when:
 
 ## Recommended next step
 
-1. Review and approve or amend decisions `D-01` through `D-14` in
-   `docs/decisions.md`.
-2. Freeze the v0.1 template table.
-3. Start M1: source manager → lexer → parser → AST → diagnostics, using the
-   specification fixtures as the acceptance suite.
+1. Approve the v0.2 semantic surface and the target-adapter contract in
+   `docs/multi-target.md`.
+2. Extend the language spec with the typed core and `external` declarations.
+3. Build the portable IR and conformance fixtures before adding a Python or
+   TypeScript emitter.
 
-Do not begin M2 code generation until the front end can prove deterministic
-parsing and precise diagnostics. The compiler's credibility depends on that
-foundation.
+Do not add target adapters until the core can prove deterministic semantics and
+capability diagnostics. "Compatible with everything" is not a design; a tested
+adapter matrix is.

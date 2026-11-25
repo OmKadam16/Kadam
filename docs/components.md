@@ -37,9 +37,7 @@ Not implemented yet:
 
 - a packaged component library beyond the example project;
 - component-aware incremental re-emission (`kadam dev` rebuilds the project);
-- component instance/definition navigation or a component browser in Studio;
-  the Studio explorer does list component source files.
-- asset browsing and a packaged component library.
+- a visual component browser or other GUI tooling.
 
 Single-file builds (`kadam build page.kdm`) have no catalog, so a component
 instance there is still an unknown component (`KDM3022`).

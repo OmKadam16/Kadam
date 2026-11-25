@@ -35,7 +35,7 @@ page "Home" {
 
     pricing2 {
         a PriceCard
-        with a title of "Studio"
+        with a title of "Pro"
         with a price of "$29"
         with a badge of "Best value"
     }
