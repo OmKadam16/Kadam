@@ -1,6 +1,8 @@
 # Kadam Roadmap
 
-**Current milestone:** M7 — general-purpose language core (planned; Studio removed)
+**Current milestone:** M8 — target adapters and interop (in progress; Studio removed)
+**Core specification:** [`docs/language-v0.2.md`](language-v0.2.md) (implemented)
+**Target contract:** [`docs/multi-target.md`](multi-target.md) (implemented for the TypeScript and Python core targets)
 
 The roadmap is ordered by dependency, not by feature appeal. Each milestone has
 an exit criterion that is objectively testable. No milestone starts before the
@@ -18,8 +20,8 @@ M3  Layout, responsive design, multi-page projects
 M4  Development server + live preview
 M5  Motion and declarative interactions   (complete)
 M6  Reusable components (+ library seed)  (complete, M6.1)
-M7  General-purpose core + portable IR     (planned)
-M8  Target adapters + interop             (planned)
+M7  General-purpose core + portable IR     (complete)
+M8  Target adapters + interop             (in progress; TypeScript/Python core done)
 M9  Broader targets + external tooling    (planned)
 ```
 
@@ -264,10 +266,13 @@ component library beyond `examples/components/`.
 
 ---
 
-## M7 — General-purpose language core (planned)
+## M7 — General-purpose language core (complete)
 
 **Goal:** evolve the existing declarative compiler into a typed, target-neutral
 core while preserving the working static-web target.
+
+**Specification:** [`docs/language-v0.2.md`](language-v0.2.md), implemented in
+`src/v02/` and exercised by `test/v02.test.mjs`.
 
 **Design constraint:** the browser editor has been removed. M7 is a language and
 compiler milestone, not a GUI milestone.
@@ -289,7 +294,8 @@ Scope:
 **Exit criteria:**
 
 - A pure core program can be parsed, validated, and lowered to the portable IR.
-- The current UI examples compile through the new core without output changes.
+- The current UI examples still compile with byte-identical output through the
+  existing UI path; UI integration with the core remains deferred.
 - Every semantic rule is documented and has deterministic tests.
 - No target-specific syntax or framework names appear in the core IR.
 - `npm run check` remains green, and the CLI still works without any GUI.
@@ -298,10 +304,14 @@ Scope:
 
 ---
 
-## M8 — Target adapters and interop (planned)
+## M8 — Target adapters and interop (in progress)
 
 **Goal:** make the target-neutral core useful in real projects by shipping the
 first two adapters and a reliable installation path.
+
+**Contract:** [`docs/multi-target.md`](multi-target.md), implemented for the
+TypeScript and Python core targets. The declarative web target remains on the
+separate v0.1 HTML/CSS pipeline; unifying the two is still pending.
 
 Scope:
 
@@ -319,7 +329,8 @@ Scope:
 **Exit criteria:**
 
 - The same portable program compiles to TypeScript/Web and Python.
-- Both generated programs pass shared conformance fixtures.
+- Both generated programs pass the shared conformance fixtures for their
+  declared capabilities.
 - Python and TypeScript outputs run with their native runtimes and no Kadam
   runtime is required beyond generated support files.
 - Binding calls have compile-time type checks and runtime failure tests.
@@ -386,12 +397,12 @@ Kadam 0.1 is complete when:
 
 ## Recommended next step
 
-1. Approve the v0.2 semantic surface and the target-adapter contract in
-   `docs/multi-target.md`.
-2. Extend the language spec with the typed core and `external` declarations.
-3. Build the portable IR and conformance fixtures before adding a Python or
-   TypeScript emitter.
+1. Unify the v0.1 page/component surface with the v0.2 core IR so the web target
+   can consume both forms without changing page output.
+2. Finish the M8 installation path by resolving the package name and public
+   publication decision (D-16); the TypeScript and Python core adapters already
+   pass executable conformance tests.
+3. Add target-specific integration fixtures before claiming support for another
+   host language.
 
-Do not add target adapters until the core can prove deterministic semantics and
-capability diagnostics. "Compatible with everything" is not a design; a tested
-adapter matrix is.
+"Compatible with everything" is not a design; a tested adapter matrix is.

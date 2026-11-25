@@ -2,15 +2,17 @@
 
 Kadam is a deterministic programming language written in constrained English. A
 `.kdm` file is the source of truth. The current compiler turns a page or project
-into plain HTML, CSS, and—only where required—JavaScript.
+into plain HTML and CSS, and compiles a `kadam 0.2` module into TypeScript or
+Python through a portable typed core.
 
-> **Status: M7 direction reset — CLI-first, general-purpose core planned.**
-> The browser Studio and its editor infrastructure have been removed. The
-> implemented compiler remains the M0–M6 static-web compiler: multi-page
-> projects, components, a development server, and deterministic HTML/CSS output
-> all work through the `kadam` command. General-purpose semantics, portable
-> intermediate representation, and Python/TypeScript target adapters are the
-> next milestones and are **not implemented yet**.
+> **Status: CLI-first, with the v0.2 core and TypeScript/Python adapters
+> implemented.** The browser Studio and its editor infrastructure have been
+> removed. The M0–M6 static-web compiler remains unchanged: multi-page projects,
+> components, a development server, and deterministic HTML/CSS output all work
+> through the `kadam` command. `kadam 0.2` modules are parsed, type-checked,
+> lowered to a target-neutral IR, and emitted as runnable `main.ts` or `main.py`
+> with capability and external-provider checks. See
+> [`docs/language-v0.2.md`](docs/language-v0.2.md).
 
 ```kdm
 page "Home" {
@@ -47,7 +49,8 @@ with a declarative UI subset:
 
 - A typed core with values, functions, state, modules, errors, and effects.
 - A target-neutral intermediate representation.
-- Explicit target adapters, starting with TypeScript/Web and Python.
+- Explicit target adapters, starting with the TypeScript and Python core targets;
+  the existing v0.1 web pipeline remains separate for now.
 - Typed `external` declarations for calling native packages.
 - A terminal-first installation and workflow: no browser IDE is required.
 - Later Rust and Java adapters, plus optional editor tooling.
@@ -97,9 +100,40 @@ supported-target plan, and non-goals.
                     static project output
 ```
 
-The current web emitter is deterministic and framework-free. The planned
-general-purpose IR and target adapters are described in
-[`docs/multi-target.md`](docs/multi-target.md).
+The v0.1 web emitter is deterministic and framework-free. The v0.2 core has a
+separate pipeline:
+
+```text
+kadam 0.2 module -> lexer/parser -> type checker -> portable IR
+                                                       |
+                                          +------------+------------+
+                                          v                         v
+                                    TypeScript                   Python
+                                     main.ts                    main.py
+```
+
+A core module must match its filename (`hello.kdm` contains `module hello`):
+
+```kdm
+kadam 0.2
+
+module hello {
+    function main takes nothing and returns number {
+        output "hello"
+        return 0
+    }
+}
+```
+
+```bash
+kadam build hello.kdm --target python --out dist
+python3 dist/main.py
+```
+
+The `--target` values are `typescript` (the default for a v0.2 build) and
+`python`. Core capability and external-provider checks run before files are
+written. See [`docs/multi-target.md`](docs/multi-target.md) and
+[`docs/language-v0.2.md`](docs/language-v0.2.md).
 
 ## Install
 
@@ -174,7 +208,8 @@ copied into the output. See
 | Path | Purpose |
 | --- | --- |
 | `install.sh` | Bash installer for the global `kadam` command |
-| `docs/language-spec.md` | Current `.kdm` syntax, semantics, defaults, and errors |
+| `docs/language-spec.md` | Current v0.1 UI syntax, semantics, defaults, and errors |
+| `docs/language-v0.2.md` | Implemented typed general-purpose core and conformance cases |
 | `docs/multi-target.md` | Target-adapter and native-binding architecture |
 | `docs/installation.md` | Local, user-prefix, and future public installation |
 | `docs/architecture.md` | Compiler pipeline and module boundaries |
@@ -184,6 +219,7 @@ copied into the output. See
 | `examples/` | Smoke fixtures and the portfolio/component example projects |
 | `src/core/` | Source manager, lexer, parser, AST, diagnostics, semantics |
 | `src/compiler/` | Project loading, IR, HTML/CSS emission, asset copying |
+| `src/v02/` | Core lexer/parser, type checker, portable IR, TypeScript/Python emitters |
 | `src/runtime/` | Reserved for a future stateful runtime; v0.1 emits none |
 | `src/server/` | Development server, watcher, SSE, overlay client |
 | `src/cli/` | Command-line interface and installer entry point |
@@ -191,7 +227,8 @@ copied into the output. See
 
 ## Documentation
 
-- [Language specification](docs/language-spec.md)
+- [v0.1 language specification](docs/language-spec.md)
+- [v0.2 core specification](docs/language-v0.2.md)
 - [Multi-target architecture](docs/multi-target.md)
 - [Installation](docs/installation.md)
 - [M6 component architecture](docs/components.md)

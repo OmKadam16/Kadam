@@ -1,9 +1,12 @@
 # Kadam Multi-Target Architecture
 
-**Status:** proposed. The current compiler emits static web HTML/CSS only.
-**Applies to:** the planned M7 general-purpose core and M8 target adapters.
-**Implementation:** none of the target adapters described here are available
-yet. This document defines the contract they must meet.
+**Status:** implemented for the v0.2 TypeScript and Python core targets. The
+v0.1 declarative web compiler still emits static HTML/CSS through its separate
+pipeline.
+**Applies to:** the M7 general-purpose core and M8 target adapters.
+**Implementation:** `src/v02/compile.ts` and the emitters in `src/v02/`. The
+v0.2 conformance suite is `test/v02.test.mjs`.
+**Core language:** [`docs/language-v0.2.md`](language-v0.2.md).
 
 ---
 
@@ -46,7 +49,7 @@ read files outside the project root.
 
 ---
 
-## 3. Planned pipeline
+## 3. Pipeline
 
 ```text
 .kdm source
@@ -87,56 +90,60 @@ types, React components, or framework-specific lifecycle concepts.
 
 ---
 
-## 4. Adapter contract (proposed)
+## 4. Adapter contract
 
 The exact TypeScript interface will be frozen with the M7 IR. The required shape
 is:
 
 ```ts
 interface TargetAdapter {
-  readonly id: string;
+  readonly id: TargetId;
   readonly version: string;
-  readonly capabilities: ReadonlySet<Capability>;
+  readonly capabilities: ReadonlySet<string>;
 
-  validate(program: CoreProgram): readonly Diagnostic[];
-  emit(program: CoreProgram, options: EmitOptions): readonly OutputFile[];
+  emit(
+    program: IrModule,
+    bindings: readonly ExternalBinding[],
+  ): OutputFile;
 }
 ```
 
+The compiler orchestrates provider binding and capability validation before
+calling `emit`.
+
 Rules:
 
-- `validate` runs before any output is written.
-- `emit` is pure and deterministic for the same program, options, and adapter
+- Provider and capability checks run before any output is written.
+- `emit` is pure and deterministic for the same program, bindings, and adapter
   version.
 - A capability that is not declared is rejected before emission, never silently
   approximated.
-- Adapter versions are recorded in generated metadata and in the CLI's
-  `--version` output.
-- Adapter-specific tests must execute the generated code with the native
-  runtime, not merely compare strings.
+- Generated output records its target id; adapter versions are exposed by the
+  target registry.
+- Adapter tests execute the generated code with the native runtime, not merely
+  compare strings.
 
 ### Conformance fixtures
 
-Every target must pass shared fixtures in the repository. A new fixture is added
-to the core suite only when its semantics are target-neutral; target-specific
-behavior lives in that adapter's suite.
+Every runnable target must pass the shared run fixtures for its declared
+capabilities, and every target must pass the shared compile-time diagnostics.
+A new fixture is added to the core suite only when its semantics are
+target-neutral; target-specific behavior lives in that adapter's suite.
 
 ---
 
 ## 5. First target set
 
-The first installable multi-target release supports:
+The implemented v0.2 core targets are:
 
 | Adapter | Output | Purpose |
 | --- | --- | --- |
-| `web` | HTML/CSS, optionally TypeScript/React/Next-compatible client output | Frontend and UI |
-| `python` | Python modules and package metadata | Backend programs |
+| `typescript` | `main.ts`, Node runtime helpers, external module imports | Core programs on a JavaScript host |
+| `python` | `main.py`, standard-library runtime helpers, external module imports | Core programs on a Python host |
 
-CSS remains part of the web adapter. Next.js is a web-adapter mode, not a
-separate language target.
-
-Rust and Java adapters follow only after the adapter contract and conformance
-suite are stable.
+The v0.1 `web` path remains HTML/CSS only. Unifying it with the portable core is
+still M8 work; it is not exposed as a `--target` value yet. Rust and Java
+adapters follow only after the adapter contract and conformance suite are stable.
 
 ---
 
@@ -145,20 +152,24 @@ suite are stable.
 Existing native code is called through explicit declarations, not translated
 from another language.
 
-A binding declaration must eventually specify:
+A binding declaration specifies:
 
 - a stable local name;
 - the target or targets that provide it;
 - argument and return types;
-- error/effect behavior;
-- the native module or symbol.
+- effect behavior;
+- the native module and symbol.
 
-The exact `.kdm` syntax is not frozen yet. The compiler will not parse Python,
-TypeScript, Rust, or Java source, and it will not claim to understand arbitrary
-packages without a binding definition.
+The implemented syntax is `external function ... provided by "target" as
+"module#symbol"`, with optional `affects` lines. The compiler does not parse
+Python, TypeScript, Rust, or Java source, and it does not claim to understand
+arbitrary packages without a binding definition.
 
 Bindings must be checked at compile time and tested at runtime. A missing target
-implementation is a diagnostic, not a generated stub that fails later.
+implementation is a diagnostic, not a generated stub that fails later. The
+implemented adapters validate provider syntax, require the selected target's
+provider, and emit a typed wrapper; native arity and types are the provider's
+responsibility because host source is not parsed.
 
 ---
 
@@ -172,19 +183,18 @@ kadam --version
 ```
 
 `install.sh` supports a local checkout now and a published npm package through
-`KADAM_PACKAGE` later. The adopter-facing command remains `kadam`; target
-selection will be added only when the adapters exist.
+`KADAM_PACKAGE` later. The adopter-facing command remains `kadam`.
 
-Planned commands, not yet implemented:
+Implemented core-target commands:
 
 ```bash
-kadam build --target web
+kadam build --target typescript
 kadam build --target python
 kadam check --target python
-kadam bindings generate
 ```
 
-The current CLI accepts no target flag. It builds the static web target.
+A v0.2 build defaults to the TypeScript target. The v0.1 static-web commands
+continue to accept no target flag. `kadam bindings generate` remains planned.
 
 ---
 
@@ -207,11 +217,12 @@ a maintenance and trust failure.
 
 ## 9. Milestone gates
 
-- **M7:** approve the typed core, portable IR, capability model, and binding
-  model. Preserve the current web output.
-- **M8:** implement the web and Python adapters, `install.sh`, and executable
-  conformance tests.
-- **M9:** add Rust/Java adapters and external language tooling.
+- **M7:** complete — typed core, portable IR, capability model, and binding
+  model are implemented; current web output is preserved.
+- **M8:** in progress — the TypeScript and Python core adapters and executable
+  conformance tests are implemented. Web unification and the public packaging
+  path remain.
+- **M9:** planned — add Rust/Java adapters and external language tooling.
 
-Do not implement a Python emitter before the portable IR exists. Doing so would
-make one target's runtime the accidental definition of the language.
+New adapters consume the existing portable IR. They do not add target syntax to
+`.kdm` or make one target's runtime the definition of the language.

@@ -579,7 +579,8 @@ runtime. Incremental compilation is deferred until a measured proposal exists.
 ## Open product and language questions
 
 These are recorded now but do not block M1. Each needs its own decision record
-before implementation.
+before implementation. D-30 proposes an initial answer to the programming-model
+question (item 1); it remains open until that decision is approved.
 
 1. **Programming model.** Is Kadam only a declarative UI language, or will it
    eventually have variables, functions, conditions, loops, and data? If yes,
@@ -953,6 +954,72 @@ expressions and palette tokens beyond named/hex remain deferred.
 
 ---
 
+### D-29 — CLI-first distribution; remove the browser editor
+
+**Status:** Approved — implemented
+**Blocks:** M7
+**Recommendation:** Implemented
+
+**Decision.** Kadam is distributed and used through the `kadam` CLI. The
+browser Studio, its host, the headless editor library, the browser-only source
+entry, and the editor-only `/__kadam/studio-map` endpoint are removed. The
+compiler and development server remain editor-independent. Installation is
+provided by `install.sh` and a global npm-compatible CLI package. No GUI is a
+prerequisite for any language or target feature.
+
+**Trade-off:** losing the visual editing surface removes click-to-source and
+the inspector. The full Studio implementation remains recoverable from commit
+`010fc06`. In exchange, the repository has one distribution path and no UI
+surface that can drift from the compiler.
+
+---
+
+### D-30 — v0.2 general-purpose core and declarative UI subset
+
+**Status:** Approved — implemented in M7
+**Blocks:** M7
+**Recommendation:** Implemented; v0.1 UI surface unchanged
+
+**Decision.** Add a typed, target-neutral core under the same `.kdm` language
+family with one module per file. The core supports text, number, boolean,
+immutable lists and records, typed functions, locals, `if`/`while`, `return`,
+`output`, file read/write intrinsics, explicit effects, and reviewable source
+spans. The v0.1 `page` and `component` surfaces remain unchanged and separate
+from modules in this milestone.
+
+Core declarations use English keywords and explicit expression operators. This
+hybrid is deliberate: UI properties remain prose-like, while arithmetic and
+nested calls must have unambiguous precedence. The core does not allow imports,
+classes, first-class functions, collection mutation, async behavior, or
+implicit target semantics in v0.2.
+
+**Trade-off:** pages and modules are not yet interleaved. This avoids making
+the web runtime the definition of the general-purpose core. The cost is a
+larger migration later when UI behavior needs general-purpose functions.
+
+---
+
+### D-31 — Targets are adapters; external calls require typed bindings
+
+**Status:** Approved — implemented for the TypeScript and Python core targets
+**Blocks:** M7/M8
+**Recommendation:** Implemented; further adapters follow the same contract
+
+**Decision.** The core IR contains no HTML, CSS, TypeScript, Python, Rust, or
+Java concepts. A target adapter declares a capability set, validates the IR
+before emission, and either emits all required effects and external providers
+or fails with a stable diagnostic. External declarations carry explicit target
+provider metadata and effect names; the core compiler never invents a provider
+or parses another language's source. A target is “supported” only after its
+adapters pass shared conformance fixtures and execute generated output in the
+native runtime.
+
+**Trade-off:** bindings require explicit metadata and per-target integration.
+The language cannot claim automatic compatibility with arbitrary packages.
+That constraint is what makes compatibility testable instead of aspirational.
+
+---
+
 ## Approval checklist
 
 | ID | Decision | Blocks | Recommendation | Status |
@@ -985,8 +1052,13 @@ expressions and palette tokens beyond named/hex remain deferred.
 | D-26 | Image component parameters | Post-M6.1 | Approve | Approved — implemented |
 | D-27 | Length component parameters | Post-M6.1 | Approve | Approved — implemented |
 | D-28 | Color component parameters | Post-M6.1 | Approve | Approved — implemented |
+| D-29 | CLI-first distribution; remove the browser editor | M7 | Implemented | Approved — implemented |
+| D-30 | v0.2 core + declarative UI subset | M7 | Review spec | Approved — implemented |
+| D-31 | Target adapters and typed external bindings | M7/M8 | Review contract | Approved — implemented for TypeScript/Python core targets |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through
 D-22 are approved for M6. D-23 through D-28 are post-M6.1 language follow-ups
-and are implemented.
+and are implemented. D-29 through D-31 are implemented: the CLI is the only
+distribution path, the v0.2 core lowers to a portable IR, and the TypeScript and
+Python core adapters pass executable conformance tests.

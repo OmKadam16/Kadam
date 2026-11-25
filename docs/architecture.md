@@ -5,10 +5,16 @@
 **Companion documents:** `docs/language-spec.md`, `docs/roadmap.md`,
 `docs/decisions.md`
 
-This document describes how a `.kdm` file becomes a static web page. It records
-module boundaries, data contracts, and determinism requirements for the current
-compiler. The repository is CLI-only; a browser editor is not part of this
-architecture.
+This document describes how a `.kdm` page or project becomes a static web page.
+It records module boundaries, data contracts, and determinism requirements for
+the v0.1 UI compiler. The repository is CLI-only; a browser editor is not part
+of this architecture.
+
+The separate `kadam 0.2` core has its own lexer, parser, type checker, portable
+IR, and TypeScript/Python emitters under `src/v02/`. That pipeline is documented
+in [`language-v0.2.md`](language-v0.2.md) and
+[`multi-target.md`](multi-target.md); it does not share page IR or HTML/CSS
+emission.
 
 ---
 

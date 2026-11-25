@@ -25,6 +25,13 @@ import { runCheckCommand } from "./check-command.js";
 import { runDevCommand } from "./dev-command.js";
 import { parseText } from "../core/parser/parser.js";
 import { SourceFile } from "../core/source/source-file.js";
+import { compileV02Text } from "../v02/compile.js";
+import { isV02Source, parseModuleText } from "../v02/parser.js";
+import {
+  TARGET_IDS,
+  isTargetId,
+  type TargetId,
+} from "../v02/target.js";
 import { KADAM_VERSION, LANGUAGE_VERSION } from "../version.js";
 
 const args = process.argv.slice(2);
@@ -53,6 +60,15 @@ if (first === "parse") {
   }
 
   const text = readSource(file, "parse");
+  if (isV02Source(text)) {
+    const result = parseModuleText(file, text);
+    console.log(JSON.stringify(result.module, null, 2));
+    if (result.diagnostics.length > 0) {
+      console.error(formatDiagnostics(result.diagnostics, [result.source]));
+      process.exit(1);
+    }
+    process.exit(0);
+  }
   const result = parseText(file, text);
   console.log(JSON.stringify(result.document, null, 2));
   if (result.diagnostics.length > 0) {
@@ -84,7 +100,7 @@ if (first === "build") {
 
   const hasProjectFlag = parsedArgs.projectDir !== undefined;
   let isProject = hasProjectFlag;
-  let targetPath = parsedArgs.projectDir ?? parsedArgs.target;
+  let targetPath = parsedArgs.projectDir ?? parsedArgs.source;
 
   if (!hasProjectFlag && targetPath !== undefined) {
     if (existsSync(targetPath)) {
@@ -99,6 +115,12 @@ if (first === "build") {
   }
 
   if (isProject) {
+    if (parsedArgs.target !== undefined) {
+      console.error(
+        "kadam build: --target is supported for single kadam 0.2 module files, not projects",
+      );
+      process.exit(2);
+    }
     const projectDir = targetPath ?? ".";
     const result = compileProject({
       projectRoot: projectDir,
@@ -147,6 +169,44 @@ if (first === "build") {
 
   const outDir = parsedArgs.outDir ?? "dist";
   const text = readSource(file, "build");
+  if (isV02Source(text)) {
+    const target = parsedArgs.target ?? "typescript";
+    const result = compileV02Text(file, text, { target });
+    if (!result.ok) {
+      console.error(formatDiagnostics(result.diagnostics, [result.source]));
+      console.error(
+        `\nkadam build: ${result.diagnostics.length} diagnostic${
+          result.diagnostics.length === 1 ? "" : "s"
+        }; no files were written.`,
+      );
+      process.exit(1);
+    }
+
+    try {
+      writeOutputFiles(file, outDir, result.files);
+    } catch (error) {
+      console.error(
+        `kadam build: cannot write ${outDir}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      process.exit(1);
+    }
+
+    console.log(`Built ${file} -> ${outDir} (target ${target})`);
+    for (const output of result.files) {
+      console.log(`  ${join(outDir, output.path)}`);
+    }
+    process.exit(0);
+  }
+
+  if (parsedArgs.target !== undefined) {
+    console.error(
+      "kadam build: --target is supported only for kadam 0.2 module files",
+    );
+    process.exit(2);
+  }
+
   const result = compileText(file, text, { basePath: parsedArgs.basePath });
 
   if (!result.ok) {
@@ -199,20 +259,55 @@ function readSource(file: string, command: string): string {
 }
 
 interface BuildArguments {
-  readonly target: string | undefined;
+  readonly source: string | undefined;
+  readonly target: TargetId | undefined;
   readonly projectDir: string | undefined;
   readonly outDir: string | undefined;
   readonly basePath: string | undefined;
 }
 
 function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null {
-  let target: string | undefined;
+  let source: string | undefined;
+  let target: TargetId | undefined;
   let projectDir: string | undefined;
   let outDir: string | undefined;
   let basePath: string | undefined;
 
   for (let index = 0; index < rawArgs.length; index += 1) {
     const argument = rawArgs[index]!;
+    if (argument === "--target") {
+      const value = rawArgs[index + 1];
+      if (value === undefined || value === "") {
+        console.error(
+          `kadam build: --target requires ${TARGET_IDS.join(" or ")}`,
+        );
+        return null;
+      }
+      if (!isTargetId(value)) {
+        console.error(
+          `kadam build: unknown target ${JSON.stringify(value)}; expected ${TARGET_IDS.join(
+            " or ",
+          )}`,
+        );
+        return null;
+      }
+      target = value;
+      index += 1;
+      continue;
+    }
+    if (argument.startsWith("--target=")) {
+      const value = argument.slice("--target=".length);
+      if (!isTargetId(value)) {
+        console.error(
+          `kadam build: unknown target ${JSON.stringify(value)}; expected ${TARGET_IDS.join(
+            " or ",
+          )}`,
+        );
+        return null;
+      }
+      target = value;
+      continue;
+    }
     if (argument === "--out" || argument === "-o") {
       const value = rawArgs[index + 1];
       if (value === undefined || value === "") {
@@ -275,15 +370,15 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
       return null;
     }
 
-    if (target === undefined) {
-      target = argument;
+    if (source === undefined) {
+      source = argument;
     } else {
       console.error(`kadam build: unexpected argument ${JSON.stringify(argument)}`);
       return null;
     }
   }
 
-  return { target, projectDir, outDir, basePath };
+  return { source, target, projectDir, outDir, basePath };
 }
 
 /**
@@ -417,14 +512,17 @@ Usage:
 
 Commands:
   parse <file>                        Parse one .kdm file and print its AST as JSON
-  build [path] [options]              Compile a .kdm page or project to static HTML and CSS
-  check [path] [options]              Validate a page or project without writing output
+  build [path] [options]              Compile a .kdm page, project, or v0.2 module
+  check [path] [options]              Validate a page, project, or v0.2 module
   dev [project] [options]             Start the development server with live reload
 
 Build and check options:
   -p, --project <dir>                 Project directory containing kadam.json
   -o, --out <dir>                     Output directory (default: dist; build only)
   -b, --base-path <path>              Deployment base path (e.g. /subpath)
+      --target <id>                   Target for a kadam 0.2 module: typescript or python
+                                       (build defaults to typescript; check is core-only
+                                       unless a target is supplied)
 
 Dev options:
       --port <n>                      Port to listen on (default: 3000; 0 picks any)
@@ -437,12 +535,14 @@ Options:
   -h, --help                          Print this help
 
 Status:
-  CLI-only distribution. The current compiler target is static web HTML/CSS.
-  General-purpose multi-target support is planned; see docs/multi-target.md.
+  CLI-only distribution. The v0.1 UI compiler emits static web HTML/CSS. The
+  v0.2 core compiler emits TypeScript or Python for one module file.
 
 Documentation:
   README.md
   docs/language-spec.md
+  docs/language-v0.2.md
+  docs/multi-target.md
   docs/architecture.md
   docs/roadmap.md
   docs/decisions.md`);

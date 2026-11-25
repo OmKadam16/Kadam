@@ -1,5 +1,10 @@
 # Kadam Language Specification
 
+> This document specifies the implemented **v0.1 UI language**. The separate
+> typed general-purpose core is implemented in
+> [`language-v0.2.md`](language-v0.2.md) and is selected by the `kadam 0.2`
+> header; it does not change this v0.1 surface.
+
 **Specification version:** 0.1
 **Compiler status:** implemented through M5 — see `docs/m5-compliance.md`
 **Status:** approved for v0.1 — see `docs/decisions.md`
