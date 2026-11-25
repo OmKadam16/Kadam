@@ -3,6 +3,7 @@
 **Current milestone:** M8 — target adapters and interop (in progress; Studio removed)
 **Core specification:** [`docs/language-v0.2.md`](language-v0.2.md) (implemented)
 **Target contract:** [`docs/multi-target.md`](multi-target.md) (implemented for the TypeScript and Python core targets)
+**Proposed priority:** [`docs/frontend-plan.md`](frontend-plan.md) — make Kadam a full frontend language (phases F0–F7) before extending backend targets
 
 The roadmap is ordered by dependency, not by feature appeal. Each milestone has
 an exit criterion that is objectively testable. No milestone starts before the
