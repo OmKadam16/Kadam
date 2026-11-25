@@ -657,6 +657,7 @@ function checkCapability(
       return;
     case "size-limit":
     case "aspect-ratio":
+    case "content-width":
     case "child-rule":
     case "column-span":
     case "sticky":
@@ -952,6 +953,8 @@ function describeStatement(statement: StatementNode): string {
       return "a size limit statement";
     case "aspect-ratio":
       return "a shape statement";
+    case "content-width":
+      return "a width statement";
     case "fluid-text":
       return "a fluid text statement";
     case "flex-rule":
@@ -1153,6 +1156,8 @@ function propertyKeys(statement: StatementNode): string[] {
       return [`${statement.bound}-${statement.axis}`];
     case "aspect-ratio":
       return ["aspect-ratio"];
+    case "content-width":
+      return ["width"];
     case "fluid-text":
       // Same property as `the text is 18px`.
       return ["text-size"];

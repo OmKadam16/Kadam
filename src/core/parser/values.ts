@@ -277,13 +277,13 @@ export function readPercentage(token: Token): PercentageValue | null {
   return { type: "percentage", value: token.value, raw: token.text };
 }
 
-export function percentageDiagnostic(token: Token): DiagnosticSpec {
-  if (isPercentage(token) && (token.value < 100 || token.value > 200)) {
+export function percentageDiagnostic(token: Token, minScale = 100): DiagnosticSpec {
+  if (isPercentage(token) && (token.value < minScale || token.value > 200)) {
     return {
       code: "KDM3005",
-      message: `scale percentage ${token.text} is outside 100%–200%`,
+      message: `scale percentage ${token.text} is outside ${minScale}%–200%`,
       span: token.span,
-      hint: "use a value from 100% to 200%",
+      hint: `use a value from ${minScale}% to 200%`,
     };
   }
   return {

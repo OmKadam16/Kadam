@@ -64,6 +64,8 @@ import {
 import {
   allStatements,
   arrangementOf,
+  baseTextSelfDeclarations,
+  breakpointShiftDeclarations,
   groupScopes,
   parentDeclarations,
   scopeDeclarations,
@@ -313,13 +315,15 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     basePath: context.basePath,
     fonts: context.fontStacks,
   };
+  const v03 = context.f1.languageVersion !== "0.1";
   const declarations = [
     ...scopeDeclarations(baseStatements, parent, null),
     ...f3ScopeDeclarations(baseStatements, f3),
     ...parentDeclarations(element, baseStatements, parent),
+    ...(v03 ? baseTextSelfDeclarations(kind, baseStatements, parent) : []),
   ];
   if (declarations.length > 0) authored.declarations = declarations;
-  const responsive = lowerResponsive(element, style, kind, parent, baseStatements, f3);
+  const responsive = lowerResponsive(element, style, kind, parent, baseStatements, f3, v03);
   const scopes = lowerScopes(element, style, kind, parent, baseStatements, f3);
   const { states, transitions } = lowerStates(element, f3);
   const rules = lowerExtraRules(element, f3);
@@ -328,8 +332,11 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
       allStatements(element).flatMap((statement) => (statement.type === "loop" ? [statement.effect] : [])),
     ),
   ];
+  const childArrangement = arrangementOf(baseStatements, style.layout?.direction ?? null);
+  const byBreakpoint = v03 ? arrangementByBreakpoint(element, responsive, childArrangement) : {};
   const childParent: F2ParentInfo = {
-    arrangement: arrangementOf(baseStatements, style.layout?.direction ?? null),
+    arrangement: childArrangement,
+    ...(Object.keys(byBreakpoint).length === 0 ? {} : { byBreakpoint }),
   };
   const scrollable = allStatements(element).some(
     (statement) => statement.type === "overflow" && statement.mode !== "hidden",
@@ -543,6 +550,7 @@ function lowerResponsive(
   parent: F2ParentInfo,
   baseStatements: readonly StatementNode[],
   f3: F3Context,
+  v03: boolean,
 ): readonly IrResponsive[] {
   const result: IrResponsive[] = [];
 
@@ -553,14 +561,18 @@ function lowerResponsive(
           statement.type === "responsive" && statement.breakpoint === breakpoint,
       )
       .map((statement) => statement.statement);
-    if (scoped.length === 0) continue;
+    // kadam 0.3: the parent may arrange its children differently here.
+    const shift = v03 ? breakpointShiftDeclarations(kind, baseStatements, scoped, parent, breakpoint) : [];
+    if (scoped.length === 0 && shift.length === 0) continue;
+    const here: F2ParentInfo = { arrangement: parent.byBreakpoint?.[breakpoint] ?? parent.arrangement };
 
     const style = cloneComputedStyle(baseStyle) as MutableStyle;
     const authored: MutableAuthored = {};
     applyScope(scoped, style, authored, kind);
     const declarations = [
-      ...scopeDeclarations(scoped, parent, baseStatements),
+      ...scopeDeclarations(scoped, v03 ? here : parent, baseStatements),
       ...f3ScopeDeclarations(scoped, f3),
+      ...shift,
     ];
     if (declarations.length > 0) authored.declarations = declarations;
     result.push({
@@ -570,6 +582,27 @@ function lowerResponsive(
     });
   }
 
+  return result;
+}
+
+/** kadam 0.3: how this element arranges its children on each breakpoint where that changes. */
+function arrangementByBreakpoint(
+  element: ElementNode,
+  responsive: readonly IrResponsive[],
+  base: F2ParentInfo["arrangement"],
+): Partial<Record<Breakpoint, F2ParentInfo["arrangement"]>> {
+  const result: Partial<Record<Breakpoint, F2ParentInfo["arrangement"]>> = {};
+  for (const breakpoint of BREAKPOINTS) {
+    const scoped = element.statements.flatMap((statement) =>
+      statement.type === "responsive" && statement.breakpoint === breakpoint ? [statement.statement] : [],
+    );
+    let arrangement = base;
+    if (scoped.some((statement) => statement.type === "grid")) arrangement = "grid";
+    else if (scoped.some((statement) => statement.type === "layout" && statement.property === "direction")) {
+      arrangement = responsive.find((entry) => entry.breakpoint === breakpoint)?.style.layout?.direction ?? base;
+    }
+    if (arrangement !== base) result[breakpoint] = arrangement;
+  }
   return result;
 }
 

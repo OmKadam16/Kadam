@@ -365,6 +365,7 @@ export type F2Statement =
       readonly value: LengthValue;
     })
   | (NodeBase & { readonly type: "aspect-ratio"; readonly width: number; readonly height: number })
+  | (NodeBase & { readonly type: "content-width" })
   | (NodeBase & { readonly type: "fluid-text"; readonly min: LengthValue; readonly max: LengthValue })
   | (NodeBase & { readonly type: "flex-rule"; readonly rule: "wrap" | "spread" | "even" })
   | (NodeBase & { readonly type: "child-rule"; readonly rule: "grow" | "no-shrink" | "end" })

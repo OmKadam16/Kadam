@@ -61,6 +61,7 @@ export function isF2State(tokens: readonly Token[]): boolean {
   const third = tokens[2];
   if (isPercentage(third)) return true;
   if (isAnyWord(third, "pinned") || isAnyWord(third, "placed")) return true;
+  if (isAnyWord(third, "as")) return true;
   if (
     isAnyWord(third, "at") &&
     (isAnyWord(tokens[3], "least") || isAnyWord(tokens[3], "most")) &&
@@ -226,6 +227,16 @@ export function matchSticky(tokens: readonly Token[]): Body {
 // shape and text
 
 // it keeps a 16 by 9 shape | it keeps a square shape
+// it is as wide as its content
+export function matchContentWidth(tokens: readonly Token[]): Body {
+  if (!isKeyword(tokens[0], "it") || !isAnyWord(tokens[1], "is") || !isAnyWord(tokens[2], "as")) return null;
+  const words = tokens.slice(3).map((token) => token.text.toLowerCase());
+  if (words.join(" ") !== "wide as its content") {
+    return fail("write: it is as wide as its content", tokens, "it is as wide as its content makes a box hug what is inside it");
+  }
+  return ok({ type: "content-width", span: spanFromTokens(tokens) });
+}
+
 export function matchAspectRatio(tokens: readonly Token[]): Body {
   if (!isKeyword(tokens[0], "it") || !isAnyWord(tokens[1], "keeps")) return null;
   if (!isKeyword(tokens[2], "a")) return null;

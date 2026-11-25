@@ -12,7 +12,7 @@ import type {
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Token } from "../lexer/token.js";
 import type { StatementMatchBody } from "./statement-types.js";
-import { endsWithScrollIntoView, parseHoverEffect, parseOptionalDuration } from "./matchers-interaction.js";
+import { MIN_SCALE_03, endsWithScrollIntoView, parseHoverEffect, parseOptionalDuration } from "./matchers-interaction.js";
 import {
   colorDiagnostic,
   describeTokens,
@@ -508,7 +508,7 @@ export function matchState(tokens: readonly Token[]): Body {
     effect = { type: "rotate", degrees };
     length = 4;
   } else {
-    const parsed = parseHoverEffect(rest, span, diagnostics);
+    const parsed = parseHoverEffect(rest, span, diagnostics, MIN_SCALE_03);
     if (parsed === null) return { statement: null, diagnostics };
     effect = parsed.effect;
     length = parsed.length;

@@ -30,7 +30,7 @@ import {
   matchText,
   matchTypography,
 } from "./matchers-appearance.js";
-import { matchClick, matchHover, matchMotion } from "./matchers-interaction.js";
+import { MIN_SCALE_03, matchClick, matchHover, matchMotion } from "./matchers-interaction.js";
 import { BUILTIN_KIND_INFO, matchKindStatement } from "./kind.js";
 import {
   matchCaption,
@@ -60,6 +60,7 @@ import {
   matchPercentSize,
   matchPosition,
   matchSizeLimit,
+  matchContentWidth,
   matchSticky,
 } from "./matchers-f2.js";
 import {
@@ -164,6 +165,9 @@ const F2_TEMPLATES: readonly StatementTemplate[] = [
   { id: "size-limit", description: "Size limit", since: "0.3",
     examples: ["it is at most 1200px wide", "it is at least 50vh tall"],
     match: (tokens) => matchSizeLimit(tokens) },
+  { id: "content-width", description: "Width that hugs the content", since: "0.3",
+    examples: ["it is as wide as its content"],
+    match: (tokens) => matchContentWidth(tokens) },
   { id: "aspect-ratio", description: "Shape (aspect ratio)", since: "0.3",
     examples: ["it keeps a 16 by 9 shape", "it keeps a square shape"],
     match: (tokens) => matchAspectRatio(tokens) },
@@ -511,7 +515,8 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
       "when hovered, it scales to 105%",
       "when hovered, the border turns black over 200ms",
     ],
-    match: (tokens) => matchHover(tokens),
+    match: (tokens, context) =>
+      matchHover(tokens, uiVersionAtLeast(context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION, "0.3") ? MIN_SCALE_03 : 100),
   },
   {
     id: "click",
@@ -574,6 +579,7 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   // kadam 0.3 (F2)
   "size-limit",
   "aspect-ratio",
+  "content-width",
   "fluid-text",
   "flex-rule",
   "child-rule",

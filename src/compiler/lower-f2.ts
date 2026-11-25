@@ -20,9 +20,89 @@ import type { IrDeclaration } from "./ir.js";
 export const FLUID_MIN_VIEWPORT = 360;
 export const FLUID_MAX_VIEWPORT = 1280;
 
+export type Arrangement = "row" | "column" | "grid" | null;
+
 export interface F2ParentInfo {
   /** The parent's flex direction, or "grid" when it arranges columns. */
-  readonly arrangement: "row" | "column" | "grid" | null;
+  readonly arrangement: Arrangement;
+  /** kadam 0.3: the parent's arrangement on breakpoints where it changes. */
+  readonly byBreakpoint?: Partial<Record<"phones" | "tablets" | "desktops", Arrangement>>;
+}
+
+/** `it sits at the end` for a parent arrangement. */
+function endDeclarations(arrangement: Arrangement): IrDeclaration[] {
+  if (arrangement === "grid") return [{ property: "justify-self", value: "end" }];
+  return [{ property: arrangement === "row" ? "margin-inline-start" : "margin-block-start", value: "auto" }];
+}
+
+/** Undo `endDeclarations` when the parent changes arrangement. */
+function endReset(arrangement: Arrangement): IrDeclaration[] {
+  if (arrangement === "grid") return [{ property: "justify-self", value: "auto" }];
+  return [{ property: arrangement === "row" ? "margin-inline-start" : "margin-block-start", value: "0" }];
+}
+
+const SELF_ALIGNED_TEXT: ReadonlySet<string> = new Set([
+  "main heading", "section heading", "minor heading", "small heading", "paragraph",
+]);
+
+function textAlignOf(statements: readonly StatementNode[]): "left" | "center" | "right" | null {
+  let value: "left" | "center" | "right" | null = null;
+  for (const statement of statements) {
+    if (statement.type === "typography" && statement.property === "align") value = statement.value;
+  }
+  return value;
+}
+
+/**
+ * kadam 0.3: centered or right-aligned headings and paragraphs in a column
+ * also place their box there. A column hugs its children, so text-align alone
+ * would not move a short line.
+ */
+function textSelfDeclarations(align: "left" | "center" | "right" | null, arrangement: Arrangement): IrDeclaration[] {
+  if (align === null) return [];
+  if (arrangement !== "column") return [{ property: "align-self", value: "auto" }];
+  const value = align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
+  return [{ property: "align-self", value }];
+}
+
+export function baseTextSelfDeclarations(
+  kind: string,
+  baseStatements: readonly StatementNode[],
+  parent: F2ParentInfo,
+): IrDeclaration[] {
+  if (!SELF_ALIGNED_TEXT.has(kind) || parent.arrangement !== "column") return [];
+  const align = textAlignOf(baseStatements);
+  return align === null || align === "left" ? [] : textSelfDeclarations(align, "column");
+}
+
+/**
+ * kadam 0.3: declarations a child needs on a breakpoint because its parent
+ * arranges its children differently there (a row on desktops, a column on
+ * phones), so `it sits at the end` and centered text follow the parent.
+ */
+export function breakpointShiftDeclarations(
+  kind: string,
+  baseStatements: readonly StatementNode[],
+  scoped: readonly StatementNode[],
+  parent: F2ParentInfo,
+  breakpoint: "phones" | "tablets" | "desktops",
+): IrDeclaration[] {
+  const to = parent.byBreakpoint?.[breakpoint];
+  const changed = to !== undefined && to !== parent.arrangement;
+  const target = changed ? to : parent.arrangement;
+  const result: IrDeclaration[] = [];
+  const baseEnd = baseStatements.some((statement) => statement.type === "child-rule" && statement.rule === "end");
+  const scopedEnd = scoped.some((statement) => statement.type === "child-rule" && statement.rule === "end");
+  if (changed && baseEnd && !scopedEnd) result.push(...endReset(parent.arrangement), ...endDeclarations(target));
+  if (SELF_ALIGNED_TEXT.has(kind)) {
+    const scopedAlign = textAlignOf(scoped);
+    const align = scopedAlign ?? textAlignOf(baseStatements);
+    if (align !== null && (changed || scopedAlign !== null)) {
+      const wasSet = parent.arrangement === "column" && (textAlignOf(baseStatements) ?? "left") !== "left";
+      if (align !== "left" || wasSet) result.push(...textSelfDeclarations(align, target));
+    }
+  }
+  return result;
 }
 
 function length(value: LengthValue): string {
@@ -74,6 +154,8 @@ function statementDeclarations(statement: StatementNode, parent: F2ParentInfo): 
       return [d(`${statement.bound}-${statement.axis}`, length(statement.value))];
     case "aspect-ratio":
       return [d("aspect-ratio", `${statement.width} / ${statement.height}`)];
+    case "content-width":
+      return [d("width", "fit-content")];
     case "fluid-text":
       return [d("font-size", fluidFontSize(statement.min, statement.max))];
     case "flex-rule":
@@ -82,8 +164,7 @@ function statementDeclarations(statement: StatementNode, parent: F2ParentInfo): 
     case "child-rule":
       if (statement.rule === "grow") return [d("flex-grow", "1")];
       if (statement.rule === "no-shrink") return [d("flex-shrink", "0")];
-      if (parent.arrangement === "grid") return [d("justify-self", "end")];
-      return [d(parent.arrangement === "row" ? "margin-inline-start" : "margin-block-start", "auto")];
+      return endDeclarations(parent.arrangement);
     case "grid":
       return [
         d("display", "grid"),
@@ -204,6 +285,7 @@ export function isF2Statement(statement: StatementNode): statement is F2Statemen
 const F2_TYPES: ReadonlySet<string> = new Set([
   "size-limit",
   "aspect-ratio",
+  "content-width",
   "fluid-text",
   "flex-rule",
   "child-rule",

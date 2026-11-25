@@ -769,6 +769,7 @@ percentage (`50%`).
 | --- | --- |
 | `it is 50% wide` / `it is 50% tall` / `it is 50% by 300px` | `width` / `height` |
 | `it is at most 1200px wide` / `it is at least 50vh tall` | `max-width` / `min-height` (and `min-width`, `max-height`) |
+| `it is as wide as its content` | `width: fit-content`, for kinds that are full width by default, such as a navigation bar; it is a width, so it conflicts with `it is full width` |
 | `it keeps a 16 by 9 shape` / `it keeps a square shape` | `aspect-ratio: 16 / 9` (whole numbers 1 to 100) |
 | `the text is between 1rem and 2.5rem` | `font-size: clamp(...)` |
 
@@ -797,6 +798,14 @@ A grid replaces the row or column direction, so both in one scope is
 scope may change the column count, or switch back to a row or column, which
 turns the grid back into flex. Child rules and spans need a parent element
 that arranges its children (`KDM3010`).
+
+`it sits at the end` follows the parent on every breakpoint: when a parent
+arranges its children in a row but in a column on phones, the child moves to
+the end of the column on phones.
+
+In a parent that arranges its children in a column, a heading or paragraph
+with `the text is centered` (or `right`) also centers (or right-aligns) its
+own box, so a short line is centered too (*kadam 0.3*).
 
 **Position and layers**
 
@@ -1145,8 +1154,9 @@ when hovered, the border turns black over 200ms
   An explicit `has no border` or zero-width border removes that default for
   this check.
 - `it lifts by <length>` moves the element up by the given distance.
-- `it scales to <percentage>` accepts 100%–200%. Values below 100% would make
-  hover shrink the target and are rejected.
+- `it scales to <percentage>` accepts 100%–200% in `kadam 0.1`, and
+  50%–200% in `kadam 0.3`, where hover and press may shrink an element
+  (`when pressed, it scales to 97%`).
 - An optional `over <duration>` sets that effect's transition duration.
   Default: `150ms` with `ease-out`.
 - Multiple hover lines MAY set different properties. Repeating the same
@@ -1512,7 +1522,7 @@ sentence.
 
 - Lengths and durations are non-negative; durations must be greater than zero
   when they define a transition or animation.
-- `it scales to` accepts 100%–200%.
+- `it scales to` accepts 100%–200% (50%–200% in `kadam 0.3`).
 - Colors must be named colors or valid hex literals.
 - Text and description strings may be empty only where explicitly allowed;
   headings, paragraphs, buttons, links, labels, placeholders, and alt text MUST

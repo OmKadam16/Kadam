@@ -70,7 +70,7 @@ test("every 0.1 template stays 0.1; only frontend-track templates are 0.3", () =
   const newer = STATEMENT_TEMPLATES.filter((t) => (t.since ?? "0.1") !== "0.1").map((t) => t.id);
   assert.deepEqual(newer.sort(), [
     "aspect-ratio", "auto-dark", "backdrop-blur", "background-image", "background-image-rule",
-    "caption", "captions", "child-rule", "click-effects", "color-token", "column-span", "corner-radius",
+    "caption", "captions", "child-rule", "click-effects", "color-token", "column-span", "content-width", "corner-radius",
     "custom-font", "custom-shadow", "effect", "f1-field-type", "f1-state", "f4-click", "field-error", "flex-rule",
     "fluid-text", "form-action", "gradient-angle", "gradient-stops", "grid", "image-fit",
     "image-focus", "key-event", "line-clamp", "loading", "loop", "media-source", "no-speech", "options",

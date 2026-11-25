@@ -28,7 +28,10 @@ import {
 } from "./values.js";
 
 /** `when hovered, <effect> [over <duration>]` */
-export function matchHover(tokens: readonly Token[]): StatementMatchBody | null {
+/** kadam 0.3 lets an element shrink on hover or press; 0.1 only grows it. */
+export const MIN_SCALE_03 = 50;
+
+export function matchHover(tokens: readonly Token[], minScale = 100): StatementMatchBody | null {
   if (!isKeyword(tokens[0], "when") || !isKeyword(tokens[1], "hovered")) {
     return null;
   }
@@ -51,7 +54,7 @@ export function matchHover(tokens: readonly Token[]): StatementMatchBody | null 
 
   const rest = tokens.slice(3);
   const diagnostics: DiagnosticSpec[] = [];
-  const effect = parseHoverEffect(rest, span, diagnostics);
+  const effect = parseHoverEffect(rest, span, diagnostics, minScale);
   if (effect === null) return { statement: null, diagnostics };
 
   const duration = parseOptionalDuration(rest, effect.length, diagnostics);
@@ -76,6 +79,7 @@ export function parseHoverEffect(
   tokens: readonly Token[],
   fallbackSpan: Span,
   diagnostics: DiagnosticSpec[],
+  minScale = 100,
 ): HoverEffectResult | null {
   if (
     isKeyword(tokens[0], "the") &&
@@ -145,13 +149,13 @@ export function parseHoverEffect(
         code: "KDM3005",
         message: "hover scale requires a percentage",
         span: spanFromTokens(tokens.slice(0, 3)),
-        hint: "use a value from 100% to 200%",
+        hint: `use a value from ${minScale}% to 200%`,
       });
       return null;
     }
     const percentage = readPercentage(valueToken);
-    if (percentage === null || percentage.value < 100 || percentage.value > 200) {
-      diagnostics.push(percentageDiagnostic(valueToken));
+    if (percentage === null || percentage.value < minScale || percentage.value > 200) {
+      diagnostics.push(percentageDiagnostic(valueToken, minScale));
       return null;
     }
     const effect: HoverEffect = { type: "scale", percentage };
