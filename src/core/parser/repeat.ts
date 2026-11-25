@@ -1,4 +1,5 @@
-import type { RecordFieldReference, RepeatFilter, RepeatSort } from "../ast/nodes.js";
+import type { RecordFieldReference, RepeatFilter, RepeatPaging, RepeatSort } from "../ast/nodes.js";
+import { readStateReference } from "./matchers-f4.js";
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Token } from "../lexer/token.js";
 import { isAnyWord, isKeyword, isString, spanFromTokens } from "./values.js";
@@ -15,7 +16,8 @@ import { isAnyWord, isKeyword, isString, spanFromTokens } from "./values.js";
 export type RepeatModifier =
   | { readonly type: "filter"; readonly filter: RepeatFilter }
   | { readonly type: "sort"; readonly sort: RepeatSort }
-  | { readonly type: "limit"; readonly count: number; readonly span: import("../source/source-file.js").Span };
+  | { readonly type: "limit"; readonly count: number; readonly span: import("../source/source-file.js").Span }
+  | { readonly type: "paging"; readonly paging: RepeatPaging };
 
 export interface RepeatModifierMatch {
   readonly modifier: RepeatModifier | null;
@@ -48,13 +50,38 @@ export function matchRepeatModifier(tokens: readonly Token[]): RepeatModifierMat
     if (field === null || !isKeyword(tokens[6], "is")) return malformed(hint);
     const negated = isAnyWord(tokens[7], "not");
     const valueToken = tokens[negated ? 8 : 7];
-    if (valueToken === undefined || tokens.length !== (negated ? 9 : 8)) return malformed(hint);
+    if (valueToken === undefined) return malformed(hint);
+    const literal = isString(valueToken) || valueToken.kind === "number" || isAnyWord(valueToken, "true") || isAnyWord(valueToken, "false");
+    if (literal && tokens.length !== (negated ? 9 : 8)) return malformed(hint);
     let value: string | number | boolean;
     if (isString(valueToken)) value = valueToken.value;
     else if (valueToken.kind === "number" && typeof valueToken.value === "number") value = valueToken.value;
     else if (isAnyWord(valueToken, "true")) value = true;
     else if (isAnyWord(valueToken, "false")) value = false;
-    else return malformed(hint);
+    else {
+      // F5 step 7: `is category` or `is category of catalog` compares with a state,
+      // optionally `, unless it is "all"`.
+      let rest = tokens.slice(negated ? 8 : 7);
+      let unless: { value: string | number | boolean; span: import("../source/source-file.js").Span } | undefined;
+      const comma = rest.findIndex((token) => token.kind === "comma");
+      if (comma !== -1) {
+        const tail = rest.slice(comma + 1);
+        const literal = tail[3];
+        let value: string | number | boolean | null = null;
+        if (isString(literal)) value = literal.value;
+        else if (literal?.kind === "number" && typeof literal.value === "number") value = literal.value;
+        else if (isAnyWord(literal, "true")) value = true;
+        else if (isAnyWord(literal, "false")) value = false;
+        if (tail.length !== 4 || !isAnyWord(tail[0], "unless") || !isKeyword(tail[1], "it") || !isKeyword(tail[2], "is") || value === null) {
+          return malformed('use: only where the category of product is category, unless it is "all"');
+        }
+        unless = { value, span: literal!.span };
+        rest = rest.slice(0, comma);
+      }
+      const state = readStateReference(rest);
+      if (state === null) return malformed(hint);
+      return { modifier: { type: "filter", filter: { field, negated, value: "", valueSpan: state.span, state, ...(unless === undefined ? {} : { unless }), span } }, diagnostics: [] };
+    }
     return { modifier: { type: "filter", filter: { field, negated, value, valueSpan: valueToken.span, span } }, diagnostics: [] };
   }
 
@@ -69,6 +96,15 @@ export function matchRepeatModifier(tokens: readonly Token[]): RepeatModifierMat
     return malformed(hint);
   }
 
+  // F5 step 7: showing 10 per page using page
+  if (isAnyWord(first, "showing") && isAnyWord(tokens[2], "per") && isAnyWord(tokens[3], "page")) {
+    const count = tokens[1];
+    const state = isAnyWord(tokens[4], "using") ? readStateReference(tokens.slice(5)) : null;
+    if (count?.kind !== "number" || typeof count.value !== "number" || !Number.isInteger(count.value) || count.value < 1 || count.value > 1000 || state === null) {
+      return malformed("use: showing 10 per page using page, where page is a number state");
+    }
+    return { modifier: { type: "paging", paging: { perPage: count.value, state, span } }, diagnostics: [] };
+  }
   if (isAnyWord(first, "showing") && isAnyWord(tokens[1], "at") && isAnyWord(tokens[2], "most")) {
     const count = tokens[3];
     if (tokens.length !== 4 || count?.kind !== "number" || typeof count.value !== "number" || !Number.isInteger(count.value) || count.value < 1 || count.value > 1000) {

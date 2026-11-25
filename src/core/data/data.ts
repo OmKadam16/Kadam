@@ -170,6 +170,8 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
     }
     for (const filter of clause.filters ?? []) {
       const type = check(filter.field);
+      // A state's type is checked once states are known (runtime-check).
+      if (filter.state !== undefined) continue;
       const valueType = typeof filter.value === "string" ? "text" : typeof filter.value === "number" ? "number" : "yes/no";
       if (type !== null && (type === "url" ? "text" : type) !== valueType) {
         diagnostics.error("KDM3043", `the field "${filter.field.name}" is ${type}, but it is compared with ${valueType}`, filter.valueSpan, "compare it with a value of the same type");
@@ -186,6 +188,7 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
       filters: clause.filters ?? [],
       sort: clause.sort ?? null,
       limit: clause.limit?.count ?? null,
+      paging: clause.paging ?? null,
       span: clause.span,
     };
     return [{ ...element, kind, properties, children: [], runtimeList }];
@@ -207,6 +210,17 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
         `unknown data "${clause.source}"`,
         clause.sourceSpan,
         close.length > 0 ? `did you mean: ${close.join(", ")}?` : `declare it in kadam.json: "data": { "${clause.source}": "data/${clause.source}.json" }`,
+      );
+      return [];
+    }
+    // F5 step 7: state changes at run time, so only loaded data can follow it.
+    const live = (clause.filters ?? []).find((filter) => filter.state !== undefined);
+    if (live !== undefined || clause.paging !== undefined) {
+      diagnostics.error(
+        "KDM3043",
+        live !== undefined ? "a data file is built into the page, so it cannot be filtered by a state" : "a data file is built into the page, so it cannot be paged",
+        live?.valueSpan ?? clause.paging!.span,
+        "compare with a fixed value, or load the data with it loads ... from",
       );
       return [];
     }

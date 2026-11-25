@@ -109,6 +109,17 @@ export function checkRuntime(elements: readonly ElementNode[], diagnostics: Diag
   const visibilityTargets = new Map<ElementNode, true>();
   const bound = new Set<ElementNode>();
   const loaders = checkLoaders(elements, index, diagnostics);
+  // F5 step 7: each state kept in the address has its own query name.
+  const addressed = new Map<string, DeclaredState>();
+  for (const declared of index.states) {
+    const statement = declared.owner.statements.find((s) => s.type === "remember" && s.name === declared.name);
+    if (statement?.type !== "remember" || statement.inAddress !== true) continue;
+    const previous = addressed.get(declared.name);
+    if (previous !== undefined) {
+      diagnostics.error("KDM3044", `two states named ${declared.name} are kept in the address`, statement.nameSpan, "give each state kept in the address its own name");
+    }
+    addressed.set(declared.name, declared);
+  }
 
   const state = (reference: StateReference, from: ElementNode, expected: StateType | null, what: string): DeclaredState | null => {
     const resolved = resolveState(reference, from, index);
@@ -286,6 +297,39 @@ function checkLoaders(elements: readonly ElementNode[], index: PageRuntimeIndex,
     }
   };
   visit(elements);
+  // F5 step 7: state filters and paging follow states of the right type.
+  const FIELD_STATE: Readonly<Record<string, StateType>> = { text: "text", url: "text", number: "number", "yes/no": "boolean" };
+  for (const [name, listElements] of lists) {
+    const loader = loaders.get(name);
+    const shape = loader?.statements.find((s) => s.type === "data-shape");
+    if (shape === undefined || shape.type !== "data-shape") continue;
+    for (const list of listElements) {
+      const runtime = list.runtimeList!;
+      for (const filter of runtime.filters) {
+        if (filter.state === undefined) continue;
+        const resolved = resolveState(filter.state, list, index);
+        if (typeof resolved === "string") {
+          diagnostics.error("KDM3012", resolved, filter.state.span, "state is declared with it remembers <name>, a boolean|number|text that starts as <value>");
+          continue;
+        }
+        if (filter.unless !== undefined && typeof filter.unless.value !== (resolved.type === "boolean" ? "boolean" : resolved.type === "number" ? "number" : "string")) {
+          diagnostics.error("KDM3005", `${resolved.name} is a ${resolved.type}, so unless it is ... needs a ${resolved.type} value`, filter.unless.span, `use a ${resolved.type} value`);
+        }
+        const fieldType = shape.fields.find((field) => field.name === filter.field.name)?.type;
+        if (fieldType !== undefined && FIELD_STATE[fieldType] !== resolved.type) {
+          diagnostics.error("KDM3005", `the field ${filter.field.name} is ${fieldType === "yes/no" ? "true or false" : fieldType}, but ${resolved.name} is a ${resolved.type}`, filter.state.span, "compare a field with a state of the same type");
+        }
+      }
+      if (runtime.paging !== null) {
+        const resolved = resolveState(runtime.paging.state, list, index);
+        if (typeof resolved === "string") {
+          diagnostics.error("KDM3012", resolved, runtime.paging.state.span, "page through with a number state: it remembers page, a number that starts as 1");
+        } else if (resolved.type !== "number") {
+          diagnostics.error("KDM3005", `paging needs a number state, but ${resolved.name} is a ${resolved.type}`, runtime.paging.state.span, "use a number state that starts as 1");
+        }
+      }
+    }
+  }
   for (const [name, element] of loaders) {
     if (!lists.has(name)) {
       const load = element.statements.find((s) => s.type === "data-load")!;

@@ -67,7 +67,7 @@ test("a loaded list compiles to a template, states, and a loader table", () => {
   const outside = html.replace(/<template[\s\S]*?<\/template>/g, "");
   assert.doesNotMatch(outside, /kadam\.invalid/);
   const js = file(result, "assets/kadam.home.js");
-  assert.match(js, /const loaders = \[\["products","\/api\/products.json","home-catalog",\[\["name","text"\],\["price","number"\],\["link","url"\],\["inStock","yes\/no"\]\],"home-loadingNote","home-emptyNote","home-errorNote",\[\["home-tile-card1",\[\["inStock",false,true\]\],\["price",true\],null\]\]\]\];/);
+  assert.match(js, /const loaders = \[\["products","\/api\/products.json","home-catalog",\[\["name","text"\],\["price","number"\],\["link","url"\],\["inStock","yes\/no"\]\],"home-loadingNote","home-emptyNote","home-errorNote",\[\["home-tile-card1",\[\["inStock",false,true,null,null\]\],\["price",true\],null,null\]\]\]\];/);
   assert.match(js, /credentials: "omit"/);
   assert.match(js, /case "reload"/);
   assert.doesNotMatch(js, /innerHTML|eval\(|new Function/);
@@ -113,4 +113,54 @@ test("reload names loaded data; unused loaders are errors", () => {
   assert.deepEqual(codes(project(CATALOG.map((l) => l.replace("reload products", "reload prodcts")))), ["KDM3012"]);
   const unused = CATALOG.filter((_, i) => i < CATALOG.indexOf("    tile {") || i > CATALOG.indexOf("    tile {") + 7);
   assert.deepEqual(codes(project(unused)), ["KDM3045"]);
+});
+
+const WITH_STATE = (filter, paging = "        showing 3 per page using page") => [
+  ...CATALOG.slice(0, 2),
+  '    it remembers category, a text that starts as "all", kept in the address',
+  "    it remembers page, a number that starts as 1, kept in the address",
+  ...CATALOG.slice(2).map((l) => (l.includes("each product has") ? l.replace("a name as text,", "a name as text, a category as text,") : l))
+    .flatMap((l) => (l.includes("only where the inStock") ? [l, filter, paging].filter((x) => x !== "") : [l])),
+];
+
+test("states kept in the address drive filters and pages of loaded data", () => {
+  const result = project(WITH_STATE('        only where the category of product is category, unless it is "all"'));
+  assert.deepEqual(result.diagnostics.map((d) => d.message), []);
+  const js = file(result, "assets/kadam.home.js");
+  assert.match(js, /const addressed = \[\["home-catalog\.category","category"\],\["home-catalog\.page","page"\]\];/);
+  assert.match(js, /\["category",false,"","home-catalog\.category","all"\]/);
+  assert.match(js, /\[3,"home-catalog\.page"\]/);
+  assert.match(js, /history\.replaceState/);
+  // Pages without address state get none of that code.
+  assert.doesNotMatch(file(project(), "assets/kadam.home.js"), /readAddress|replaceState/);
+});
+
+test("state filters and paging are type-checked, and only for loaded data", () => {
+  const wrongType = project(WITH_STATE("        only where the price of product is category"));
+  assert.deepEqual(codes(wrongType), ["KDM3005"]);
+  assert.match(wrongType.diagnostics[0].message, /price is number, but category is a text/);
+  assert.deepEqual(codes(project(WITH_STATE("", "        showing 3 per page using category"))), ["KDM3005"]);
+  assert.deepEqual(codes(project(WITH_STATE("        only where the category of product is categry"))), ["KDM3012"]);
+  assert.deepEqual(codes(project(WITH_STATE('        only where the category of product is category, unless it is 3'))), ["KDM3005"]);
+  const both = WITH_STATE("").map((l) => l.replace("showing 3 per page using page", "showing 3 per page using page\n        showing at most 2"));
+  assert.ok(codes(project(both)).includes("KDM3040"));
+});
+
+test("a data file cannot follow a state", () => {
+  const root = project();
+  const page = ["kadam 0.3", "", 'page "Shop" {', "    box {", "        a container",
+    '        it remembers category, a text that starts as "all"',
+    "        tile {", "            a ProductCard for each product in items", "            only where the name of product is category",
+    "            with a name of the name of product", "            with a price of the name of product", '            with a link of "https://example.com"', "        }", "    }", "}", ""].join("\n");
+  writeFileSync(join(root.root, "pages", "home.kdm"), page);
+  writeFileSync(join(root.root, "items.json"), '[{"name":"a"}]');
+  writeFileSync(join(root.root, "kadam.json"), JSON.stringify({ kadam: "0.3", name: "shop", components: ["components/ProductCard.kdm"], data: { items: "items.json" }, pages: [{ source: "pages/home.kdm", route: "/" }] }));
+  const result = compileProject({ projectRoot: root.root, write: false });
+  assert.deepEqual(codes(result), ["KDM3043"]);
+  assert.match(result.diagnostics[0].message, /cannot be filtered by a state/);
+});
+
+test("two address states with one name are an error", () => {
+  const body = ["a1 {", "    a container", '    it remembers tab, a text that starts as "x", kept in the address', "}", "a2 {", "    a container", '    it remembers tab, a text that starts as "y", kept in the address', "}"];
+  assert.deepEqual(codes(project(body)), ["KDM3044"]);
 });

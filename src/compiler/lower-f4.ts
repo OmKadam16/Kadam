@@ -38,9 +38,12 @@ export interface IrLoader {
   readonly error: string;
   readonly lists: readonly {
     readonly template: string;
-    readonly filters: readonly (readonly [string, boolean, string | number | boolean])[];
+    /** [field, negated, value, state key or null, unless value or null]; a state key replaces the value. */
+    readonly filters: readonly (readonly [string, boolean, string | number | boolean, string | null, string | number | boolean | null])[];
     readonly sort: readonly [string, boolean] | null;
     readonly limit: number | null;
+    /** F5 step 7: [per page, number state key]. */
+    readonly paging: readonly [number, string] | null;
   }[];
 }
 
@@ -73,6 +76,8 @@ export interface IrRuntime {
   readonly scopes: readonly Breakpoint[];
   /** kadam 0.3 (D-41): runtime data. */
   readonly loaders: readonly IrLoader[];
+  /** F5 step 7: states kept in the address, as [state key, query name]. */
+  readonly addressed: readonly (readonly [string, string])[];
 }
 
 export interface RuntimeLowering {
@@ -253,9 +258,19 @@ export function lowerRuntime(
       error: nodeIdOf(error),
       lists: (templates.get(load.name) ?? []).map((list) => ({
         template: nodeIdOf(list),
-        filters: list.runtimeList!.filters.map((filter) => [filter.field.name, filter.negated, filter.value] as const),
+        filters: list.runtimeList!.filters.map(
+          (filter) =>
+            [
+              filter.field.name,
+              filter.negated,
+              filter.value,
+              filter.state === undefined ? null : keyOf(stateFor(filter.state, list)),
+              filter.unless?.value ?? null,
+            ] as const,
+        ),
         sort: list.runtimeList!.sort === null ? null : ([list.runtimeList!.sort.field.name, list.runtimeList!.sort.descending] as const),
         limit: list.runtimeList!.limit,
+        paging: list.runtimeList!.paging === null ? null : ([list.runtimeList!.paging.perPage, keyOf(stateFor(list.runtimeList!.paging.state, list))] as const),
       })),
     });
   });
@@ -270,6 +285,9 @@ export function lowerRuntime(
       controllers,
       scopes: (["phones", "tablets", "desktops"] as const).filter((breakpoint) => scopes.has(breakpoint)),
       loaders,
+      addressed: index.states
+        .filter((declared) => declared.owner.statements.some((s) => s.type === "remember" && s.name === declared.name && s.inAddress === true))
+        .map((declared) => [keyOf(declared), declared.name] as const),
     },
     attributes,
     texts,

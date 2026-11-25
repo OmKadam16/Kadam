@@ -25,6 +25,8 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   const lines: string[] = [HEADER, "", "const nodes = new Map();", 'for (const node of document.querySelectorAll("[data-kdm-id]")) nodes.set(node.getAttribute("data-kdm-id"), node);', ""];
 
   if (usesState) lines.push(`const state = new Map(${json(runtime.states.map((s) => [s.key, s.initial]))});`);
+  const addressed = runtime.addressed.length > 0;
+  if (addressed) lines.push(`const addressed = ${json(runtime.addressed)};`, ...ADDRESS_JS);
   if (runtime.textBindings.length > 0) lines.push(`const texts = ${json(runtime.textBindings.map((b) => [b.nodeId, b.key]))};`);
   if (runtime.visibilityBindings.length > 0) {
     lines.push(`const shown = ${json(runtime.visibilityBindings.map((b) => [b.nodeId, b.key, b.value, b.attribute]))};`);
@@ -36,7 +38,7 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   const loads = runtime.loaders.length > 0;
   if (loads) {
     lines.push(
-      `const loaders = ${json(runtime.loaders.map((l) => [l.source, l.url, l.nodeId, l.fields, l.loading, l.empty, l.error, l.lists.map((list) => [list.template, list.filters, list.sort, list.limit])]))};`,
+      `const loaders = ${json(runtime.loaders.map((l) => [l.source, l.url, l.nodeId, l.fields, l.loading, l.empty, l.error, l.lists.map((list) => [list.template, list.filters, list.sort, list.limit, list.paging])]))};`,
     );
   }
   lines.push("");
@@ -105,6 +107,8 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
     "    }",
     "  }",
     "  render();",
+    ...(addressed ? ["  writeAddress();"] : []),
+    ...(loads ? ["  for (const entry of loaders) showRecords(entry);"] : []),
     "}",
     "",
   );
@@ -123,6 +127,7 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
       ? ['  else nodes.get(id).addEventListener("keydown", (event) => { if (event.key === trigger && !event.isComposing) run(effects); });']
       : []),
     "}",
+    ...(addressed ? ["readAddress();", 'addEventListener("popstate", () => {', "  readAddress();", "  render();", ...(loads ? ["  for (const entry of loaders) showRecords(entry);"] : []), "});"] : []),
     "render();",
     ...(loads ? ["for (const entry of loaders) load(entry);"] : []),
     "",
@@ -218,14 +223,22 @@ const LOADER_JS: readonly string[] = [
   "    return typeof value === \"string\" && SAFE_URL.test(value) && !/[\\u0000-\\u0020]/.test(value);",
   "  });",
   "}",
-  "function shapeList(records, [, filters, sort, limit]) {",
-  "  let list = records.filter((record) => filters.every(([field, negated, value]) => (record[field] === value) !== negated));",
+  "const cached = new Map();",
+  "function shapeList(records, [, filters, sort, limit, paging]) {",
+  "  let list = records.filter((record) => filters.every(([field, negated, value, key, unless]) => {",
+  "    if (key !== null && unless !== null && state.get(key) === unless) return true;",
+  "    return (record[field] === (key === null ? value : state.get(key))) !== negated;",
+  "  }));",
   "  if (sort !== null) {",
   "    const [field, descending] = sort;",
   "    list = [...list].sort((a, b) => {",
   "      const order = a[field] < b[field] ? -1 : a[field] > b[field] ? 1 : 0;",
   "      return descending ? -order : order;",
   "    });",
+  "  }",
+  "  if (paging !== null) {",
+  "    const page = Math.max(1, Math.floor(state.get(paging[1])) || 1);",
+  "    return list.slice((page - 1) * paging[0], page * paging[0]);",
   "  }",
   "  return limit === null ? list : list.slice(0, limit);",
   "}",
@@ -246,8 +259,10 @@ const LOADER_JS: readonly string[] = [
   "    }",
   "  }",
   "}",
-  "async function load([source, url, containerId, fields, loadingId, emptyId, errorId, lists]) {",
+  "async function load(entry) {",
+  "  const [source, url, containerId, fields, loadingId, emptyId, errorId] = entry;",
   "  requests.get(source)?.abort();",
+  "  cached.delete(source);",
   "  const controller = new AbortController();",
   "  requests.set(source, controller);",
   "  const show = (id, visible) => nodes.get(id).toggleAttribute(\"data-kdm-hidden\", !visible);",
@@ -276,6 +291,15 @@ const LOADER_JS: readonly string[] = [
   "    show(errorId, true);",
   "    return;",
   "  }",
+  "  cached.set(source, records);",
+  "  showRecords(entry);",
+  "}",
+  "// Lists follow state (filters, pages) without loading again.",
+  "function showRecords([source, , , , , emptyId, , lists]) {",
+  "  const records = cached.get(source);",
+  "  if (records === undefined) return;",
+  "  for (const node of rendered.get(source) ?? []) node.remove();",
+  "  rendered.set(source, []);",
   "  let count = 0;",
   "  for (const list of lists) {",
   "    const template = document.querySelector(`template[data-kdm-template=\"${list[0]}\"]`);",
@@ -287,6 +311,39 @@ const LOADER_JS: readonly string[] = [
   "      count += 1;",
   "    }",
   "  }",
-  "  if (count === 0) show(emptyId, true);",
+  "  nodes.get(emptyId).toggleAttribute(\"data-kdm-hidden\", count !== 0);",
+  "}",
+];
+
+/**
+ * F5 step 7: states kept in the address. A valid `?name=` value replaces the
+ * starting value; a change replaces the address (no new history entry); a
+ * value equal to the start leaves the parameter out.
+ */
+const ADDRESS_JS: readonly string[] = [
+  "const starts = new Map(addressed.map(([key]) => [key, state.get(key)]));",
+  "function readAddress() {",
+  "  const params = new URLSearchParams(location.search);",
+  "  for (const [key, name] of addressed) {",
+  "    const start = starts.get(key);",
+  "    const raw = params.get(name);",
+  "    let value = start;",
+  "    if (raw !== null) {",
+  "      if (typeof start === \"number\") value = raw.trim() !== \"\" && Number.isFinite(Number(raw)) ? Number(raw) : start;",
+  "      else if (typeof start === \"boolean\") value = raw === \"true\" ? true : raw === \"false\" ? false : start;",
+  "      else value = raw;",
+  "    }",
+  "    state.set(key, value);",
+  "  }",
+  "}",
+  "function writeAddress() {",
+  "  const params = new URLSearchParams(location.search);",
+  "  for (const [key, name] of addressed) {",
+  "    if (state.get(key) === starts.get(key)) params.delete(name);",
+  "    else params.set(name, String(state.get(key)));",
+  "  }",
+  "  const search = params.toString();",
+  "  const next = `${location.pathname}${search === \"\" ? \"\" : `?${search}`}${location.hash}`;",
+  "  if (next !== `${location.pathname}${location.search}${location.hash}`) history.replaceState(history.state, \"\", next);",
   "}",
 ];

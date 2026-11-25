@@ -4,13 +4,18 @@ import { expect, test } from "@playwright/test";
 import { serve } from "./serve.mjs";
 
 const PRODUCTS = [
-  { name: "Lamp", price: 40, link: "https://example.com/lamp", inStock: true },
-  { name: "Desk", price: 250, link: "https://example.com/desk", inStock: true },
-  { name: "Chair", price: 120, link: "/chair", inStock: false },
-  { name: "Shelf", price: 90, link: "https://example.com/shelf", inStock: true },
+  { name: "Lamp", category: "lighting", price: 40, link: "https://example.com/lamp", inStock: true },
+  { name: "Desk", category: "furniture", price: 250, link: "https://example.com/desk", inStock: true },
+  { name: "Chair", category: "furniture", price: 120, link: "/chair", inStock: false },
+  { name: "Shelf", category: "furniture", price: 90, link: "https://example.com/shelf", inStock: true },
+];
+const MORE = [
+  ...PRODUCTS,
+  { name: "Sconce", category: "lighting", price: 75, link: "https://example.com/sconce", inStock: true },
+  { name: "Stool", category: "furniture", price: 60, link: "https://example.com/stool", inStock: true },
 ];
 
-async function open(page, api) {
+async function open(page, api, query = "") {
   const shop = await serve("shop", { csp: true, api });
   const errors = [];
   page.on("console", (message) => {
@@ -18,10 +23,13 @@ async function open(page, api) {
     if (message.type() === "error" && !message.text().startsWith("Failed to load resource")) errors.push(message.text());
   });
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(shop.origin);
+  await page.goto(`${shop.origin}/${query}`);
   return { shop, errors };
 }
-const close = (shop) => new Promise((resolve) => shop.server.close(resolve));
+const close = (shop) => new Promise((resolve) => {
+  shop.server.close(resolve);
+  shop.server.closeAllConnections();
+});
 const cards = (page) => page.locator(".kdm-kind-card h2");
 
 test.describe("runtime data", () => {
@@ -85,6 +93,56 @@ test.describe("runtime data", () => {
     await page.getByRole("button", { name: "Reload products" }).focus();
     await page.keyboard.press("Enter");
     await expect(cards(page)).toHaveText(["Desk", "Shelf"]);
+    await close(shop);
+  });
+});
+
+test.describe("state kept in the address", () => {
+  test("category buttons filter without loading again, and the address follows", async ({ page }) => {
+    let calls = 0;
+    const { shop, errors } = await open(page, () => {
+      calls += 1;
+      return { body: MORE };
+    });
+    // Five in stock, three per page, most expensive first.
+    await expect(cards(page)).toHaveText(["Desk", "Shelf", "Sconce"]);
+    await page.getByRole("button", { name: "Lighting" }).click();
+    await expect(cards(page)).toHaveText(["Sconce", "Lamp"]);
+    await expect(page).toHaveURL(/\?category=lighting$/);
+    await page.getByRole("button", { name: "All" }).click();
+    await expect(cards(page)).toHaveText(["Desk", "Shelf", "Sconce"]);
+    await expect(page).toHaveURL(new RegExp(`${shop.origin}/$`));
+    expect(calls).toBe(1);
+    expect(errors).toEqual([]);
+    await close(shop);
+  });
+
+  test("pages move through the list, and the address keeps the page", async ({ page }) => {
+    const { shop } = await open(page, () => ({ body: MORE }));
+    await expect(cards(page)).toHaveText(["Desk", "Shelf", "Sconce"]);
+    await expect(page.locator("[data-kdm-id='home-pageLabel']")).toHaveText("1");
+    await page.getByRole("button", { name: "Next page" }).click();
+    await expect(cards(page)).toHaveText(["Stool", "Lamp"]);
+    await expect(page).toHaveURL(/\?page=2$/);
+    await expect(page.locator("[data-kdm-id='home-pageLabel']")).toHaveText("2");
+    await page.getByRole("button", { name: "First page" }).click();
+    await expect(cards(page)).toHaveText(["Desk", "Shelf", "Sconce"]);
+    await expect(page).toHaveURL(new RegExp(`${shop.origin}/$`));
+    await close(shop);
+  });
+
+  test("opening an address restores its state; bad values fall back", async ({ page }) => {
+    const { shop } = await open(page, () => ({ body: MORE }), "?category=lighting&page=1");
+    await expect(cards(page)).toHaveText(["Sconce", "Lamp"]);
+    await page.goto(`${shop.origin}/?page=2`);
+    await expect(cards(page)).toHaveText(["Stool", "Lamp"]);
+    await expect(page.locator("[data-kdm-id='home-pageLabel']")).toHaveText("2");
+    // Past the last page there is nothing to show.
+    await page.goto(`${shop.origin}/?category=furniture&page=2`);
+    await expect(page.getByText("Nothing is in stock right now.")).toBeVisible();
+    await page.goto(`${shop.origin}/?page=abc`);
+    await expect(cards(page)).toHaveText(["Desk", "Shelf", "Sconce"]);
+    await expect(page.locator("[data-kdm-id='home-pageLabel']")).toHaveText("1");
     await close(shop);
   });
 });

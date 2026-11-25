@@ -125,7 +125,7 @@ export function readStateLiteral(tokens: readonly Token[]): StateLiteral | null 
 }
 
 /** `count` or `count of cart1`. */
-function readStateReference(tokens: readonly Token[]): StateReference | null {
+export function readStateReference(tokens: readonly Token[]): StateReference | null {
   const name = tokens[0];
   if (name === undefined || !isWordToken(name) || !STATE_NAME.test(name.text)) return null;
   if (tokens.length === 1) return { name: name.text, owner: null, span: name.span };
@@ -282,12 +282,17 @@ export function matchRemember(tokens: readonly Token[]): Body {
   ) {
     return fail("state is it remembers <name>, a boolean|number|text that starts as <value>", tokens, hint);
   }
-  const initial = readStateLiteral(tokens.slice(9));
+  // kadam 0.3 (F5 step 7): `..., kept in the address`.
+  let valueTokens = tokens.slice(9);
+  const tail = valueTokens.map((token) => token.text.toLowerCase());
+  const inAddress = tail.length >= 5 && tail.slice(-5).join(" ") === ", kept in the address";
+  if (inAddress) valueTokens = valueTokens.slice(0, -5);
+  const initial = readStateLiteral(valueTokens);
   if (initial === null) return fail("a state starts as true, false, a number, or quoted text", tokens.slice(9), hint);
   if (initial.kind !== valueType) {
     return fail(`${name.text} is a ${valueType}, so it cannot start as ${describeLiteral(initial)}`, tokens.slice(9), hint);
   }
-  return ok({ type: "remember", name: name.text, nameSpan: name.span, valueType, initial, span: spanFromTokens(tokens) });
+  return ok({ type: "remember", name: name.text, nameSpan: name.span, valueType, initial, ...(inAddress ? { inAddress: true as const } : {}), span: spanFromTokens(tokens) });
 }
 
 export function describeLiteral(literal: StateLiteral): string {

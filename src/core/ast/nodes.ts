@@ -163,6 +163,8 @@ export interface RepeatClause extends NodeBase {
   readonly sort?: RepeatSort | undefined;
   /** `showing at most 3`. */
   readonly limit?: { readonly count: number; readonly span: Span } | undefined;
+  /** `showing 10 per page using page`; loaded data only. */
+  readonly paging?: RepeatPaging | undefined;
 }
 
 export interface RecordFieldReference {
@@ -176,6 +178,16 @@ export interface RepeatFilter extends NodeBase {
   readonly negated: boolean;
   readonly value: string | number | boolean;
   readonly valueSpan: Span;
+  /** F5 step 7: compare with a state (`is category`); loaded data only. */
+  readonly state?: StateReference | undefined;
+  /** `, unless it is "all"`: the filter is off while the state has this value. */
+  readonly unless?: { readonly value: string | number | boolean; readonly span: Span } | undefined;
+}
+
+/** F5 step 7: `showing 10 per page using page`. */
+export interface RepeatPaging extends NodeBase {
+  readonly perPage: number;
+  readonly state: StateReference;
 }
 
 export interface RepeatSort extends NodeBase {
@@ -463,6 +475,8 @@ export type F4Statement =
       readonly nameSpan: Span;
       readonly valueType: StateType;
       readonly initial: StateLiteral;
+      /** kadam 0.3 (F5 step 7): `, kept in the address` mirrors it in `?name=`. */
+      readonly inAddress?: true | undefined;
     })
   | (NodeBase & { readonly type: "starts-hidden" })
   // kadam 0.3 (F5 step 6, D-41): runtime data.
@@ -532,6 +546,7 @@ export interface RuntimeList {
   readonly filters: readonly RepeatFilter[];
   readonly sort: RepeatSort | null;
   readonly limit: number | null;
+  readonly paging: RepeatPaging | null;
   readonly span: Span;
 }
 

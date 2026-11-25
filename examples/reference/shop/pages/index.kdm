@@ -10,8 +10,10 @@ page "Shop" {
         it has 40px padding on the top and bottom
         it has 20px padding on the left and right
         it has 16px gap between children
+        it remembers category, a text that starts as "all", kept in the address
+        it remembers page, a number that starts as 1, kept in the address
         it loads products from "/api/products.json"
-        each product has a name as text, a price as a number, a link as a url, and an inStock as true or false
+        each product has a name as text, a category as text, a price as a number, a link as a url, and an inStock as true or false
         while loading, it shows loadingNote
         when there are none, it shows emptyNote
         when loading fails, it shows errorNote
@@ -21,10 +23,30 @@ page "Shop" {
             the text says "Products"
         }
 
-        again {
-            a button
-            the text says "Reload products"
-            when clicked, reload products
+        filters {
+            a container
+            it arranges its children in a row
+            it has 8px gap between children
+            allButton {
+                a button
+                the text says "All"
+                when clicked, set category to "all" and set page to 1
+            }
+            lampsButton {
+                a button
+                the text says "Lighting"
+                when clicked, set category to "lighting" and set page to 1
+            }
+            furnitureButton {
+                a button
+                the text says "Furniture"
+                when clicked, set category to "furniture" and set page to 1
+            }
+            again {
+                a button
+                the text says "Reload products"
+                when clicked, reload products
+            }
         }
 
         loadingNote {
@@ -45,11 +67,32 @@ page "Shop" {
         tile {
             a ProductCard for each product in products
             only where the inStock of product is true
+            only where the category of product is category, unless it is "all"
             sorted by the price of product from highest to lowest
-            showing at most 10
+            showing 3 per page using page
             with a name of the name of product
             with a price of the price of product
             with a link of the link of product
+        }
+
+        pager {
+            a container
+            it arranges its children in a row
+            it has 12px gap between children
+            first {
+                a button
+                the text says "First page"
+                when clicked, set page to 1
+            }
+            pageLabel {
+                a paragraph
+                the text shows page
+            }
+            next {
+                a button
+                the text says "Next page"
+                when clicked, add 1 to page
+            }
         }
     }
 }

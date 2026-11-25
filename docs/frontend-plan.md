@@ -314,8 +314,25 @@ CSP, and JavaScript off. The shop page's whole runtime is 4.8 KB unminified
 project rather than the dashboard, so the dashboard's golden screenshots stay
 as they are.
 
-**Next steps:** URL state (`?page=2`) for pagination and filters, then F6
-interop.
+**Step 7 status: shipped.** `it remembers page, a number that starts as 1,
+kept in the address` mirrors a state in `?page=`. Lists of loaded data filter
+by a state (`only where the category of product is category, unless it is
+"all"`) and page through results (`showing 3 per page using page`), showing
+records again without another request. The shop reference has category
+buttons and paging, tested in Playwright, including opening a shared address
+and bad values. The shop page's whole runtime is now 7.8 KB unminified
+(2.7 KB gzipped).
+
+**Known gaps:** a number state has no bounds, so "Next page" can go past the
+last page (the empty state shows); there is no "selected" style for the
+active filter button; text fields and dropdowns cannot be bound to state yet.
+
+**F5 exit:** build-time data, generated pages and Markdown render the blog
+reference; live data loads, filters and pages in tests against a local mock
+server (the shop reference, not the dashboard, as noted in step 6). The docs
+reference site still writes its pages by hand.
+
+**Next:** F6, interop with HTML, CSS, TypeScript and frameworks.
 
 
 - **Build-time data:** `kadam.json` declares typed data files (JSON/CSV in the

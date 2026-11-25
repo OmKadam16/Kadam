@@ -552,8 +552,14 @@ class Parser {
           return;
         }
         builder.kind = { ...builder.kind!, repeat: { ...repeat, sort: modifier.sort } };
+      } else if (modifier.type === "paging") {
+        if (repeat.paging !== undefined || repeat.limit !== undefined) {
+          this.#error("KDM3040", "a data list has one showing line", modifier.paging.span, "keep one showing line");
+          return;
+        }
+        builder.kind = { ...builder.kind!, repeat: { ...repeat, paging: modifier.paging } };
       } else {
-        if (repeat.limit !== undefined) {
+        if (repeat.limit !== undefined || repeat.paging !== undefined) {
           this.#error("KDM3040", "a data list has one showing at most line", modifier.span, "keep one showing at most line");
           return;
         }

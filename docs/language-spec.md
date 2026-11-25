@@ -1350,6 +1350,51 @@ catalog {
 
 ---
 
+### 6.24 State in the address (*kadam 0.3*, F5 step 7)
+
+A state can be kept in the page address, so a filter or page survives a
+reload and can be shared as a link:
+
+```kdm
+it remembers category, a text that starts as "all", kept in the address
+it remembers page, a number that starts as 1, kept in the address
+```
+
+- When the page opens, `?category=lighting&page=2` sets the states. A value
+  that does not fit the state's type (`?page=abc`) leaves the starting value.
+- When an effect changes a state, the address is updated in place (no new
+  history entry). A state at its starting value is left out of the address.
+- The query name is the state's name, so two states kept in the address need
+  different names (`KDM3044`).
+- The server HTML shows the starting values; the address is applied when the
+  page script runs.
+
+Lists of loaded data (6.23) can follow states:
+
+```kdm
+tile {
+    a ProductCard for each product in products
+    only where the category of product is category, unless it is "all"
+    showing 10 per page using page
+    with a name of the name of product
+}
+```
+
+- `only where the <field> of <record> is [not] <state>` compares with a state
+  of the same type: text or url fields with text states, numbers with numbers,
+  true-or-false fields with booleans (`KDM3005`; an unknown state is
+  `KDM3012`). `, unless it is <value>` turns the filter off while the state has
+  that value.
+- `showing <n> per page using <state>` shows page `<state>` (counting from 1)
+  of the filtered, sorted list. It needs a number state, and replaces
+  `showing at most` (`KDM3040`). Past the last page, the empty state shows.
+- When a state changes, lists show the records again without loading them
+  again.
+- Data files are built into the page, so a state filter or paging on one is
+  `KDM3043`.
+
+---
+
 ## 7. Events and interactions
 
 Events are declarative. There are no handlers, expressions, or user-written
