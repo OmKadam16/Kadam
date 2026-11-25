@@ -137,6 +137,9 @@ export class DevSession {
     for (const component of this.#manifest.components ?? []) {
       paths.add(component.source);
     }
+    // The theme and data files feed every page too (kadam 0.3).
+    if (this.#manifest.theme !== undefined) paths.add(this.#manifest.theme);
+    for (const source of Object.values(this.#manifest.data ?? {})) paths.add(source);
     for (const file of this.#latestFiles) {
       if (file.kind === "asset") paths.add(file.path);
     }

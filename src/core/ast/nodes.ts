@@ -148,12 +148,25 @@ export type KindReference =
   | SlotKindReference
   | UnknownKindReference;
 
+/**
+ * kadam 0.3 (F5): `a ProjectCard for each project in projects` repeats a
+ * component instance once per record of a project data file, at build time.
+ */
+export interface RepeatClause extends NodeBase {
+  readonly item: string;
+  readonly itemSpan: Span;
+  readonly source: string;
+  readonly sourceSpan: Span;
+}
+
 export interface KindNode extends NodeBase {
   readonly type: "kind";
   readonly article: "a" | "an";
   readonly reference: KindReference;
   /** Present only when a component kind selects a named variant. */
   readonly variant?: VariantSelection | undefined;
+  /** kadam 0.3: present when the instance repeats per data record. */
+  readonly repeat?: RepeatClause | undefined;
   readonly width?: LengthValue;
   readonly height?: LengthValue;
 }
@@ -220,6 +233,11 @@ export interface PropertyBindingNode extends NodeBase {
   readonly nameSpan: Span;
   readonly value: string;
   readonly valueSpan: Span;
+  /**
+   * kadam 0.3: `with a title of the title of project` reads a record field.
+   * Data expansion replaces it with a literal value before validation.
+   */
+  readonly field?: { readonly name: string; readonly item: string; readonly span: Span } | undefined;
 }
 
 export interface ComponentInstanceOrigin {

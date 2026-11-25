@@ -62,6 +62,8 @@ export interface KadamManifest {
   readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
   /** kadam 0.3: project theme file with theme colors (D-38). */
   readonly theme?: string | undefined;
+  /** kadam 0.3 (F5): data names to project-relative JSON files, e.g. { "projects": "data/projects.json" }. */
+  readonly data?: Readonly<Record<string, string>> | undefined;
 }
 
 export interface ManifestFont {
@@ -93,6 +95,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "breakpoints",
   "fonts",
   "theme",
+  "data",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -409,6 +412,27 @@ export function loadManifest(
       diagnostics.error("KDM4001", "'theme' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove theme');
     } else if (typeof raw.theme !== "string" || !raw.theme.endsWith(".kdm")) {
       diagnostics.error("KDM4001", "'theme' in kadam.json must be the path of a .kdm file", rootSpan, 'use "theme": "theme.kdm"');
+    }
+  }
+
+  // Validate data files (kadam 0.3, F5)
+  if ("data" in raw) {
+    const value = raw.data;
+    const hint = 'use "data": { "projects": "data/projects.json" }';
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'data' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove data');
+    } else if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      diagnostics.error("KDM4001", "'data' in kadam.json must be an object", rootSpan, hint);
+    } else {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (entries.length > 32) diagnostics.error("KDM4001", "'data' in kadam.json has at most 32 entries", rootSpan, hint);
+      for (const [name, path] of entries) {
+        if (!/^[a-z][A-Za-z0-9]{0,63}$/.test(name)) {
+          diagnostics.error("KDM4001", `data name "${name}" must be one lowerCamel word`, rootSpan, hint);
+        } else if (typeof path !== "string" || !path.endsWith(".json")) {
+          diagnostics.error("KDM4001", `data "${name}" must be the path of a .json file`, rootSpan, hint);
+        }
+      }
     }
   }
 
@@ -755,6 +779,10 @@ export function loadManifest(
     siteUrl: typeof raw.siteUrl === "string" ? raw.siteUrl.replace(/\/$/, "") : undefined,
     fonts: readFonts(raw.fonts),
     theme: typeof raw.theme === "string" ? raw.theme : undefined,
+    data:
+      typeof raw.data === "object" && raw.data !== null && !Array.isArray(raw.data)
+        ? (raw.data as Record<string, string>)
+        : undefined,
     breakpoints:
       typeof raw.breakpoints === "object" && raw.breakpoints !== null && !Array.isArray(raw.breakpoints)
         ? (raw.breakpoints as Record<string, number>)

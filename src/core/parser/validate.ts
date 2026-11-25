@@ -126,6 +126,8 @@ function checkStructure(
   parent: ElementNode | null,
   insideForm: boolean,
   diagnostics: DiagnosticBag,
+  /** A component root's parent is the instance's parent, judged after expansion. */
+  parentUnknown = false,
 ): void {
   const parentKind = parent === null ? null : builtinKindName(parent.kind);
   const allowedChildren = parentKind === null ? undefined : CHILD_RULES[parentKind];
@@ -133,7 +135,7 @@ function checkStructure(
     const kind = builtinKindName(element.kind);
     if (kind !== null) {
       const allowedParents = PARENT_RULES[kind];
-      if (allowedParents !== undefined && (parentKind === null || !allowedParents.includes(parentKind))) {
+      if (allowedParents !== undefined && !parentUnknown && (parentKind === null || !allowedParents.includes(parentKind))) {
         diagnostics.error(
           "KDM3010",
           `${articleFor(kind)} ${kind} must be inside ${allowedParents.map((p) => `${articleFor(p)} ${p}`).join(" or ")}`,
@@ -183,7 +185,7 @@ export function validateElementTree(
   options: ValidateOptions = {},
 ): void {
   for (const element of elements) validateElement(element, diagnostics, options);
-  checkStructure(elements, null, false, diagnostics);
+  checkStructure(elements, null, false, diagnostics, options.allowSlotKinds === true);
   checkPinnedOverlap(elements, diagnostics);
 }
 

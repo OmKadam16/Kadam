@@ -273,6 +273,23 @@ tests. A page with no state still emits zero JavaScript (golden test).
 
 ### F5 — Data (medium)
 
+**Step 1 status: shipped (D-40).** Build-time data lists:
+
+| Area | What shipped |
+| --- | --- |
+| Data files | `"data": { "projects": "data/projects.json" }` in `kadam.json`: JSON arrays of flat records, one type per field, at most 1000 records, watched by `kadam dev`. |
+| Data lists | `a ProjectCard for each project in projects` with `with a title of the title of project`; quoted bindings and variants mix in. |
+| Checks | Unknown data, fields and record names get suggestions; each generated instance is checked like a hand-written one; missing fields fall back to parameter defaults. |
+| Output | Static HTML, no runtime. Every 0.1 and existing 0.3 example stays byte-identical. |
+| Also fixed | A component's root can be a list item (judged where it is used); `kadam dev` now also watches the theme file. |
+| Dogfood | The portfolio's project cards and "Also built" list come from `data/projects.json` and `data/more.json`. |
+
+**Next steps:** filtering, sorting and limits (`where featured of project is
+true`, `sorted by year`, `the first 3`); generated pages from a template page;
+Markdown documents; then runtime data with required loading, empty and error
+states.
+
+
 - **Build-time data:** `kadam.json` declares typed data files (JSON/CSV in the
   project), used for lists and for **generated pages**: one page per record
   (`/blog/:slug`) from a template page. This stays deterministic because it is
@@ -454,7 +471,7 @@ anchor:
 | D-35 | Browser support matrix (approved) | F2 |
 | D-38 | Theme colors and dark mode (open question 5; approved, implemented) | F3 |
 | D-36 | Client runtime for `kadam 0.3` (replaces D-18 for 0.3), state, events and security model (approved 2026-11-25) | F4 step 2 |
-| — | Data and network model (open question 3) | F5 |
+| D-40 | Build-time data files and data lists (implemented); runtime data and the network model still open | F5 |
 | — | Escape-hatch policy (open question 12) | F6 |
 | — | Web Components as primary interop target | F6 |
 | D-39 | Contrast check is a warning in 0.3 (open question 14; approved, implemented) | F3 |

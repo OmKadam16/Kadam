@@ -535,6 +535,15 @@ class Parser {
         );
         return;
       }
+      if (property.binding.field !== undefined && builder.kind.repeat === undefined) {
+        this.#error(
+          "KDM3041",
+          "a record field can only be read by an instance that repeats for each record",
+          property.binding.field.span,
+          "add for each <item> in <dataName> to the kind sentence, or bind a quoted value",
+        );
+        return;
+      }
       builder.properties.push(property.binding);
       return;
     }

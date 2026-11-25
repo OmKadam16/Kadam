@@ -339,6 +339,9 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
           };
         }
       }
+      if (kind?.repeat !== undefined && !uiVersionAtLeast(version, "0.3")) {
+        return { statement: kind, diagnostics: [...result.diagnostics, requiresVersion(tokens, "for each ... in ...", "0.3", version)] };
+      }
       return { statement: kind, diagnostics: result.diagnostics };
     },
   },

@@ -4,6 +4,7 @@ import type {
   KindNode,
   KindReference,
   LengthValue,
+  RepeatClause,
   VariantSelection,
 } from "../ast/nodes.js";
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
@@ -117,17 +118,37 @@ export interface KindParseResult {
 }
 
 export function matchKindStatement(tokens: readonly Token[]): KindParseResult | null {
+  // Reassigned below when a data-list clause is split off the end.
   const first = tokens[0];
   if (!isKeyword(first, "a") && !isKeyword(first, "an")) return null;
 
   const article = first!.text.toLowerCase() as "a" | "an";
   const diagnostics: DiagnosticSpec[] = [];
+  const span = spanFromTokens(tokens);
+  // kadam 0.3 (F5): a trailing `for each <item> in <data>` repeats the instance.
+  const forIndex = tokens.findIndex((token, index) => index > 0 && isAnyWord(token, "for") && isAnyWord(tokens[index + 1], "each"));
+  let repeat: RepeatClause | undefined;
+  if (forIndex !== -1) {
+    const clause = tokens.slice(forIndex);
+    const item = clause[2];
+    const source = clause[4];
+    if (clause.length !== 5 || !isAnyWord(clause[3], "in") || !isDataName(item) || !isDataName(source)) {
+      diagnostics.push({
+        code: "KDM2002",
+        message: "malformed data list",
+        span: spanFromTokens(clause),
+        hint: "use: a <ComponentName> for each <item> in <dataName>, e.g. a ProjectCard for each project in projects",
+      });
+    } else {
+      repeat = { item: item!.text, itemSpan: item!.span, source: source!.text, sourceSpan: source!.span, span: spanFromTokens(clause) };
+    }
+    tokens = tokens.slice(0, forIndex);
+  }
   const thatIndex = tokens.findIndex((token) => isKeyword(token, "that"));
   const prefix = tokens.slice(1, thatIndex === -1 ? tokens.length : thatIndex);
   const inIndex = prefix.findIndex((token) => isAnyWord(token, "in"));
   const kindTokens = inIndex === -1 ? prefix : prefix.slice(0, inIndex);
   let variant: VariantSelection | undefined;
-  const span = spanFromTokens(tokens);
 
   if (inIndex !== -1) {
     const variantTokens = prefix.slice(inIndex);
@@ -221,6 +242,16 @@ export function matchKindStatement(tokens: readonly Token[]): KindParseResult | 
     }
   }
 
+  if (repeat !== undefined && reference.type !== "component-kind") {
+    diagnostics.push({
+      code: "KDM3040",
+      message: "only a component can repeat for each record",
+      span: repeat.span,
+      hint: "make a component for one record, then write: a ProjectCard for each project in projects",
+    });
+    repeat = undefined;
+  }
+
   if (variant !== undefined && reference.type !== "component-kind") {
     diagnostics.push({
       code: "KDM2002",
@@ -264,6 +295,7 @@ export function matchKindStatement(tokens: readonly Token[]): KindParseResult | 
     article,
     reference,
     ...(variant === undefined ? {} : { variant }),
+    ...(repeat === undefined ? {} : { repeat }),
     ...(width === undefined ? {} : { width }),
     ...(height === undefined ? {} : { height }),
     span,
@@ -381,4 +413,9 @@ export function kindText(kind: KindNode | null): string {
 
 export function describeKindTokens(tokens: readonly Token[]): string {
   return describeTokens(tokens);
+}
+
+/** A lowerCamel name for a data set or a record: `projects`, `project`. */
+function isDataName(token: Token | undefined): boolean {
+  return token !== undefined && (token.kind === "identifier" || token.kind === "keyword") && /^[a-z][A-Za-z0-9]{0,63}$/.test(token.text);
 }

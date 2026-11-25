@@ -1126,6 +1126,54 @@ hide and puts dialogs in the page.
 
 ---
 
+### 6.20 Data lists (*kadam 0.3*, F5 step 1, D-40)
+
+A project can declare JSON data files in `kadam.json`:
+
+```json
+"data": { "projects": "data/projects.json" }
+```
+
+Each file is an array of flat records whose fields are text, numbers, or
+true/false:
+
+```json
+[
+  { "title": "PaperRepro", "tag": "Research tools", "picture": "assets/paperrepro.svg" },
+  { "title": "RenoLens", "tag": "Multi-agent AI" }
+]
+```
+
+A page repeats a component once per record:
+
+```kdm
+project {
+    a ProjectCard for each project in projects
+    with a title of the title of project
+    with a tag of the tag of project
+    with a picture of the picture of project
+}
+```
+
+- The kind sentence ends with `for each <record> in <data>`. A variant may come
+  first: `a ProjectCard in the linked variant for each project in projects`.
+- `with a <parameter> of the <field> of <record>` reads a field. Quoted
+  bindings (`with a badge of "New"`) still work and are the same for every
+  record.
+- The instances are named `project1`, `project2`, … in file order, and each is
+  checked exactly like a hand-written instance. A field that is missing or
+  `null` leaves the parameter to its default.
+- The output is static HTML. Data lists never add a runtime.
+
+**Errors.** An unknown data name (`KDM3042`); an unknown field, the wrong
+record name, or a true/false field used as a value (`KDM3043`); a generated
+name that is already used (`KDM3044`); a field read outside a data list or
+inside a component (`KDM3041`); a built-in kind or child elements on a repeated
+instance (`KDM3040`); a data file that is not valid JSON, not an array, over
+1000 records, or that mixes types in one field (`KDM4010`).
+
+---
+
 ## 7. Events and interactions
 
 Events are declarative. There are no handlers, expressions, or user-written
@@ -1720,6 +1768,11 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3015 | Hover background color is invalid on a gradient |
 | KDM3038 | Warning: two elements are pinned to the same spot (*kadam 0.3*) |
 | KDM3039 | Warning: text contrast is below WCAG AA (*kadam 0.3*, D-39) |
+| KDM3040 | Only a component can repeat for each record, and it cannot have child elements yet (*kadam 0.3*) |
+| KDM3041 | A record field is read outside a data list, or a data list is inside a component (*kadam 0.3*) |
+| KDM3042 | Unknown data name, or a data list in a single-file build (*kadam 0.3*) |
+| KDM3043 | Unknown field, wrong record name, or a true/false field used as a value (*kadam 0.3*) |
+| KDM3044 | A data list makes an element name that is already used (*kadam 0.3*) |
 
 **Project (`KDM4xxx`)**
 
@@ -1731,6 +1784,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM4004 | Language version mismatch or unsupported version |
 | KDM4005 | Duplicate route |
 | KDM4006 | Project declares no pages |
+| KDM4010 | Data file is missing, not valid JSON, or not an array of flat records with one type per field (*kadam 0.3*) |
 
 **Internal (`KDM9xxx`)**
 

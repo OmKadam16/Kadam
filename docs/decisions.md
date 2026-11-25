@@ -1224,6 +1224,44 @@ JavaScript-free.
 
 ---
 
+### D-40 — Build-time data for `kadam 0.3` (F5 step 1)
+
+**Status:** Implemented on 2026-11-25 under the user's go-ahead to keep
+building F5; open to revision. Covers build-time data only. Runtime loading
+(`it loads ... from "https://..."`) needs its own decision.
+
+**Decision.**
+
+1. **Data files are JSON, declared in `kadam.json`.** `"data": { "projects":
+   "data/projects.json" }`. Each file is an array of at most 1000 flat records.
+   A field is text, a number, or true/false, with one type across all records.
+   A field may be missing or `null` in some records. Nested objects and arrays
+   are errors (`KDM4010`). CSV waits until JSON is proven.
+2. **A component repeats once per record.** `a ProjectCard for each project in
+   projects`, with `with a title of the title of project` reading a field.
+   Literal bindings and a variant may be mixed in. Only components repeat,
+   because a component already names exactly what one record fills in.
+3. **Expansion happens first, at build time.** Repeats become ordinary
+   instances named `project1`, `project2`, … before component validation. Each
+   one is checked like a hand-written instance, and the output is static HTML
+   with no runtime. A missing or null field leaves the parameter to its
+   default; a required parameter with no value is the usual component error.
+4. **Names are checked before anything is generated.** An unknown data name
+   (`KDM3042`), an unknown field or a wrong record name (`KDM3043`), and a
+   generated name that clashes with an existing element (`KDM3044`) get
+   suggestions. A true/false field cannot be shown as a value. A field read
+   outside a repeat (`KDM3041`) and a repeat on a built-in kind (`KDM3040`)
+   are errors. Repeats are allowed only on pages, not inside components.
+5. **Determinism.** Data is just more source: records keep file order, numbers
+   print with JavaScript's shortest round-trip form, and `kadam dev` watches
+   data files.
+
+**Not yet:** filtering, sorting and limits; child content on a repeated
+instance; generated pages (one page per record); Markdown documents; runtime
+data. These are the next F5 steps.
+
+---
+
 ## Approval checklist
 
 | ID | Decision | Blocks | Recommendation | Status |
@@ -1267,6 +1305,7 @@ JavaScript-free.
 | D-36 | Client runtime for kadam 0.3 (replaces D-18 for 0.3) | F4 step 2 | Approve | Approved |
 | D-38 | Theme colors and dark mode | F3 | Approve | Approved — implemented behind kadam 0.3 |
 | D-39 | Contrast check is a warning in 0.3 | F3 | Approve | Approved — implemented |
+| D-40 | Build-time data files and data lists | F5 step 1 | Review | Implemented under the user's go-ahead |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

@@ -21,6 +21,7 @@ import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
 import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
+import { expandData, parseDataFile, type DataSet } from "../core/data/data.js";
 import {
   analyzeDocument,
   type SemanticPage,
@@ -195,6 +196,24 @@ export function compileProject(
   }
   const colorTokens = new Set(themeColors.map((color) => color.name));
 
+  // kadam 0.3 (F5): project data files, read once and shared by every page.
+  const data = new Map<string, DataSet | null>();
+  for (const [name, sourcePath] of Object.entries(manifest.data ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    const dataSource = loadProjectSource({
+      projectRoot,
+      realProjectRoot,
+      outDir,
+      sourcePath,
+      kind: "data",
+      code: "KDM4010",
+      missingSpan: manifestSpan,
+      overrides: options.sourceOverrides,
+      diagnostics,
+      sources,
+    });
+    data.set(name, dataSource === null ? null : parseDataFile(name, dataSource, diagnostics));
+  }
+
   for (const pageEntry of manifest.pages) {
     const sourcePath = pageEntry.source;
     const source = loadProjectSource({
@@ -229,7 +248,8 @@ export function compileProject(
       resolvedPath: resolve(projectRoot, sourcePath),
       route: normalizeRoute(pageEntry.route),
       source,
-      document: parsed.document,
+      // Data lists become ordinary instances before any component check.
+      document: { ...parsed.document, page: expandData(parsed.document.page, data, diagnostics) },
     });
   }
 
@@ -528,8 +548,8 @@ interface ProjectSourceRequest {
   readonly realProjectRoot: string;
   readonly outDir: string;
   readonly sourcePath: string;
-  readonly kind: "page" | "component" | "theme";
-  readonly code: "KDM4002" | "KDM4007";
+  readonly kind: "page" | "component" | "theme" | "data";
+  readonly code: "KDM4002" | "KDM4007" | "KDM4010";
   readonly missingSpan: Span;
   readonly overrides: ProjectCompileOptions["sourceOverrides"];
   readonly diagnostics: DiagnosticBag;

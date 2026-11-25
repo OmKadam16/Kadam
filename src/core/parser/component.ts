@@ -739,6 +739,10 @@ class ComponentParser {
         );
         return;
       }
+      if (property.binding.field !== undefined) {
+        this.#error("KDM3041", "data lists are only allowed on pages", property.binding.field.span, "repeat the component on the page, and pass the values in as parameters");
+        return;
+      }
       builder.properties.push(property.binding);
       return;
     }
@@ -798,6 +802,9 @@ class ComponentParser {
           node.span,
           "move this sentence to the top of the element body",
         );
+      }
+      if (node.repeat !== undefined) {
+        this.#error("KDM3041", "data lists are only allowed on pages", node.repeat.span, "repeat the component on the page, and pass the values in as parameters");
       }
       builder.kind = node;
       return;

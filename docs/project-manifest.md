@@ -53,6 +53,7 @@ MyWebsite/
 | `breakpoints` | object | no | — | *kadam 0.3.* Extra min-width breakpoints, e.g. `{ "wide": 1440 }`, used as `on wide screens, ...`. Names are one lower-case word other than `phones`, `tablets`, `desktops`; widths are whole pixels from 1 to 10000; at most 8. |
 | `fonts` | object | no | — | *kadam 0.3.* Local font files used as `the font is "Inter"`: `{ "Inter": { "source": "assets/fonts/Inter.woff2", "weight": "100 900", "style": "normal", "fallback": "sans serif" } }`. `source` is a project `.woff2` or `.woff` file (no remote fonts); `weight` defaults to `"400"`, `style` to `"normal"`, `fallback` to `"sans serif"`. Only fonts a page uses are copied. |
 | `theme` | string | no | — | *kadam 0.3.* A `.kdm` file with a `theme { ... }` block of theme colors (`the brand color is #4F46E5`, `in dark mode, the brand color is #818CF8`), shared by every page and component (D-38). |
+| `data` | object | no | — | *kadam 0.3.* Data names to project-relative `.json` files, e.g. `{ "projects": "data/projects.json" }`, used as `a ProjectCard for each project in projects` (D-40). Each file is an array of at most 1000 flat records (text, number, or true/false fields). At most 32 entries. |
 
 Unknown top-level keys and unknown page keys are errors, so a typo is never
 silently ignored.
