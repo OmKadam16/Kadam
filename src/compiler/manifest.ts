@@ -49,6 +49,11 @@ export interface KadamManifest {
    * sitemap.xml.
    */
   readonly siteUrl?: string | undefined;
+  /**
+   * kadam 0.3: extra min-width breakpoints, e.g. { "wide": 1440 }, used as
+   * `on wide screens, ...`. Values are viewport widths in px.
+   */
+  readonly breakpoints?: Readonly<Record<string, number>> | undefined;
 }
 
 export interface LoadedManifest {
@@ -68,6 +73,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "outDir",
   "basePath",
   "siteUrl",
+  "breakpoints",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -317,6 +323,39 @@ export function loadManifest(
         rootSpan,
         'use an origin such as "https://example.com"; put any subpath in basePath',
       );
+    }
+  }
+
+  // Validate breakpoints (kadam 0.3)
+  if ("breakpoints" in raw) {
+    const value = raw.breakpoints;
+    const hint = 'use an object of names to pixel widths, e.g. "breakpoints": { "wide": 1440 }';
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'breakpoints' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove breakpoints');
+    } else if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      diagnostics.error("KDM4001", "'breakpoints' in kadam.json must be an object", rootSpan, hint);
+    } else {
+      const entries = Object.entries(value as Record<string, unknown>);
+      if (entries.length > 8) {
+        diagnostics.error("KDM4001", "'breakpoints' in kadam.json has at most 8 entries", rootSpan, hint);
+      }
+      for (const [name, width] of entries) {
+        if (!BREAKPOINT_NAME.test(name) || RESERVED_BREAKPOINTS.has(name)) {
+          diagnostics.error(
+            "KDM4001",
+            `invalid breakpoint name ${JSON.stringify(name)}`,
+            rootSpan,
+            "use one lower-case word other than phones, tablets, or desktops, e.g. \"wide\"",
+          );
+        } else if (typeof width !== "number" || !Number.isInteger(width) || width < 1 || width > 10000) {
+          diagnostics.error(
+            "KDM4001",
+            `breakpoint ${JSON.stringify(name)} must be a whole number of pixels from 1 to 10000`,
+            rootSpan,
+            hint,
+          );
+        }
+      }
     }
   }
 
@@ -661,6 +700,10 @@ export function loadManifest(
     outDir: typeof raw.outDir === "string" ? raw.outDir : "dist",
     basePath: typeof raw.basePath === "string" ? raw.basePath : undefined,
     siteUrl: typeof raw.siteUrl === "string" ? raw.siteUrl.replace(/\/$/, "") : undefined,
+    breakpoints:
+      typeof raw.breakpoints === "object" && raw.breakpoints !== null && !Array.isArray(raw.breakpoints)
+        ? (raw.breakpoints as Record<string, number>)
+        : undefined,
   };
 
   return {
@@ -670,6 +713,9 @@ export function loadManifest(
     manifestSource,
   };
 }
+
+const BREAKPOINT_NAME = /^[a-z]{2,20}$/;
+const RESERVED_BREAKPOINTS: ReadonlySet<string> = new Set(["phones", "tablets", "desktops"]);
 
 /** An absolute http(s) origin with no path, query, or fragment. */
 function isSiteOrigin(value: unknown): value is string {

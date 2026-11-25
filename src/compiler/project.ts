@@ -165,6 +165,8 @@ export function compileProject(
   const defaultLanguageVersion: UiLanguageVersion = isUiLanguageVersion(manifest.kadam)
     ? manifest.kadam
     : LANGUAGE_VERSION;
+  const breakpoints =
+    manifest.breakpoints === undefined ? undefined : new Map(Object.entries(manifest.breakpoints));
 
   for (const pageEntry of manifest.pages) {
     const sourcePath = pageEntry.source;
@@ -186,6 +188,7 @@ export function compileProject(
       validate: false,
       allowComponentKinds: true,
       defaultLanguageVersion,
+      breakpoints,
     });
     diagnostics.addAll(parsed.diagnostics);
 
@@ -221,7 +224,7 @@ export function compileProject(
     });
     if (source === null) continue;
 
-    const parsed = parseComponentSource(source, { defaultLanguageVersion });
+    const parsed = parseComponentSource(source, { defaultLanguageVersion, breakpoints });
     reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     componentFiles.push({
       source,

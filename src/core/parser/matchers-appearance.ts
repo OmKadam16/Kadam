@@ -1,4 +1,5 @@
 import { F1_FIELD_TYPES, isF1State } from "./matchers-f1.js";
+import { isF2State, isFluidText } from "./matchers-f2.js";
 import type {
   ColorValue,
   FieldType,
@@ -183,6 +184,8 @@ export function matchTypography(tokens: readonly Token[]): StatementMatchBody | 
   ) {
     return null;
   }
+  // kadam 0.3: `the text is between 1rem and 2rem` is fluid text.
+  if (isFluidText(tokens)) return null;
 
   const rest = tokens.slice(3);
   const span = spanFromTokens(tokens);
@@ -326,6 +329,8 @@ export function matchSizeState(tokens: readonly Token[]): StatementMatchBody | n
   if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "is")) return null;
   // kadam 0.3 states (checked, disabled, character limits) have their own template.
   if (isF1State(tokens)) return null;
+  // kadam 0.3 sizes, limits, and positions have their own templates.
+  if (isF2State(tokens)) return null;
   const rest = tokens.slice(2);
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];

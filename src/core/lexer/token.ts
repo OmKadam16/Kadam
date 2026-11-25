@@ -1,3 +1,6 @@
+/** Length units. em, vw, vh, dvh are kadam 0.3; the parser rejects them in 0.1 files. */
+export type LengthUnit = "px" | "rem" | "em" | "vw" | "vh" | "dvh";
+
 import type { Span } from "../source/source-file.js";
 
 export type TokenKind =
@@ -26,6 +29,6 @@ export interface Token {
   readonly text: string;
   /** Normalized value: lower-case keyword/color, decoded string, or number. */
   readonly value?: string | number;
-  readonly unit?: "px" | "rem" | "ms" | "s";
+  readonly unit?: LengthUnit | "ms" | "s";
   readonly span: Span;
 }

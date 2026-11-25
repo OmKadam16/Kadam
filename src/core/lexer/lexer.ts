@@ -1,3 +1,4 @@
+import type { LengthUnit } from "./token.js";
 import type { Diagnostic } from "../diagnostics/diagnostic.js";
 import { DiagnosticBag } from "../diagnostics/diagnostic.js";
 import type { SourceFile } from "../source/source-file.js";
@@ -157,7 +158,7 @@ interface NumberResult {
   readonly kind: "number" | "length" | "duration" | "percentage";
   readonly value: number;
   readonly end: number;
-  readonly unit?: "px" | "rem" | "ms" | "s";
+  readonly unit?: LengthUnit | "ms" | "s";
 }
 
 function scanNumber(
@@ -178,10 +179,10 @@ function scanNumber(
     return { kind: "percentage", value, end: index + 1 };
   }
 
-  const immediate = matchUnit(text, index);
+  const immediate = matchUnit(text, index) ?? matchNewUnit(text, index);
   if (immediate !== null) {
     return {
-      kind: immediate.unit === "px" || immediate.unit === "rem" ? "length" : "duration",
+      kind: immediate.unit === "ms" || immediate.unit === "s" ? "duration" : "length",
       value,
       end: immediate.end,
       unit: immediate.unit,
@@ -209,7 +210,7 @@ function scanNumber(
         "KDM1004",
         `malformed unit ${JSON.stringify(text.slice(index, unitEnd))}`,
         source.span(start, unitEnd),
-        "supported units are px, rem, ms, and s; a length needs a unit unless it is 0",
+        "supported units are px, rem, em, vw, vh, dvh, %, ms, and s; a length needs a unit unless it is 0",
       );
     }
   }
@@ -239,6 +240,23 @@ function matchUnit(
   for (const unit of candidates) {
     const candidate = text.slice(start, start + unit.length).toLowerCase();
     if (candidate !== unit) continue;
+    const after = text[start + unit.length];
+    if (after !== undefined && isAsciiAlphaNumeric(after)) continue;
+    return { unit, end: start + unit.length };
+  }
+  return null;
+}
+
+/**
+ * kadam 0.3 length units. Only accepted directly after the number (`50vw`),
+ * never after a space, so no existing `<number> <word>` phrase changes meaning.
+ */
+function matchNewUnit(
+  text: string,
+  start: number,
+): { readonly unit: "em" | "vw" | "vh" | "dvh"; readonly end: number } | null {
+  for (const unit of ["dvh", "em", "vw", "vh"] as const) {
+    if (text.slice(start, start + unit.length).toLowerCase() !== unit) continue;
     const after = text[start + unit.length];
     if (after !== undefined && isAsciiAlphaNumeric(after)) continue;
     return { unit, end: start + unit.length };

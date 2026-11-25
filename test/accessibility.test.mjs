@@ -27,6 +27,7 @@ const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const PROJECTS = [
   ["examples/reference/marketing", [...WCAG, "best-practice"]],
   ["examples/reference/docs", [...WCAG, "best-practice"]],
+  ["examples/reference/dashboard", [...WCAG, "best-practice"]],
   ["examples/canonical", [...WCAG, "best-practice"]],
   ["examples/portfolio", WCAG],
   ["examples/components", WCAG],

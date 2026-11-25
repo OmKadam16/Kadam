@@ -9,7 +9,7 @@ import type {
 } from "../core/ast/nodes.js";
 import type { Span } from "../core/source/source-file.js";
 
-export type IrLengthUnit = "px" | "rem" | null;
+export type IrLengthUnit = "px" | "rem" | "em" | "vw" | "vh" | "dvh" | "%" | null;
 
 export interface IrLength {
   readonly value: number;
@@ -154,6 +154,14 @@ export interface IrAuthoredStyle {
    * name; text properties are emitted wherever typography is emitted.
    */
   readonly properties?: readonly IrTextProperty[];
+  /** kadam 0.3 (F2) layout declarations in source order. */
+  readonly declarations?: readonly IrDeclaration[];
+}
+
+/** A resolved CSS declaration from a kadam 0.3 (F2) layout statement. */
+export interface IrDeclaration {
+  readonly property: string;
+  readonly value: string;
 }
 
 export interface IrTextProperty {
@@ -239,6 +247,8 @@ export interface IrImageContent {
   readonly url: string;
   readonly alt: string | null;
   readonly decorative: boolean;
+  /** kadam 0.3: `lazy` for every image but the first, unless the author says. */
+  readonly loading?: "lazy";
 }
 
 export interface IrFieldContent {
@@ -287,6 +297,16 @@ export interface IrResponsive {
   readonly style: IrComputedStyle;
 }
 
+/** kadam 0.3 custom breakpoint or container query scope. */
+export interface IrScopedStyle {
+  /** The at-rule, e.g. `@media (min-width: 1440px)` or `@container (width < 400px)`. */
+  readonly query: string;
+  /** Emission order across the page; more specific scopes come later. */
+  readonly order: number;
+  readonly authored: IrAuthoredStyle;
+  readonly style: IrComputedStyle;
+}
+
 export interface IrElement {
   readonly type: "element";
   readonly nodeId: string;
@@ -314,6 +334,10 @@ export interface IrElement {
   readonly htmlId?: string;
   /** Button state: disabled, or submits its form. */
   readonly control?: { readonly disabled: boolean; readonly submit: boolean };
+  /** kadam 0.3 custom breakpoint and container query styles. */
+  readonly scopes?: readonly IrScopedStyle[];
+  /** A scroll container: keyboard users can focus and scroll it. */
+  readonly scrollable?: true;
 }
 
 export interface IrPageStyle {

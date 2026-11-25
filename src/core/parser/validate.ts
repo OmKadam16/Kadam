@@ -7,11 +7,13 @@ import type {
   LengthValue,
   PageSettingNode,
   ResponsiveStatement,
+  ScopedStatement,
   StatementNode,
 } from "../ast/nodes.js";
 import type { DiagnosticBag } from "../diagnostics/diagnostic.js";
 import type { Span } from "../source/source-file.js";
 import { BUILTIN_KIND_INFO } from "./kind.js";
+import { findProperty, isNativeProperty } from "./properties.js";
 
 const TEXT_CONTENT: ReadonlySet<BuiltinKindName> = new Set([
   "button",
@@ -154,6 +156,7 @@ function checkStructure(
         diagnostics.error("KDM3010", "a form cannot contain another form", element.nameSpan, "move the inner form out");
       }
     }
+    checkLayoutContext(element, parent, diagnostics);
     checkStructure(element.children, element, insideForm || kind === "form", diagnostics);
   });
 }
@@ -166,6 +169,7 @@ export function validateElementTree(
 ): void {
   for (const element of elements) validateElement(element, diagnostics, options);
   checkStructure(elements, null, false, diagnostics);
+  checkPinnedOverlap(elements, diagnostics);
 }
 
 function checkPageSettingDuplicate(
@@ -247,12 +251,13 @@ function validateElement(
   if (element.kind?.width !== undefined) baseUsed.set("width", element.kind.span);
   if (element.kind?.height !== undefined) baseUsed.set("height", element.kind.span);
 
-  const responsiveByBreakpoint = new Map<string, ResponsiveStatement[]>();
+  const responsiveByBreakpoint = new Map<string, (ResponsiveStatement | ScopedStatement)[]>();
   for (const statement of element.statements) {
-    if (statement.type === "responsive") {
-      const list = responsiveByBreakpoint.get(statement.breakpoint) ?? [];
+    if (statement.type === "responsive" || statement.type === "scoped") {
+      const key = scopeKey(statement);
+      const list = responsiveByBreakpoint.get(key) ?? [];
       list.push(statement);
-      responsiveByBreakpoint.set(statement.breakpoint, list);
+      responsiveByBreakpoint.set(key, list);
       continue;
     }
     checkCapability(kindName, element.kind, statement, diagnostics);
@@ -270,7 +275,7 @@ function validateElement(
     const scopeFacts = collectResponsiveFacts(statements, baseFacts);
     for (const responsive of statements) {
       const inner = responsive.statement;
-      if (inner.type === "responsive") {
+      if (inner.type === "responsive" || inner.type === "scoped") {
         diagnostics.error(
           "KDM3013",
           "a responsive statement cannot be nested inside another responsive scope",
@@ -298,6 +303,100 @@ function validateElement(
   for (const child of element.children) {
     validateElement(child, diagnostics, options);
   }
+}
+
+/** Statements in the same responsive scope share duplicate detection. */
+function scopeKey(statement: ResponsiveStatement | ScopedStatement): string {
+  if (statement.type === "responsive") return statement.breakpoint;
+  const scope = statement.scope;
+  return scope.kind === "breakpoint"
+    ? `${scope.name} screens`
+    : `parent ${scope.comparison} than ${scope.width.raw}`;
+}
+
+/** Every statement of an element, including those inside scopes. */
+function allStatements(element: ElementNode): StatementNode[] {
+  return element.statements.map((statement) =>
+    statement.type === "responsive" || statement.type === "scoped" ? statement.statement : statement,
+  );
+}
+
+/**
+ * kadam 0.3 layout rules that depend on the parent element: child rules and
+ * spans need a parent that arranges its children, a placed element and a
+ * container condition need a parent element at all.
+ */
+function checkLayoutContext(element: ElementNode, parent: ElementNode | null, diagnostics: DiagnosticBag): void {
+  const parentKind = parent === null ? null : builtinKindName(parent.kind);
+  const parentStatements = parent === null ? [] : allStatements(parent);
+  const parentHasGrid = parentStatements.some((statement) => statement.type === "grid");
+  const needsParent = (statement: StatementNode, what: string): void => {
+    diagnostics.error(
+      "KDM3010",
+      `${what} needs a parent element`,
+      statement.span,
+      `move ${element.name} inside a container, or remove the statement`,
+    );
+  };
+  for (const scoped of element.statements) {
+    if (scoped.type === "scoped" && scoped.scope.kind === "container" && parent === null) {
+      needsParent(scoped, "a container condition");
+    }
+  }
+  for (const statement of allStatements(element)) {
+    if (statement.type === "child-rule") {
+      if (parent === null) {
+        needsParent(statement, describeStatement(statement));
+      } else if (parentKind !== null && !CONTAINERS.has(parentKind)) {
+        diagnostics.error(
+          "KDM3010",
+          `${describeStatement(statement)} needs a parent that arranges its children`,
+          statement.span,
+          `${parent.name} is ${articleFor(parentKind)} ${parentKind}; put ${element.name} in a container`,
+        );
+      }
+    } else if (statement.type === "column-span") {
+      if (parent === null) {
+        needsParent(statement, "an it spans statement");
+      } else if (parentKind !== null && !parentHasGrid) {
+        diagnostics.error(
+          "KDM3010",
+          "an it spans statement needs a parent that arranges its children in columns",
+          statement.span,
+          `add to ${parent.name}: it arranges its children in 3 columns`,
+        );
+      }
+    } else if (statement.type === "position" && statement.mode === "placed" && parent === null) {
+      needsParent(statement, "an it is placed statement");
+    }
+  }
+}
+
+/** Warn when two elements are pinned to the same spot: one hides the other. */
+function checkPinnedOverlap(elements: readonly ElementNode[], diagnostics: DiagnosticBag): void {
+  const seen = new Map<string, ElementNode>();
+  const visit = (list: readonly ElementNode[]): void => {
+    for (const element of list) {
+      for (const statement of element.statements) {
+        if (statement.type !== "position" || statement.mode !== "pinned") continue;
+        const spot = [statement.vertical, statement.horizontal].filter((edge) => edge !== null).join(" ");
+        const key = `${spot}@${statement.offset?.raw ?? "0"}`;
+        const first = seen.get(key);
+        if (first === undefined) {
+          seen.set(key, element);
+        } else {
+          diagnostics.warning(
+            "KDM3038",
+            `${element.name} and ${first.name} are both pinned to the ${spot}; one will cover the other`,
+            statement.span,
+            "pin them to different spots, or put both in one pinned container",
+          );
+        }
+      }
+      visit(element.children);
+    }
+  };
+  visit(elements);
 }
 
 function builtinKindName(kind: KindNode | null): BuiltinKindName | null {
@@ -352,6 +451,10 @@ function checkCapability(
       }
       return;
     case "property":
+      {
+        const row = findProperty(statement.name);
+        if (row !== undefined && isNativeProperty(row) && row.applies === "all") return;
+      }
       if (!TEXT_BEARING.has(kindName)) {
         reject(`the ${statement.name} applies to text-bearing kinds: button, link, headings, paragraph, and text field`);
       }
@@ -466,7 +569,43 @@ function checkCapability(
         reject("click actions apply only to a button or link");
       }
       return;
+    case "fluid-text":
+      if (kindName === "text field") {
+        reject("fluid text applies to buttons, links, headings, and paragraphs; give a text field one size");
+        return;
+      }
+      if (!TEXT_BEARING.has(kindName)) {
+        reject("fluid text applies to text-bearing kinds: button, link, headings, paragraph, and text field");
+      }
+      return;
+    case "flex-rule":
+    case "grid":
+      if (!CONTAINERS.has(kindName)) {
+        reject("layout statements apply to container, card, and navigation bar");
+      }
+      return;
+    case "image-fit":
+    case "image-focus":
+      if (kindName !== "image" && kindName !== "video") {
+        reject("image fit and focus apply to an image or video");
+      }
+      return;
+    case "loading":
+      if (kindName !== "image") reject("it loads lazily applies only to an image");
+      return;
+    case "size-limit":
+    case "aspect-ratio":
+    case "child-rule":
+    case "column-span":
+    case "sticky":
+    case "position":
+    case "overflow":
+      if (kindName === "divider" && statement.type !== "child-rule" && statement.type !== "column-span") {
+        reject("a divider supports margin, color, and spacing only");
+      }
+      return;
     case "responsive":
+    case "scoped":
       return;
   }
 }
@@ -680,8 +819,36 @@ function describeStatement(statement: StatementNode): string {
       return "an it submits the form statement";
     case "text-span":
       return "an inline span statement";
+    case "size-limit":
+      return "a size limit statement";
+    case "aspect-ratio":
+      return "a shape statement";
+    case "fluid-text":
+      return "a fluid text statement";
+    case "flex-rule":
+      return "a child spacing statement";
+    case "child-rule":
+      return `an ${statement.rule === "grow" ? "it grows to fill the space" : statement.rule === "end" ? "it sits at the end" : "it does not shrink"} statement`;
+    case "grid":
+      return "a grid statement";
+    case "column-span":
+      return "an it spans statement";
+    case "sticky":
+      return "an it sticks statement";
+    case "position":
+      return statement.mode === "pinned" ? "an it is pinned statement" : "an it is placed statement";
+    case "overflow":
+      return "an overflow statement";
+    case "image-fit":
+      return "an image fit statement";
+    case "image-focus":
+      return "an image focus statement";
+    case "loading":
+      return "an image loading statement";
     case "responsive":
       return "a responsive statement";
+    case "scoped":
+      return statement.scope.kind === "container" ? "a container condition" : "a custom breakpoint statement";
   }
 }
 
@@ -794,7 +961,35 @@ function propertyKeys(statement: StatementNode): string[] {
     case "form-action":
     case "submit":
       return [statement.type];
+    case "size-limit":
+      return [`${statement.bound}-${statement.axis}`];
+    case "aspect-ratio":
+      return ["aspect-ratio"];
+    case "fluid-text":
+      // Same property as `the text is 18px`.
+      return ["text-size"];
+    case "flex-rule":
+      return [statement.rule === "wrap" ? "flex-wrap" : "child-spacing"];
+    case "child-rule":
+      return [`child-${statement.rule}`];
+    case "grid":
+      // A grid replaces the row/column direction.
+      return ["layout-direction"];
+    case "column-span":
+      return ["column-span"];
+    case "sticky":
+    case "position":
+      return ["position"];
+    case "overflow":
+      return statement.mode === "hidden"
+        ? ["overflow-x", "overflow-y"]
+        : [statement.mode === "scroll-x" ? "overflow-x" : "overflow-y"];
+    case "image-fit":
+    case "image-focus":
+    case "loading":
+      return [statement.type];
     case "responsive":
+    case "scoped":
       return [];
   }
 }
@@ -835,7 +1030,7 @@ function collectFacts(element: ElementNode): ScopeFacts {
 }
 
 function collectResponsiveFacts(
-  statements: readonly ResponsiveStatement[],
+  statements: readonly (ResponsiveStatement | ScopedStatement)[],
   base: ScopeFacts,
 ): ScopeFacts {
   let background = base.background;

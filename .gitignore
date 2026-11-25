@@ -5,3 +5,5 @@ coverage/
 .DS_Store
 .kadam-cache/
 examples/**/dist/
+test-results/
+playwright-report/

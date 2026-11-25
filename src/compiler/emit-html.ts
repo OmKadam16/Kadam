@@ -69,6 +69,14 @@ function metaLines(title: string, meta: IrPageMeta): string[] {
 }
 
 function renderElement(element: IrElement, depth: number): string {
+  const html = renderElementTag(element, depth);
+  if (element.scrollable !== true) return html;
+  // kadam 0.3: a scroll container is focusable so keyboard users can scroll it.
+  const marker = `data-kdm-id="${element.nodeId}"`;
+  return html.replace(marker, `${marker} tabindex="0"`);
+}
+
+function renderElementTag(element: IrElement, depth: number): string {
   const indent = "  ".repeat(depth);
   const classAttribute = `${element.className} ${element.kindClass}`;
 
@@ -108,7 +116,9 @@ function renderElement(element: IrElement, depth: number): string {
     case "cell":
       return textElement(element, "td", indent, classAttribute);
     case "code block":
-      return `${indent}<pre class="${classAttribute}" data-kdm-id="${element.nodeId}"><code>${escapeText(requireText(element))}</code></pre>`;
+      // A code block scrolls sideways (overflow-x: auto), so keyboard users
+      // must be able to focus it (WCAG 2.1.1, axe scrollable-region-focusable).
+      return `${indent}<pre class="${classAttribute}" data-kdm-id="${element.nodeId}" tabindex="0"><code>${escapeText(requireText(element))}</code></pre>`;
     case "header":
       return renderContainer(element, "header", indent, classAttribute);
     case "footer":
@@ -203,6 +213,7 @@ function renderImage(
   const height = htmlDimension(element.authored.height);
   if (width !== null) attributes.push(`width="${width}"`);
   if (height !== null) attributes.push(`height="${height}"`);
+  if (image.loading === "lazy") attributes.push(`loading="lazy"`);
   return `${indent}<img ${attributes.join(" ")}>`;
 }
 

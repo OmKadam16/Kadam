@@ -6,7 +6,7 @@ import type {
 } from "../ast/nodes.js";
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Span } from "../source/source-file.js";
-import type { Token } from "../lexer/token.js";
+import type { LengthUnit, Token } from "../lexer/token.js";
 import { NAMED_COLORS } from "../lexer/lexicon.js";
 
 export function spanFromTokens(tokens: readonly Token[]): Span {
@@ -49,7 +49,7 @@ export function isIdentifier(token: Token | undefined): boolean {
 
 export function isLength(token: Token | undefined): token is Token & {
   value: number;
-  unit: "px" | "rem" | null;
+  unit: LengthUnit | null;
 } {
   return token?.kind === "length" && typeof token.value === "number";
 }

@@ -2,7 +2,9 @@ import type {
   Breakpoint,
   PageSettingNode,
   ResponsiveStatement,
+  ScopedStatement,
   StatementNode,
+  StatementScope,
 } from "../ast/nodes.js";
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Token } from "../lexer/token.js";
@@ -44,6 +46,22 @@ import {
   matchSubmit,
   matchTextSpan,
 } from "./matchers-f1.js";
+import {
+  matchAspectRatio,
+  matchChildRule,
+  matchColumnSpan,
+  matchFlexRule,
+  matchFluidText,
+  matchGrid,
+  matchImageFit,
+  matchImageFocus,
+  matchLoading,
+  matchOverflow,
+  matchPercentSize,
+  matchPosition,
+  matchSizeLimit,
+  matchSticky,
+} from "./matchers-f2.js";
 import { PROPERTIES, matchPropertySentence, propertyNamed } from "./properties.js";
 import { closestMatches } from "./suggest.js";
 import type {
@@ -51,7 +69,7 @@ import type {
   StatementTemplate,
   TemplateContext,
 } from "./statement-types.js";
-import { describeTokens, isKeyword, spanFromTokens } from "./values.js";
+import { describeTokens, isAnyWord, isKeyword, readLength, spanFromTokens } from "./values.js";
 import {
   LATEST_UI_LANGUAGE_VERSION,
   uiVersionAtLeast,
@@ -101,6 +119,53 @@ const F1_TEMPLATES: readonly StatementTemplate[] = [
   { id: "f1-field-type", description: "Field input type", since: "0.3",
     examples: ["it accepts phone numbers", "it accepts dates", "it accepts web addresses"],
     match: (tokens) => matchF1FieldType(tokens) },
+];
+
+/** kadam 0.3 (F2) layout and sizing templates. */
+const F2_TEMPLATES: readonly StatementTemplate[] = [
+  { id: "percent-size", description: "Percentage size", since: "0.3",
+    examples: ["it is 50% wide", "it is 100% tall", "it is 50% by 300px"],
+    match: (tokens) => matchPercentSize(tokens) },
+  { id: "size-limit", description: "Size limit", since: "0.3",
+    examples: ["it is at most 1200px wide", "it is at least 50vh tall"],
+    match: (tokens) => matchSizeLimit(tokens) },
+  { id: "aspect-ratio", description: "Shape (aspect ratio)", since: "0.3",
+    examples: ["it keeps a 16 by 9 shape", "it keeps a square shape"],
+    match: (tokens) => matchAspectRatio(tokens) },
+  { id: "fluid-text", description: "Fluid text size", since: "0.3",
+    examples: ["the text is between 1rem and 2.5rem", "the text size is between 16px and 24px"],
+    match: (tokens) => matchFluidText(tokens) },
+  { id: "flex-rule", description: "Child wrapping and spacing", since: "0.3",
+    examples: ["it wraps its children", "it spreads its children apart", "it spaces its children evenly"],
+    match: (tokens) => matchFlexRule(tokens) },
+  { id: "child-rule", description: "Rule for a child in a row or column", since: "0.3",
+    examples: ["it grows to fill the space", "it does not shrink", "it sits at the end"],
+    match: (tokens) => matchChildRule(tokens) },
+  { id: "grid", description: "Grid columns", since: "0.3",
+    examples: ["it arranges its children in 3 columns", "it arranges its children in columns at least 240px wide"],
+    match: (tokens) => matchGrid(tokens) },
+  { id: "column-span", description: "Grid column span", since: "0.3",
+    examples: ["it spans 2 columns", "it spans all columns"],
+    match: (tokens) => matchColumnSpan(tokens) },
+  { id: "sticky", description: "Sticky position", since: "0.3",
+    examples: ["it sticks to the top", "it sticks 16px from the top"],
+    match: (tokens) => matchSticky(tokens) },
+  { id: "position", description: "Pinned or placed position", since: "0.3",
+    examples: ["it is pinned to the bottom right", "it is pinned 24px from the bottom right",
+      "it is placed over its parent", "it is placed at the top right of its parent"],
+    match: (tokens) => matchPosition(tokens) },
+  { id: "overflow", description: "Overflow", since: "0.3",
+    examples: ["it scrolls vertically", "it scrolls horizontally", "it hides overflow"],
+    match: (tokens) => matchOverflow(tokens) },
+  { id: "image-fit", description: "Image fit", since: "0.3",
+    examples: ["it fills its box", "it fits inside its box"],
+    match: (tokens) => matchImageFit(tokens) },
+  { id: "image-focus", description: "Image focus point", since: "0.3",
+    examples: ["it keeps the top in view", "it keeps the bottom right in view"],
+    match: (tokens) => matchImageFocus(tokens) },
+  { id: "loading", description: "Image loading", since: "0.3",
+    examples: ["it loads lazily", "it loads right away"],
+    match: (tokens) => matchLoading(tokens) },
 ];
 
 export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
@@ -330,6 +395,7 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
     match: (tokens) => matchMotion(tokens),
   },
   ...F1_TEMPLATES,
+  ...F2_TEMPLATES,
   {
     id: "property",
     description: "Regular property sentence",
@@ -365,6 +431,19 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "layout",
   "visibility",
   "property",
+  // kadam 0.3 (F2)
+  "size-limit",
+  "aspect-ratio",
+  "fluid-text",
+  "flex-rule",
+  "child-rule",
+  "grid",
+  "column-span",
+  "sticky",
+  "position",
+  "overflow",
+  "image-fit",
+  "image-focus",
 ]);
 
 const BREAKPOINTS: ReadonlySet<string> = new Set([
@@ -396,10 +475,25 @@ export function matchLine(
   context: TemplateContext = DEFAULT_CONTEXT,
   templates: readonly StatementTemplate[] = STATEMENT_TEMPLATES,
 ): MatchLineResult {
+  const result = matchLineStatements(tokens, context, templates);
+  const unitErrors = newUnitDiagnostics(tokens, context);
+  return unitErrors.length === 0
+    ? result
+    : { ...result, diagnostics: [...result.diagnostics, ...unitErrors] };
+}
+
+function matchLineStatements(
+  tokens: readonly Token[],
+  context: TemplateContext,
+  templates: readonly StatementTemplate[],
+): MatchLineResult {
   if (tokens.length === 0) {
     return { matches: [], diagnostics: [], selected: null };
   }
 
+  if (context.allowResponsive && (isCustomBreakpointLine(tokens) || isContainerLine(tokens))) {
+    return matchScopedLine(tokens, context, templates);
+  }
   if (context.allowResponsive && isKeyword(tokens[0], "on")) {
     return matchResponsiveLine(tokens, context, templates);
   }
@@ -425,6 +519,220 @@ export function matchLine(
     diagnostics: matches[0]!.body.diagnostics,
     selected: matches[0]!,
   };
+}
+
+/**
+ * Match the one ordinary statement after a scope prefix (`on phones,`,
+ * `on wide screens,`, `when its parent is narrower than 400px,`). Pushes
+ * diagnostics and returns null when the inner statement is not allowed.
+ */
+function matchScopedInner(
+  innerTokens: readonly Token[],
+  label: string,
+  commaSpan: Span,
+  context: TemplateContext,
+  templates: readonly StatementTemplate[],
+  diagnostics: DiagnosticSpec[],
+): StatementNode | null {
+  if (innerTokens.length === 0) {
+    diagnostics.push({
+      code: "KDM2010",
+      message: `expected a statement after ${label},`,
+      span: commaSpan,
+      hint: "responsive statements wrap one ordinary element statement",
+    });
+    return null;
+  }
+
+  if (isKeyword(innerTokens[0], "on") || isContainerLine(innerTokens)) {
+    diagnostics.push({
+      code: "KDM3013",
+      message: "a responsive statement cannot be nested inside another responsive scope",
+      span: spanFromTokens(innerTokens),
+      hint: "use one breakpoint prefix per line",
+    });
+    return null;
+  }
+
+  if (isKeyword(innerTokens[0], "a") || isKeyword(innerTokens[0], "an")) {
+    diagnostics.push({
+      code: "KDM3013",
+      message: "kind declarations are not allowed in a responsive scope",
+      span: spanFromTokens(innerTokens),
+      hint: "declare the kind once, outside any breakpoint",
+    });
+    return null;
+  }
+
+  const innerContext: TemplateContext = {
+    allowResponsive: false,
+    languageVersion: context.languageVersion,
+    breakpoints: context.breakpoints,
+  };
+  const innerMatches = collectMatches(innerTokens, innerContext, templates);
+  if (innerMatches.length === 0) {
+    diagnostics.push(unrecognizedStatement(innerTokens));
+    return null;
+  }
+  if (innerMatches.length > 1) {
+    diagnostics.push(ambiguousStatement(innerTokens, innerMatches));
+    return null;
+  }
+
+  const innerBody = innerMatches[0]!.body;
+  diagnostics.push(...innerBody.diagnostics);
+  const innerStatement = innerBody.statement;
+  if (innerStatement === null) return null;
+  if (innerStatement.type === "page-setting") {
+    diagnostics.push({
+      code: "KDM3013",
+      message: "page settings are not allowed in a responsive scope",
+      span: innerStatement.span,
+      hint: "page settings apply to the whole page; use an element statement",
+    });
+    return null;
+  }
+  if (innerStatement.type === "kind") {
+    diagnostics.push({
+      code: "KDM3013",
+      message: "kind declarations are not allowed in a responsive scope",
+      span: innerStatement.span,
+      hint: "declare the kind once, outside any breakpoint",
+    });
+    return null;
+  }
+  if (!RESPONSIVE_ALLOWED.has(innerStatement.type)) {
+    diagnostics.push({
+      code: "KDM3013",
+      message: `${innerStatement.type} statements are not allowed in a responsive scope`,
+      span: innerStatement.span,
+      hint:
+        "responsive scopes allow size, background, border, corners, shadow, typography, spacing, layout, and visibility",
+    });
+    return null;
+  }
+  return innerStatement as StatementNode;
+}
+
+/** `when its parent is ...`: a kadam 0.3 container-query line. */
+function isContainerLine(tokens: readonly Token[]): boolean {
+  return isAnyWord(tokens[0], "when") && isAnyWord(tokens[1], "its") && isAnyWord(tokens[2], "parent");
+}
+
+/** `on <name> screens,`: a kadam 0.3 custom breakpoint from kadam.json. */
+function isCustomBreakpointLine(tokens: readonly Token[]): boolean {
+  return (
+    isKeyword(tokens[0], "on") &&
+    !BREAKPOINTS.has(tokens[1]?.text.toLowerCase() ?? "") &&
+    isAnyWord(tokens[2], "screens")
+  );
+}
+
+export const SCOPED_TEMPLATE: StatementTemplate = {
+  id: "scoped",
+  description: "Custom breakpoint or container query",
+  since: "0.3",
+  examples: [
+    "on wide screens, it arranges its children in 4 columns",
+    "when its parent is narrower than 400px, it arranges its children in a column",
+  ],
+  // The registry handles these prefixes directly in `matchLine`.
+  match: () => null,
+};
+
+const CONTAINER_HINT = "for example: when its parent is narrower than 400px, it arranges its children in a column";
+
+function matchScopedLine(
+  tokens: readonly Token[],
+  context: TemplateContext,
+  templates: readonly StatementTemplate[],
+): MatchLineResult {
+  const diagnostics: DiagnosticSpec[] = [];
+  const failed = (): MatchLineResult => ({
+    matches: [{ template: SCOPED_TEMPLATE, body: { statement: null, diagnostics } }],
+    diagnostics,
+    selected: null,
+  });
+  const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
+
+  let scope: StatementScope;
+  let label: string;
+  let commaIndex: number;
+  if (isContainerLine(tokens)) {
+    const comparison = tokens[4];
+    const width = tokens[6] === undefined ? null : readLength(tokens[6]);
+    if (
+      !isKeyword(tokens[3], "is") ||
+      (!isAnyWord(comparison, "narrower") && !isAnyWord(comparison, "wider")) ||
+      !isAnyWord(tokens[5], "than") ||
+      width === null ||
+      (width.unit !== "px" && width.unit !== "rem" && width.unit !== "em") ||
+      width.value <= 0
+    ) {
+      diagnostics.push({
+        code: "KDM3005",
+        message: "a container condition is: when its parent is narrower or wider than <width>,",
+        span: spanFromTokens(tokens.slice(0, Math.min(tokens.length, 7))),
+        hint: `${CONTAINER_HINT} (the width uses px, rem, or em)`,
+      });
+      return failed();
+    }
+    scope = {
+      kind: "container",
+      comparison: isAnyWord(comparison, "narrower") ? "narrower" : "wider",
+      width,
+    };
+    label = `when its parent is ${scope.comparison} than ${width.raw}`;
+    commaIndex = 7;
+  } else {
+    const name = tokens[1]!.text.toLowerCase();
+    const minWidth = context.breakpoints?.get(name);
+    if (minWidth === undefined) {
+      diagnostics.push({
+        code: "KDM3005",
+        message: `unknown breakpoint ${JSON.stringify(name)}`,
+        span: tokens[1]!.span,
+        hint: `use phones, tablets, or desktops, or define it in kadam.json: "breakpoints": { "${name}": 1440 }`,
+      });
+      return failed();
+    }
+    scope = { kind: "breakpoint", name, minWidth };
+    label = `on ${name} screens`;
+    commaIndex = 3;
+  }
+
+  const comma = tokens[commaIndex];
+  if (comma?.kind !== "comma") {
+    diagnostics.push({
+      code: "KDM2010",
+      message: `a comma is required after ${label}`,
+      span: comma?.span ?? tokens[commaIndex - 1]!.span,
+      hint: `write: ${label}, it is hidden`,
+    });
+    return failed();
+  }
+
+  const inner = matchScopedInner(tokens.slice(commaIndex + 1), label, comma.span, context, templates, diagnostics);
+  if (inner === null) return failed();
+  if (!uiVersionAtLeast(version, "0.3")) {
+    diagnostics.push(
+      requiresVersion(tokens, scope.kind === "container" ? "a container condition" : "a custom breakpoint", "0.3", version),
+    );
+  }
+  const statement: ScopedStatement = { type: "scoped", scope, statement: inner, span: spanFromTokens(tokens) };
+  const selected = { template: SCOPED_TEMPLATE, body: { statement, diagnostics } };
+  return { matches: [selected], diagnostics, selected };
+}
+
+const NEW_UNITS: ReadonlySet<string> = new Set(["em", "vw", "vh", "dvh"]);
+
+/** A 0.1 file may not use the kadam 0.3 units; one error per token. */
+function newUnitDiagnostics(tokens: readonly Token[], context: TemplateContext): DiagnosticSpec[] {
+  const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
+  if (uiVersionAtLeast(version, "0.3")) return [];
+  return tokens
+    .filter((token) => token.kind === "length" && token.unit !== undefined && NEW_UNITS.has(token.unit))
+    .map((token) => requiresVersion([token], `the unit ${token.unit}`, "0.3", version));
 }
 
 function collectMatches(
@@ -525,115 +833,15 @@ function matchResponsiveLine(
     };
   }
 
-  const innerTokens = tokens.slice(3);
-  if (innerTokens.length === 0) {
-    diagnostics.push({
-      code: "KDM2010",
-      message: `expected a statement after on ${breakpoint},`,
-      span: comma.span,
-      hint: "responsive statements wrap one ordinary element statement",
-    });
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-
-  if (isKeyword(innerTokens[0], "on")) {
-    diagnostics.push({
-      code: "KDM3013",
-      message: "a responsive statement cannot be nested inside another responsive scope",
-      span: spanFromTokens(innerTokens),
-      hint: "use one breakpoint prefix per line",
-    });
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-
-  if (isKeyword(innerTokens[0], "a") || isKeyword(innerTokens[0], "an")) {
-    diagnostics.push({
-      code: "KDM3013",
-      message: "kind declarations are not allowed in a responsive scope",
-      span: spanFromTokens(innerTokens),
-      hint: "declare the kind once, outside any breakpoint",
-    });
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-
-  const innerContext: TemplateContext = {
-    allowResponsive: false,
-    languageVersion: context.languageVersion,
-  };
-  const innerMatches = collectMatches(innerTokens, innerContext, templates);
-  if (innerMatches.length === 0) {
-    diagnostics.push(unrecognizedStatement(innerTokens));
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-  if (innerMatches.length > 1) {
-    diagnostics.push(ambiguousStatement(innerTokens, innerMatches));
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-
-  const innerBody = innerMatches[0]!.body;
-  diagnostics.push(...innerBody.diagnostics);
-  const innerStatement = innerBody.statement;
+  const innerStatement = matchScopedInner(
+    tokens.slice(3),
+    `on ${breakpoint}`,
+    comma.span,
+    context,
+    templates,
+    diagnostics,
+  );
   if (innerStatement === null) {
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-  if (innerStatement.type === "page-setting") {
-    diagnostics.push({
-      code: "KDM3013",
-      message: "page settings are not allowed in a responsive scope",
-      span: innerStatement.span,
-      hint: "page settings apply to the whole page; use an element statement",
-    });
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-  if (innerStatement.type === "kind") {
-    diagnostics.push({
-      code: "KDM3013",
-      message: "kind declarations are not allowed in a responsive scope",
-      span: innerStatement.span,
-      hint: "declare the kind once, outside any breakpoint",
-    });
-    return {
-      matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
-      diagnostics,
-      selected: null,
-    };
-  }
-  if (!RESPONSIVE_ALLOWED.has(innerStatement.type)) {
-    diagnostics.push({
-      code: "KDM3013",
-      message: `${innerStatement.type} statements are not allowed in a responsive scope`,
-      span: innerStatement.span,
-      hint:
-        "responsive scopes allow size, background, border, corners, shadow, typography, spacing, layout, and visibility",
-    });
     return {
       matches: [{ template: RESPONSIVE_TEMPLATE, body: { statement: null, diagnostics } }],
       diagnostics,

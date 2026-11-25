@@ -753,6 +753,105 @@ tags, and `sitemap.xml`.
 Skipping a heading level, for example from 1 to 4, is a warning: it is
 reported, but the page still builds.
 
+### 6.16 Layout and sizing (*kadam 0.3*)
+
+Everything in this section is new in `kadam 0.3`; in a `kadam 0.1` file each
+sentence, and each new unit, is `KDM2013`. The new words are contextual, not
+reserved.
+
+**Units.** Lengths may also use `em`, `vw`, `vh`, and `dvh` (written directly
+after the number: `80vh`, never `80 vh`). Sizes and size limits also accept a
+percentage (`50%`).
+
+**Sizes and shapes**
+
+| Sentence | CSS |
+| --- | --- |
+| `it is 50% wide` / `it is 50% tall` / `it is 50% by 300px` | `width` / `height` |
+| `it is at most 1200px wide` / `it is at least 50vh tall` | `max-width` / `min-height` (and `min-width`, `max-height`) |
+| `it keeps a 16 by 9 shape` / `it keeps a square shape` | `aspect-ratio: 16 / 9` (whole numbers 1 to 100) |
+| `the text is between 1rem and 2.5rem` | `font-size: clamp(...)` |
+
+Fluid text grows linearly from the first size at a 360px viewport to the
+second at 1280px (1rem = 16px), and stays inside both sizes beyond that. Both
+sizes use px or rem and the first is smaller. It is the text size, so it
+clashes with `the text is 18px` in the same scope. It applies to text-bearing
+kinds except a text field. `the text size is between ...` is the regular form.
+
+**Rows and columns**
+
+| Sentence | Applies to | CSS |
+| --- | --- | --- |
+| `it wraps its children` | containers | `flex-wrap: wrap` |
+| `it spreads its children apart` | containers | `justify-content: space-between` |
+| `it spaces its children evenly` | containers | `justify-content: space-evenly` |
+| `it grows to fill the space` | a child of a container | `flex-grow: 1` |
+| `it does not shrink` | a child of a container | `flex-shrink: 0` |
+| `it sits at the end` | a child of a container | `margin-inline-start: auto` in a row, `margin-block-start: auto` in a column, `justify-self: end` in a grid |
+| `it arranges its children in 3 columns` | containers (1 column, or 2 to 12) | `display: grid`, equal columns |
+| `it arranges its children in columns at least 240px wide` | containers | as many columns as fit (`auto-fit`, `minmax`) |
+| `it spans 2 columns` / `it spans all columns` | a child of a grid | `grid-column` |
+
+A grid replaces the row or column direction, so both in one scope is
+`KDM3004`. A grid inside a column stretches to the full width. A responsive
+scope may change the column count, or switch back to a row or column, which
+turns the grid back into flex. Child rules and spans need a parent element
+that arranges its children (`KDM3010`).
+
+**Position and layers**
+
+| Sentence | CSS |
+| --- | --- |
+| `it sticks to the top` / `it sticks 16px from the bottom` | `position: sticky` |
+| `it is pinned to the bottom right` / `it is pinned 24px from the top` | `position: fixed` |
+| `it is placed over its parent` | `position: absolute; inset: 0` |
+| `it is placed at the top right of its parent` / `it is placed 8px from the top right of its parent` | `position: absolute` |
+| `the layer is 10` | `z-index` (whole number 0 to 1000; any kind) |
+
+A spot is one edge (`top`, `bottom`, `left`, `right`) or a corner
+(`top left`, `bottom right`, ...). One edge stretches along that edge: a bar
+pinned to the top spans the width. The parent of a placed element becomes its
+positioning box automatically (`position: relative`), and so does an element
+with a layer but no position. Sticky, pinned, and placed are one property per
+scope. Two elements pinned to the same spot get warning `KDM3038`.
+
+**Overflow and images**
+
+| Sentence | Applies to | Result |
+| --- | --- | --- |
+| `it scrolls vertically` / `it scrolls horizontally` | any kind | `overflow-y` / `overflow-x: auto`, and `tabindex="0"` so keyboard users can scroll it |
+| `it hides overflow` / `it hides its overflow` | any kind | `overflow: hidden` |
+| `it fills its box` / `it fits inside its box` | image, video | `object-fit: cover` / `contain` |
+| `it keeps the top right in view` / `it keeps the center in view` | image, video | `object-position` |
+| `it loads lazily` / `it loads right away` | image | `loading="lazy"` / none |
+
+On a `kadam 0.3` page every image except the first one in the page loads
+lazily unless it says `it loads right away`. A code block is always focusable,
+because it scrolls sideways.
+
+**Custom breakpoints and container conditions**
+
+```kdm
+on wide screens, it arranges its children in 4 columns
+when its parent is narrower than 400px, it arranges its children in a column
+when its parent is wider than 50rem, it has 32px gap between children
+```
+
+- `on <name> screens,` uses a breakpoint from `kadam.json`
+  (`"breakpoints": { "wide": 1440 }`) and applies at that viewport width and
+  wider (`@media (min-width: 1440px)`). An undefined name is `KDM3005`.
+  The built-in `phones`, `tablets`, and `desktops` are unchanged.
+- `when its parent is narrower|wider than <width>,` is a container query on the
+  parent element (`@container (width < 400px)`). The width uses px, rem, or em.
+  The parent gets `container-type: inline-size`, and it fills its slot rather
+  than shrinking to its content. A top-level element has no parent element, so
+  the condition is `KDM3010` there.
+- Both prefixes wrap one ordinary statement and follow the rules of
+  responsive scopes (§9). They cannot be nested in each other or in `on phones,`.
+- Order in the stylesheet: built-in breakpoints, then custom breakpoints by
+  increasing width, then `wider than` conditions by increasing width, then
+  `narrower than` conditions by decreasing width, so the more specific rule wins.
+
 ---
 
 ## 7. Events and interactions
@@ -1346,6 +1445,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3013 | Statement is not allowed in a responsive scope |
 | KDM3014 | Hover border color requires a base border |
 | KDM3015 | Hover background color is invalid on a gradient |
+| KDM3038 | Warning: two elements are pinned to the same spot (*kadam 0.3*) |
 
 **Project (`KDM4xxx`)**
 

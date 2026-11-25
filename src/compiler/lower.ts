@@ -50,6 +50,14 @@ import {
   length,
 } from "./defaults.js";
 import { InternalCompilerError } from "./internal-error.js";
+import {
+  allStatements,
+  arrangementOf,
+  groupScopes,
+  parentDeclarations,
+  scopeDeclarations,
+  type F2ParentInfo,
+} from "./lower-f2.js";
 import type {
   IrAccessibility,
   IrAction,
@@ -70,6 +78,7 @@ import type {
   IrMotion,
   IrPageStyle,
   IrResponsive,
+  IrScopedStyle,
   IrShadow,
   IrSize,
   IrSourceMapping,
@@ -143,9 +152,10 @@ export function lowerDocument(
     basePath,
     f1,
     pageLanguage: meta?.language ?? "en",
+    firstImage: document.languageVersion === "0.1" ? null : firstImage(pageNode.elements),
   };
   const elements = pageNode.elements.map((element) =>
-    lowerElement(element, context),
+    lowerElement(element, context, PAGE_PARENT),
   );
 
   return {
@@ -172,6 +182,20 @@ interface LowerContext {
   readonly basePath: string;
   readonly f1: F1LowerContext;
   readonly pageLanguage: string;
+  /** kadam 0.3: the first image loads right away; later ones lazily. */
+  readonly firstImage: ElementNode | null;
+}
+
+/** Top-level elements sit in the page, which is a plain block. */
+const PAGE_PARENT: F2ParentInfo = { arrangement: null };
+
+function firstImage(elements: readonly ElementNode[]): ElementNode | null {
+  for (const element of elements) {
+    if (element.kind?.reference.type === "builtin-kind" && element.kind.reference.name === "image") return element;
+    const nested = firstImage(element.children);
+    if (nested !== null) return nested;
+  }
+  return null;
 }
 
 function lowerPageStyle(
@@ -213,7 +237,7 @@ function lowerPageStyle(
   };
 }
 
-function lowerElement(element: ElementNode, context: LowerContext): IrElement {
+function lowerElement(element: ElementNode, context: LowerContext, parent: F2ParentInfo): IrElement {
   const kind = elementKind(element);
   const identity = identityFor(element, context.slug);
   const style = createDefaultStyle(kind, context.pageStyle) as MutableStyle;
@@ -233,10 +257,29 @@ function lowerElement(element: ElementNode, context: LowerContext): IrElement {
   }
 
   applyScope(element.statements, style, authored, kind);
-  const responsive = lowerResponsive(element, style, kind);
+  const baseStatements = element.statements.filter(
+    (statement) => statement.type !== "responsive" && statement.type !== "scoped",
+  );
+  const declarations = [
+    ...scopeDeclarations(baseStatements, parent, null),
+    ...parentDeclarations(element, baseStatements, parent),
+  ];
+  if (declarations.length > 0) authored.declarations = declarations;
+  const responsive = lowerResponsive(element, style, kind, parent, baseStatements);
+  const scopes = lowerScopes(element, style, kind, parent, baseStatements);
+  const childParent: F2ParentInfo = {
+    arrangement: arrangementOf(baseStatements, style.layout?.direction ?? null),
+  };
+  const scrollable = allStatements(element).some(
+    (statement) => statement.type === "overflow" && statement.mode !== "hidden",
+  );
 
   const text = findStatement(element, "text") as TextStatement | null;
-  const image = lowerImage(element, kind, context.basePath);
+  const loweredImage = lowerImage(element, kind, context.basePath);
+  const image =
+    loweredImage !== null && kind === "image" && isLazy(element, context)
+      ? { ...loweredImage, loading: "lazy" as const }
+      : loweredImage;
   const loweredField =
     lowerField(element, kind, identity.nodeId) ??
     lowerControlField(element, kind, identity.nodeId);
@@ -275,11 +318,37 @@ function lowerElement(element: ElementNode, context: LowerContext): IrElement {
     image,
     field,
     accessibility: accessibilityFor(kind, text, image, field, action),
-    children: element.children.map((child) => lowerElement(child, context)),
+    children: element.children.map((child) => lowerElement(child, context, childParent)),
     ...(content === undefined ? {} : { content }),
     ...(htmlId === undefined ? {} : { htmlId }),
     ...(control === undefined ? {} : { control }),
+    ...(scopes.length === 0 ? {} : { scopes }),
+    ...(scrollable ? { scrollable: true as const } : {}),
   };
+}
+
+function isLazy(element: ElementNode, context: LowerContext): boolean {
+  if (context.f1.languageVersion === "0.1") return false;
+  const loading = findStatement(element, "loading");
+  if (loading !== null && loading.type === "loading") return loading.mode === "lazy";
+  return element !== context.firstImage;
+}
+
+function lowerScopes(
+  element: ElementNode,
+  baseStyle: IrComputedStyle,
+  kind: BuiltinKindName,
+  parent: F2ParentInfo,
+  baseStatements: readonly StatementNode[],
+): readonly IrScopedStyle[] {
+  return groupScopes(element).map((group) => {
+    const style = cloneComputedStyle(baseStyle) as MutableStyle;
+    const authored: MutableAuthored = {};
+    applyScope(group.statements, style, authored, kind);
+    const declarations = scopeDeclarations(group.statements, parent, baseStatements);
+    if (declarations.length > 0) authored.declarations = declarations;
+    return { query: group.query, order: group.order, authored: authored as IrAuthoredStyle, style };
+  });
 }
 
 function identityFor(
@@ -306,6 +375,8 @@ function lowerResponsive(
   element: ElementNode,
   baseStyle: IrComputedStyle,
   kind: BuiltinKindName,
+  parent: F2ParentInfo,
+  baseStatements: readonly StatementNode[],
 ): readonly IrResponsive[] {
   const result: IrResponsive[] = [];
 
@@ -321,6 +392,8 @@ function lowerResponsive(
     const style = cloneComputedStyle(baseStyle) as MutableStyle;
     const authored: MutableAuthored = {};
     applyScope(scoped, style, authored, kind);
+    const declarations = scopeDeclarations(scoped, parent, baseStatements);
+    if (declarations.length > 0) authored.declarations = declarations;
     result.push({
       breakpoint,
       authored: authored as IrAuthoredStyle,
@@ -340,7 +413,7 @@ function applyScope(
   let gradientDirection: GradientDirection | null = null;
 
   for (const statement of statements) {
-    if (statement.type === "responsive") continue;
+    if (statement.type === "responsive" || statement.type === "scoped") continue;
     if (statement.type === "gradient-direction") {
       gradientDirection = statement.direction;
       continue;
@@ -412,6 +485,8 @@ function applyStatement(
 
 function applyProperty(statement: PropertyStatement, authored: MutableAuthored): void {
   const definition = findProperty(statement.name);
+  // Rows that apply to every kind (the layer) lower with the F2 declarations.
+  if (definition !== undefined && isNativeProperty(definition) && definition.applies === "all") return;
   if (definition === undefined || !isNativeProperty(definition)) {
     throw new InternalCompilerError(
       `property ${JSON.stringify(statement.name)} is not a native row of the property table`,

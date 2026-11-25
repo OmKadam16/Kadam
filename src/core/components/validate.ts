@@ -697,6 +697,7 @@ function validateStatements(
         }
         break;
       case "responsive":
+      case "scoped":
         validateStatements([statement.statement], sourceRecord, pageTitles, diagnostics);
         break;
       default:

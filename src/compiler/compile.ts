@@ -31,6 +31,8 @@ export interface CompileOptions {
   readonly pages?: readonly SemanticPage[] | undefined;
   /** Optional deployment base path (e.g. "/subpath"). Defaults to "". */
   readonly basePath?: string | undefined;
+  /** kadam 0.3 custom breakpoints (normally from kadam.json): name to px. */
+  readonly breakpoints?: ReadonlyMap<string, number> | undefined;
 }
 
 export interface CompileResult {
@@ -63,7 +65,7 @@ function compileWithSource(
   sourceDiagnostics: readonly Diagnostic[],
   options: CompileOptions,
 ): CompileResult {
-  const parsed = parseSource(source);
+  const parsed = parseSource(source, { breakpoints: options.breakpoints });
   const document = parsed.document;
   const route = normalizeRoute(options.route ?? "/");
   const pages =

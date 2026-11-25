@@ -1,0 +1,10 @@
+{
+  "kadam": "0.3",
+  "name": "reference-dashboard",
+  "breakpoints": { "wide": 1440 },
+  "pages": [
+    { "source": "pages/overview.kdm", "route": "/" }
+  ],
+  "assets": "assets",
+  "outDir": "dist"
+}

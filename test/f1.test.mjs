@@ -128,6 +128,8 @@ test("inline spans are checked against the text", () => {
 test("a code block preserves whitespace and escapes markup", () => {
   const result = page(el("c1", "code block", text("<b>\n  x</b>")));
   assert.match(html(result), /<pre [^>]*><code>&lt;b&gt;\n  x&lt;\/b&gt;<\/code><\/pre>/);
+  // It scrolls sideways, so keyboard users can focus it.
+  assert.match(html(result), /<pre [^>]*tabindex="0"><code>/);
 });
 
 test("video needs a source and captions or an explicit no-speech marker", () => {

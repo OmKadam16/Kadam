@@ -1,3 +1,4 @@
+import type { LengthUnit } from "../lexer/token.js";
 import type { Span } from "../source/source-file.js";
 
 export type Breakpoint = "phones" | "tablets" | "desktops";
@@ -78,7 +79,8 @@ export interface ColorValue {
 export interface LengthValue {
   readonly type: "length";
   readonly value: number;
-  readonly unit: "px" | "rem" | null;
+  /** `%` only from kadam 0.3 size sentences (`it is 50% wide`). */
+  readonly unit: LengthUnit | "%" | null;
   readonly raw: string;
   /** An unresolved `{$name}` length parameter, replaced during expansion. */
   readonly reference?: { readonly name: string; readonly span: Span } | undefined;
@@ -299,7 +301,9 @@ export type StatementNode =
   | MotionStatement
   | PropertyStatement
   | F1Statement
-  | ResponsiveStatement;
+  | F2Statement
+  | ResponsiveStatement
+  | ScopedStatement;
 
 /** kadam 0.3 (F1) statements; matched in `src/core/parser/matchers-f1.ts`. */
 export type F1Statement =
@@ -328,6 +332,67 @@ export type F1Statement =
       readonly targetSpan: Span;
       readonly effect: TextSpanEffect;
     });
+
+/** kadam 0.3 (F2) layout statements; matched in `src/core/parser/matchers-f2.ts`. */
+export type F2Statement =
+  | (NodeBase & {
+      readonly type: "size-limit";
+      readonly bound: "min" | "max";
+      readonly axis: "width" | "height";
+      readonly value: LengthValue;
+    })
+  | (NodeBase & { readonly type: "aspect-ratio"; readonly width: number; readonly height: number })
+  | (NodeBase & { readonly type: "fluid-text"; readonly min: LengthValue; readonly max: LengthValue })
+  | (NodeBase & { readonly type: "flex-rule"; readonly rule: "wrap" | "spread" | "even" })
+  | (NodeBase & { readonly type: "child-rule"; readonly rule: "grow" | "no-shrink" | "end" })
+  | (NodeBase & {
+      readonly type: "grid";
+      /** A fixed column count, or null for `columns at least <minWidth> wide`. */
+      readonly columns: number | null;
+      readonly minWidth: LengthValue | null;
+    })
+  | (NodeBase & { readonly type: "column-span"; readonly columns: number | "all" })
+  | (NodeBase & {
+      readonly type: "sticky";
+      readonly edge: "top" | "bottom";
+      readonly offset: LengthValue | null;
+    })
+  | (NodeBase & {
+      readonly type: "position";
+      /** pinned: fixed to the viewport. placed: absolute inside the parent. */
+      readonly mode: "pinned" | "placed";
+      /** Null edges with mode "placed" means over the whole parent. */
+      readonly vertical: "top" | "bottom" | null;
+      readonly horizontal: "left" | "right" | null;
+      readonly offset: LengthValue | null;
+    })
+  | (NodeBase & { readonly type: "overflow"; readonly mode: "scroll-y" | "scroll-x" | "hidden" })
+  | (NodeBase & { readonly type: "image-fit"; readonly fit: "cover" | "contain" })
+  | (NodeBase & {
+      readonly type: "image-focus";
+      readonly vertical: "top" | "center" | "bottom";
+      readonly horizontal: "left" | "center" | "right";
+    })
+  | (NodeBase & { readonly type: "loading"; readonly mode: "lazy" | "eager" });
+
+/**
+ * kadam 0.3 scoped statement: `on wide screens, ...` (a breakpoint from
+ * kadam.json) or `when its parent is narrower than 400px, ...` (a container
+ * query on the parent element).
+ */
+export interface ScopedStatement extends NodeBase {
+  readonly type: "scoped";
+  readonly scope: StatementScope;
+  readonly statement: StatementNode;
+}
+
+export type StatementScope =
+  | { readonly kind: "breakpoint"; readonly name: string; readonly minWidth: number }
+  | {
+      readonly kind: "container";
+      readonly comparison: "narrower" | "wider";
+      readonly width: LengthValue;
+    };
 
 export type TextSpanEffect =
   | { readonly type: "bold" }

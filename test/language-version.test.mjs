@@ -69,8 +69,11 @@ test("version gating also applies inside a responsive scope", () => {
 test("every 0.1 template stays 0.1; only frontend-track templates are 0.3", () => {
   const newer = STATEMENT_TEMPLATES.filter((t) => (t.since ?? "0.1") !== "0.1").map((t) => t.id);
   assert.deepEqual(newer.sort(), [
-    "caption", "captions", "f1-field-type", "f1-state", "form-action", "media-source",
-    "no-speech", "options", "page-metadata", "poster", "property", "submit", "text-span",
+    "aspect-ratio", "caption", "captions", "child-rule", "column-span", "f1-field-type",
+    "f1-state", "flex-rule", "fluid-text", "form-action", "grid", "image-fit", "image-focus",
+    "loading", "media-source", "no-speech", "options", "overflow", "page-metadata",
+    "percent-size", "position", "poster", "property", "size-limit", "sticky", "submit",
+    "text-span",
   ]);
 });
 

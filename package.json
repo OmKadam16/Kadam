@@ -33,9 +33,11 @@
     "test": "npm run build && node --test test/*.test.mjs",
     "check": "npm run typecheck && npm test",
     "prepack": "npm run build",
-    "probes": "npm run build && node test/helpers/probe-report.mjs"
+    "probes": "npm run build && node test/helpers/probe-report.mjs",
+    "test:browser": "npm run build && playwright test -c test/browser/playwright.config.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@types/node": "^22.0.0",
     "axe-core": "^4.14.1",
     "jsdom": "^31.0.1",

@@ -201,9 +201,12 @@ kadam keywords
 
 UI files may declare `kadam 0.3` to use syntax added for the frontend track:
 the regular property sentence (`the padding is 24px`), landmarks, lists,
-tables, media, forms that submit, inline links in text, and page metadata.
-`examples/reference/` holds a marketing site and a docs site written with
-it. A
+tables, media, forms that submit, inline links in text, page metadata, and
+layout: grids, `%`/`vw`/`vh`/`em` units, fluid text, size limits, sticky and
+pinned elements, scroll regions, custom breakpoints, and container conditions.
+`examples/reference/` holds a marketing site, a docs site, and a dashboard
+written with it. `npm run test:browser` renders them in Chrome at four widths.
+A
 `kadam 0.1` file compiles exactly as before. Run `npm run probes` to see how
 many everyday frontend features compile today; see
 [the frontend plan](docs/frontend-plan.md).

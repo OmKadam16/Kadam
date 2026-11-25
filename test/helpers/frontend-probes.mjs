@@ -34,12 +34,21 @@ export function probeSource(probe) {
   if (probe.statement !== "") lines.push(probe.statement);
   // Optional extra body lines: the minimum content a kind requires.
   for (const line of probe.body ?? []) lines.push(line);
+  if (probe.parent === true) {
+    // The probe element sits inside a container (for placed elements and
+    // container conditions, which need a parent).
+    const body = lines.map((line) => `            ${line}`).join("\n");
+    return `kadam 0.3\npage "P" {\n    p0 {\n        a container\n        x1 {\n${body}\n        }\n    }\n}\n`;
+  }
   const body = lines.map((line) => `        ${line}`).join("\n");
   return `kadam 0.3\npage "P" {\n    x1 {\n${body}\n    }\n}\n`;
 }
 
+/** Probes compile against one custom breakpoint, as if kadam.json declared it. */
+export const PROBE_BREAKPOINTS = new Map([["wide", 1440]]);
+
 export function runProbe(probe) {
-  const result = compileText("probe.kdm", probeSource(probe));
+  const result = compileText("probe.kdm", probeSource(probe), { breakpoints: PROBE_BREAKPOINTS });
   const first = result.diagnostics[0];
   return {
     probe,

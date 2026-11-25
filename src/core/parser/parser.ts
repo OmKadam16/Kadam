@@ -45,6 +45,8 @@ export interface ParseOptions {
    * project manifest's version, or "0.1" for a standalone file.
    */
   readonly defaultLanguageVersion?: UiLanguageVersion | undefined;
+  /** kadam 0.3 custom breakpoints from kadam.json: name to min-width px. */
+  readonly breakpoints?: ReadonlyMap<string, number> | undefined;
 }
 
 export interface LogicalLine {
@@ -89,6 +91,7 @@ export function parseSource(
     lines,
     diagnostics,
     options.defaultLanguageVersion ?? LANGUAGE_VERSION,
+    options.breakpoints,
   ).parse();
   if (options.validate !== false) {
     validateDocument(document, diagnostics, {
@@ -129,6 +132,7 @@ class Parser {
   #version: string | null = null;
   #versionSpan: Span | null = null;
   #languageVersion: UiLanguageVersion;
+  readonly #breakpoints: ReadonlyMap<string, number> | undefined;
   #sawTopLevelLine = false;
   #pageSeen = false;
   #page: PageBuilder | null = null;
@@ -141,7 +145,9 @@ class Parser {
     lines: readonly LogicalLine[],
     diagnostics: DiagnosticBag,
     defaultLanguageVersion: UiLanguageVersion,
+    breakpoints: ReadonlyMap<string, number> | undefined = undefined,
   ) {
+    this.#breakpoints = breakpoints;
     this.#languageVersion = defaultLanguageVersion;
     this.#source = source;
     this.#lines = lines;
@@ -529,6 +535,7 @@ class Parser {
     const context: TemplateContext = {
       allowResponsive: true,
       languageVersion: this.#languageVersion,
+      breakpoints: this.#breakpoints,
     };
     const match = matchLine(tokens, context);
     for (const diagnostic of match.diagnostics) this.#diagnostics.addSpec(diagnostic);

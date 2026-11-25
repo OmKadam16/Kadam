@@ -54,6 +54,7 @@ export type DiagnosticCode =
   | "KDM3035"
   | "KDM3036"
   | "KDM3037"
+  | "KDM3038"
   | "KDM4001"
   | "KDM4002"
   | "KDM4003"

@@ -23,6 +23,7 @@ import {
   readLengthArgument,
   spanFromTokens,
 } from "./values.js";
+import { isFluidText } from "./matchers-f2.js";
 
 /**
  * D-32: the regular property sentence (kadam 0.3).
@@ -60,6 +61,8 @@ interface RowBase {
   /** Inclusive bounds for numeric values. */
   readonly min?: number;
   readonly max?: number;
+  /** Numeric values must be whole numbers. */
+  readonly integer?: boolean;
   /** Accepted words for a choice value, mapped to the stored value. */
   readonly choices?: Readonly<Record<string, string>>;
   readonly description: string;
@@ -74,7 +77,7 @@ export interface ShorthandPropertyDefinition extends RowBase {
 
 export interface NativePropertyDefinition extends RowBase {
   /** Which element kinds accept the property (mirrors spec Appendix A.5). */
-  readonly applies: "text-bearing";
+  readonly applies: "text-bearing" | "all";
   /** Generated CSS property. */
   readonly css: string;
 }
@@ -177,6 +180,18 @@ export const PROPERTIES: readonly PropertyDefinition[] = [
     description: "Extra space between letters",
     example: "the letter spacing is 1px",
   },
+  // Layering (kadam 0.3, F2)
+  {
+    name: "layer",
+    value: "number",
+    min: 0,
+    max: 1000,
+    integer: true,
+    applies: "all",
+    css: "z-index",
+    description: "Stacking order; higher layers are drawn on top",
+    example: "the layer is 10",
+  },
   // Box
   {
     name: "width",
@@ -276,6 +291,8 @@ export function matchPropertySentence(tokens: readonly Token[]): StatementMatchB
   // table is claimed; everything else is left to the other templates.
   const definition = propertyNamed(tokens);
   if (definition === undefined) return null;
+  // kadam 0.3: `the text size is between 1rem and 2rem` is fluid text.
+  if (isFluidText(tokens)) return null;
   const isIndex = 1 + definition.name.split(" ").length;
 
   const span = spanFromTokens(tokens);
@@ -395,6 +412,10 @@ function readNumber(
     return null;
   }
   const value = token.value;
+  if (definition.integer === true && !Number.isInteger(value)) {
+    diagnostics.push(invalid(definition, `the ${definition.name} is a whole number, found ${token.text}`, token.span));
+    return null;
+  }
   if (
     (definition.min !== undefined && value < definition.min) ||
     (definition.max !== undefined && value > definition.max)

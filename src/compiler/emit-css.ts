@@ -346,6 +346,23 @@ export function emitPageCss(page: PageIR): string {
     }
   }
 
+  // kadam 0.3 custom breakpoints and container queries, most specific last.
+  const scoped = new Map<string, { order: number; rules: string[] }>();
+  for (const element of elements) {
+    for (const scope of element.scopes ?? []) {
+      const entry = scoped.get(scope.query) ?? { order: scope.order, rules: [] };
+      entry.rules.push(...responsiveRules(element, scope.authored, scope.style));
+      scoped.set(scope.query, entry);
+    }
+  }
+  const scopedBlocks = [...scoped.entries()]
+    .filter(([, entry]) => entry.rules.length > 0)
+    .sort(([a, x], [b, y]) => x.order - y.order || (a < b ? -1 : a > b ? 1 : 0));
+  for (const [query, entry] of scopedBlocks) {
+    const body = entry.rules.map((rule) => indent(rule)).join("\n\n");
+    blocks.push(`${query} {\n${body}\n}`);
+  }
+
   const hoverRules: string[] = [];
   for (const element of elements) {
     if (element.hover.length === 0) continue;
@@ -393,6 +410,7 @@ function baseRules(element: IrElement): readonly string[] {
     element.style.typography,
   );
   appendLayoutDeclarations(declarations, element.authored, element.style);
+  appendF2Declarations(declarations, element.authored);
   if (needsTransformBox(element)) {
     declarations.push(["display", "inline-block"]);
   }
@@ -419,6 +437,7 @@ function fieldBaseRules(element: IrElement): readonly string[] {
   if (element.authored.fontFamily !== undefined) {
     wrapper.push(["font-family", FONT_STACKS[element.authored.fontFamily]]);
   }
+  appendF2Declarations(wrapper, element.authored);
   if (element.authored.visibility !== undefined) {
     wrapper.push(["display", "none"]);
   }
@@ -466,6 +485,7 @@ function responsiveRules(
     if (authored.fontFamily !== undefined) {
       wrapper.push(["font-family", FONT_STACKS[authored.fontFamily]]);
     }
+    appendF2Declarations(wrapper, authored);
     if (authored.visibility !== undefined) {
       wrapper.push(["display", "none"]);
     }
@@ -495,6 +515,7 @@ function responsiveRules(
   appendBoxDeclarations(declarations, authored, style);
   appendTypographyDeclarations(declarations, authored, style.typography);
   appendLayoutDeclarations(declarations, authored, style);
+  appendF2Declarations(declarations, authored);
   if (authored.visibility !== undefined) {
     declarations.push(["display", "none"]);
   }
@@ -684,6 +705,12 @@ function appendLayoutDeclarations(
   }
   if (authoredLayout.gap !== undefined && style.gap !== null) {
     declarations.push(["gap", formatLength(style.gap)]);
+  }
+}
+
+function appendF2Declarations(declarations: Declaration[], authored: IrAuthoredStyle): void {
+  for (const declaration of authored.declarations ?? []) {
+    declarations.push([declaration.property, declaration.value]);
   }
 }
 

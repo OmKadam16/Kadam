@@ -50,6 +50,7 @@ MyWebsite/
 | `outDir` | string | no | `"dist"` | Output directory, resolved against the project root. |
 | `basePath` | string | no | `""` | Deployment prefix such as `"/my-site"`. Must start with `/` or be empty. |
 | `siteUrl` | string | no | — | *kadam 0.3.* Absolute origin such as `"https://example.com"` (no path; use `basePath`). Adds canonical links, Open Graph URLs, share images, and `sitemap.xml`. |
+| `breakpoints` | object | no | — | *kadam 0.3.* Extra min-width breakpoints, e.g. `{ "wide": 1440 }`, used as `on wide screens, ...`. Names are one lower-case word other than `phones`, `tablets`, `desktops`; widths are whole pixels from 1 to 10000; at most 8. |
 
 Unknown top-level keys and unknown page keys are errors, so a typo is never
 silently ignored.

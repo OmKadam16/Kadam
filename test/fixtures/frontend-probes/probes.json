@@ -151,77 +151,78 @@
       "phase": "F2",
       "kind": "container",
       "statement": "it arranges its children in 3 columns",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p17",
       "phase": "F2",
       "kind": "container",
       "statement": "it wraps its children",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p18",
       "phase": "F2",
       "kind": "container",
       "statement": "it spaces its children evenly",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p19",
       "phase": "F2",
       "kind": "container",
       "statement": "it is placed over its parent",
-      "compiles": false
+      "compiles": true,
+      "parent": true
     },
     {
       "id": "p20",
       "phase": "F2",
       "kind": "container",
       "statement": "it sticks to the top",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p21",
       "phase": "F2",
       "kind": "container",
       "statement": "it is 50% wide",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p22",
       "phase": "F2",
       "kind": "container",
       "statement": "it is at most 1200px wide",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p23",
       "phase": "F2",
       "kind": "container",
       "statement": "it is at least 300px tall",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p24",
       "phase": "F2",
       "kind": "container",
       "statement": "it is 80vh tall",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p25",
       "phase": "F2",
       "kind": "container",
       "statement": "it scrolls vertically",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p26",
       "phase": "F2",
       "kind": "container",
       "statement": "on wide screens, it is hidden",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p27",
@@ -319,14 +320,14 @@
       "phase": "F2",
       "kind": "paragraph",
       "statement": "the text is 2em",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p41",
       "phase": "F2",
       "kind": "paragraph",
       "statement": "the text is between 1rem and 2rem",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p42",

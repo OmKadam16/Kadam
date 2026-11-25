@@ -459,6 +459,7 @@ function styleReferenceNames(elements: readonly ElementNode[]): Set<string> {
         }
         return;
       case "responsive":
+      case "scoped":
         visitStatement(statement.statement);
         return;
       default:
@@ -830,6 +831,7 @@ function substituteStatement(
       };
     }
     case "responsive":
+    case "scoped":
       return {
         ...statement,
         statement: substituteStatement(statement.statement, bindings, diagnostics),

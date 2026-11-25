@@ -1,0 +1,242 @@
+// Reference project: dashboard (frontend plan §3). F2 layout and sizing.
+page "Overview" {
+    the page description says "Team analytics overview."
+    the page icon is "assets/icon.svg"
+    the page background is #F1F5F9
+
+    topBar {
+        a header
+        it sticks to the top
+        the layer is 10
+        has a #FFFFFF background
+        it has 12px padding on the top and bottom
+        it has 24px padding on the left and right
+        topNav {
+            a navigation bar
+            has no background
+            it spreads its children apart
+            brand {
+                a minor heading
+                the text says "Pulse"
+            }
+            settingsLink {
+                a link
+                the text says "Settings"
+                when clicked, open "https://example.com/settings" in a new tab
+            }
+        }
+    }
+
+    workspace {
+        a container
+        it is full width
+        it is at most 1600px wide
+        it has 24px padding
+        it has 24px gap between children
+
+        pageTitle {
+            a main heading
+            the text says "This week"
+            the text is between 2.25rem and 3rem
+        }
+
+        stats {
+            a section
+            it arranges its children in columns at least 200px wide
+            it has 16px gap between children
+            on wide screens, it arranges its children in 4 columns
+            statsTitle {
+                a section heading
+                the text says "Key numbers"
+                it spans all columns
+            }
+            visitsCard {
+                a card
+                it has 20px padding
+                it has 4px gap between children
+                visitsLabel {
+                    a paragraph
+                    the text says "Visitors"
+                    the text is #64748B
+                }
+                visitsValue {
+                    a paragraph
+                    the text says "12,480"
+                    the text is 28px
+                    the text is bold
+                }
+            }
+            signupsCard {
+                a card
+                it has 20px padding
+                it has 4px gap between children
+                signupsLabel {
+                    a paragraph
+                    the text says "Sign-ups"
+                    the text is #64748B
+                }
+                signupsValue {
+                    a paragraph
+                    the text says "842"
+                    the text is 28px
+                    the text is bold
+                }
+            }
+            revenueCard {
+                a card
+                it has 20px padding
+                it has 4px gap between children
+                revenueLabel {
+                    a paragraph
+                    the text says "Revenue"
+                    the text is #64748B
+                }
+                revenueValue {
+                    a paragraph
+                    the text says "$9,310"
+                    the text is 28px
+                    the text is bold
+                }
+            }
+            churnCard {
+                a card
+                it has 20px padding
+                it has 4px gap between children
+                churnLabel {
+                    a paragraph
+                    the text says "Churn"
+                    the text is #64748B
+                }
+                churnValue {
+                    a paragraph
+                    the text says "1.9%"
+                    the text is 28px
+                    the text is bold
+                }
+            }
+        }
+
+        panels {
+            a container
+            it arranges its children in 3 columns
+            it has 24px gap between children
+            on phones, it arranges its children in 1 column
+            on tablets, it arranges its children in 2 columns
+
+            chartCard {
+                a card
+                it spans 2 columns
+                on phones, it spans 1 column
+                on tablets, it spans all columns
+                it has 20px padding
+                it has 12px gap between children
+                chartTitle {
+                    a section heading
+                    the text says "Visitors by day"
+                }
+                chartImage {
+                    an image
+                    it shows "assets/chart.svg"
+                    the description says "Bar chart: visitors rise from Monday to Saturday"
+                    it is full width
+                    it keeps a 16 by 9 shape
+                    it fits inside its box
+                    it loads right away
+                }
+            }
+
+            teamCard {
+                a card
+                it hides overflow
+                teamPhoto {
+                    an image
+                    it shows "assets/team.svg"
+                    it is decorative
+                    it is full width
+                    it keeps a 4 by 3 shape
+                    it fills its box
+                    it keeps the top right in view
+                }
+                teamBody {
+                    a container
+                    it has 20px padding
+                    it has 8px gap between children
+                    teamTitle {
+                        a section heading
+                        the text says "Your team"
+                    }
+                    teamRow {
+                        a container
+                        it arranges its children in a row
+                        it has 8px gap between children
+                        when its parent is narrower than 260px, it arranges its children in a column
+                        teamCount {
+                            a paragraph
+                            the text says "6 people"
+                            it grows to fill the space
+                        }
+                        inviteButton {
+                            a button
+                            the text says "Invite"
+                            it does not shrink
+                        }
+                    }
+                }
+            }
+        }
+
+        activity {
+            a section
+            it has 12px gap between children
+            activityTitle {
+                a section heading
+                the text says "Recent activity"
+            }
+            activityLog {
+                a container
+                it is at most 240px tall
+                it scrolls vertically
+                has a #FFFFFF background
+                has 12px rounded corners
+                it has 16px padding
+                it has 12px gap between children
+                logOne {
+                    a paragraph
+                    the text says "Mon 09:12 — Ana published the spring landing page."
+                }
+                logTwo {
+                    a paragraph
+                    the text says "Mon 11:40 — Ben invited two teammates."
+                }
+                logThree {
+                    a paragraph
+                    the text says "Tue 08:05 — Weekly report sent to 14 people."
+                }
+                logFour {
+                    a paragraph
+                    the text says "Tue 15:22 — Checkout conversion rose to 3.1%."
+                }
+                logFive {
+                    a paragraph
+                    the text says "Wed 10:00 — Ana archived the winter campaign."
+                }
+                logSix {
+                    a paragraph
+                    the text says "Wed 16:45 — New sign-up form went live."
+                }
+                logSeven {
+                    a paragraph
+                    the text says "Thu 09:30 — Ben exported last month's invoices."
+                }
+            }
+        }
+    }
+
+    helpButton {
+        a button
+        the text says "Help"
+        it is pinned 24px from the bottom right
+        the layer is 20
+        when clicked, open "https://example.com/help" in a new tab
+    }
+}

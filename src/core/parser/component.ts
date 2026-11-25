@@ -72,6 +72,8 @@ interface ElementBuilder {
 export interface ComponentParseOptions {
   /** Version used when the file has no directive (the manifest's, or 0.1). */
   readonly defaultLanguageVersion?: UiLanguageVersion | undefined;
+  /** kadam 0.3 custom breakpoints from kadam.json. */
+  readonly breakpoints?: ReadonlyMap<string, number> | undefined;
 }
 
 export function parseComponentSource(
@@ -88,6 +90,7 @@ export function parseComponentSource(
     lines,
     diagnostics,
     options.defaultLanguageVersion ?? LANGUAGE_VERSION,
+    options.breakpoints,
   ).parse();
 
   return {
@@ -119,6 +122,7 @@ class ComponentParser {
   #version: string | null = null;
   #versionSpan: Span | null = null;
   #languageVersion: UiLanguageVersion;
+  readonly #breakpoints: ReadonlyMap<string, number> | undefined;
   #sawTopLevelLine = false;
   #componentSeen = false;
   #component: ComponentBuilder | null = null;
@@ -133,7 +137,9 @@ class ComponentParser {
     lines: readonly LogicalLine[],
     diagnostics: DiagnosticBag,
     defaultLanguageVersion: UiLanguageVersion,
+    breakpoints: ReadonlyMap<string, number> | undefined = undefined,
   ) {
+    this.#breakpoints = breakpoints;
     this.#languageVersion = defaultLanguageVersion;
     this.#source = source;
     this.#lines = lines;
@@ -733,6 +739,7 @@ class ComponentParser {
     const match = matchLine(tokens, {
       allowResponsive: true,
       languageVersion: this.#languageVersion,
+      breakpoints: this.#breakpoints,
     });
     for (const diagnostic of match.diagnostics) this.#diagnostics.addSpec(diagnostic);
     const node = match.selected?.body.statement ?? null;

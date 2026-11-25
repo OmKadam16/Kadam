@@ -1,6 +1,6 @@
 # Kadam Frontend Plan — from static pages to a full UI language
 
-**Status:** Approved (2026-11-24). F0 and F1 are implemented; F2 is next.
+**Status:** Approved (2026-11-24). F0, F1 and F2 are implemented; F3 is next. F8 (rich visuals and immersive UI) is recorded for later.
 **Replaces as current priority:** the backend half of M8. The v0.2 core and its
 TypeScript/Python adapters stay as they are (maintained, not extended) until
 this plan reaches F6.
@@ -124,36 +124,30 @@ normative description is spec §6.15.
 
 **Exit:** met.
 
-### F2 — Layout and sizing (medium)
+### F2 — Layout and sizing (medium) — implemented 2026-11-25
 
-- **Units:** `%`, `vw`, `vh`/`dvh`, `em`, and `between <length> and <length>`
-  (emitted as `clamp()` with the viewport as the fluid axis), for size and
-  text.
-- **Constraints:** `it is at most 1200px wide`, `at least`, and
-  `it keeps a 16:9 shape` (aspect ratio).
-- **Flex completion:** `it wraps its children`,
-  `it spreads its children apart` (space-between),
-  `it spaces its children evenly`, and per-child rules: `it grows to fill the
-  space`, `it does not shrink`, `it sits at the end`.
-- **Grid:** `it arranges its children in 3 columns`, `in columns at least
-  240px wide` (auto-fill/minmax), and `it spans 2 columns`. Responsive column
-  counts via the existing `on phones,` prefix.
-- **Positioning:** `it sticks to the top` (with offset),
-  `it is pinned to the bottom right` (fixed), `it is placed over its parent`
-  (absolute inside a positioned container, emitted automatically), and
-  `the layer is 10`. Overlap rules are checked at compile time where possible.
-- **Overflow:** `it scrolls vertically|horizontally`, `it hides overflow`.
-- **Images:** `it fills its box` / `it fits inside its box` (object-fit), focal
-  point, `it loads lazily` (default for images below the first screen), and
-  generated `srcset` widths from the asset at build time (deterministic
-  resize).
-- **Custom breakpoints:** named in `kadam.json`
-  (`"breakpoints": { "wide": 1440 }`), used as `on wide screens,`. The default
-  three tiers stay. Container queries come as
-  `when its parent is narrower than 400px,`.
+All F2 syntax is `kadam 0.3`; `kadam 0.1` output stays byte-identical (all 37
+example output files compared against the F1 compiler). The normative
+description is spec §6.16.
 
-**Exit:** all three reference layouts render correctly at 360/768/1280/1600px.
-Playwright screenshot tests in CI compare against approved baselines.
+| Item | Result |
+| --- | --- |
+| Units | `em`, `vw`, `vh`, `dvh` everywhere a length is accepted, written directly after the number; `%` for sizes and limits. A 0.1 file gets one `KDM2013` per new unit. |
+| Fluid text | `the text is between 1rem and 2.5rem` becomes `clamp()` from a 360px to a 1280px viewport. Same property as `the text is 18px`. |
+| Constraints | `it is at most 1200px wide`, `at least`, both axes. **Changed from the plan:** the shape is `it keeps a 16 by 9 shape` (and `a square shape`), because `:` is not a Kadam token. |
+| Flex | `it wraps its children`, `it spreads its children apart`, `it spaces its children evenly`; per-child `it grows to fill the space`, `it does not shrink`, `it sits at the end` (logical margins, so it is ready for right-to-left in F8). |
+| Grid | `in 3 columns`, `in columns at least 240px wide` (**auto-fit**, not auto-fill, so a short row stretches instead of leaving empty columns), `it spans 2 columns` / `all columns`. Responsive column counts work; a scope may switch a grid back to a row or column. A grid in a column stretches to the full width. |
+| Positioning | `it sticks to the top`, `it is pinned 24px from the bottom right`, `it is placed over its parent` / `at the top right of its parent` (the parent is positioned automatically), and `the layer is 10` (a property-table row for every kind). Two elements pinned to the same spot is warning `KDM3038`. |
+| Overflow | `it scrolls vertically|horizontally` (the container becomes keyboard-focusable), `it hides overflow`. |
+| Images | `it fills its box` / `it fits inside its box`, `it keeps the top right in view`, `it loads lazily` / `right away`. On 0.3 pages every image after the first loads lazily by default. **Deferred to F8:** generated `srcset` widths need build-time image processing, which conflicts with zero dependencies (D-15) and needs its own decision. |
+| Breakpoints | `"breakpoints": { "wide": 1440 }` in `kadam.json` and `on wide screens,` (min-width). Container conditions: `when its parent is narrower than 400px,` / `wider than`; the parent becomes a query container and fills its slot, because size containment would otherwise collapse it. |
+| Reference projects | New `examples/reference/dashboard` (sticky header, auto-fit stat cards, a 3/2/1-column panel grid with spans, a custom wide breakpoint, a container condition, a scroll region, and a pinned help button). |
+| Browser tests | `npm run test:browser` (Playwright, dev only, uses the installed Chrome). All three reference projects render at 360/768/1280/1600px against approved screenshot baselines (per platform), with a no-sideways-scroll check, and pass axe **including colour contrast** in a real browser. This found one F1 bug, now fixed: a code block scrolled sideways but could not be focused by keyboard. |
+| Probes | 39/66 compile (13/13 F2). |
+
+**Exit:** met for the reference layouts on macOS. There is no CI workflow in
+the repository yet, so the baselines are approved locally; Linux baselines
+will be generated when CI is added.
 
 ### F3 — Styling, theming and states (medium)
 
@@ -322,6 +316,67 @@ it.
   exists).
 - **Dogfooding:** the Kadam documentation site is written in Kadam.
 
+### F8 — Rich visuals and immersive UI (later; after F3 and F4)
+
+The long-term goal is that Kadam can build both calm static pages and
+immersive ones: a hero video behind the headline, images with effects, 3D
+objects you can turn, and scroll-driven scenes. All of it stays plain English
+and compiles to standard HTML, CSS and (where needed) the F4 runtime.
+
+- **Image effects:** any image can take effects in the same sentence style:
+  ```kdm
+  heroImage {
+      an image
+      it shows "assets/hero.jpg"
+      it is blurred by 4px
+      it is grayscale, and in color on hover
+      it has a dark overlay at 40%
+      it is shaped like a circle
+      it zooms in slowly on hover
+  }
+  ```
+  Filters (blur, grayscale, sepia, brightness, contrast, saturation), color
+  and gradient overlays, masks and shapes (circle, rounded, blob, custom SVG
+  mask), blend modes, duotone, and slow pan/zoom (Ken Burns). Pure CSS where
+  possible, so no runtime is needed.
+- **Background and hero video:** `it plays "assets/loop.mp4" in the
+  background`, muted, looping, `playsinline`, with a required poster and an
+  automatic pause control (WCAG 2.2.2). Reduced-motion users see the poster.
+- **Scroll and motion:** parallax layers, scroll-linked reveal and progress
+  (CSS scroll-driven animations first, runtime fallback), sticky scroll
+  scenes, and page transitions. Every motion has a reduced-motion fallback.
+- **3D:** CSS 3D first (tilt on hover, perspective, flip cards), then real 3D
+  models: `a 3d model that shows "assets/shoe.glb"` with orbit, auto-rotate,
+  lighting presets and a poster image. The model viewer is a generated,
+  self-hosted module loaded only on pages that use it.
+- **Generative backgrounds:** gradient meshes, noise, particles and simple
+  shader backgrounds from a fixed preset list, plus Lottie animations.
+- **Galleries:** grid and masonry galleries, carousels with keyboard and swipe
+  support, and a lightbox.
+- **Built-in named icons:** `it shows the icon "arrow right"` from a bundled,
+  tree-shaken icon set, so simple icons do not need an SVG file each.
+- **Image optimisation:** responsive `srcset`, AVIF/WebP and blur-up
+  placeholders generated at build time (needs an image-processing decision,
+  see D-15).
+- **Standard component library:** ready-made cards, navigation bars, modals,
+  tabs, accordions, pricing tables and footers written in Kadam itself and
+  importable like any other component.
+- **Privacy-safe embeds:** maps and video-site embeds that load only after a
+  click (facade pattern), so no third-party request happens on page load.
+- **Right-to-left languages and translations:** logical properties
+  everywhere (already used from F2 on), `the page direction is right to left`,
+  and per-language text files.
+
+**Constraints:** no third-party runtime code without a decision record; every
+effect has a reduced-motion fallback; media requires a poster and alt text;
+each page has a performance budget (JavaScript and media size) checked by
+`kadam check`; 3D and shader features degrade to the poster image when WebGL
+is unavailable.
+
+**Exit:** an immersive reference page (video hero, image effects, a 3D
+product viewer and a scroll scene) passes axe, works keyboard-only, meets its
+performance budget, and shows the poster fallbacks with reduced motion on.
+
 ## 6. After F6: back to the backend
 
 Once F6 exits, resume the original M8/M9 sequence with the frontend as the
@@ -344,6 +399,8 @@ anchor:
 | — | Escape-hatch policy (open question 12) | F6 |
 | — | Web Components as primary interop target | F6 |
 | — | Accessibility errors vs warnings, WCAG 2.2 AA (open question 14) | F3 |
+| — | 3D model viewer and shader backgrounds: self-hosted module, size budget | F8 |
+| — | Build-time image processing (srcset, AVIF) vs zero dependencies (D-15) | F8 |
 
 ## 8. Where the work lands in the code
 
@@ -376,7 +433,13 @@ Playwright and axe-core are dev/CI dependencies only.
 ```text
 F0 ──► F1 ──► F2 ──► F3 ──► F4 ──► F5 ──► F6 ──► backend
               └──────── F7 tooling runs alongside ────────┘
+                            F3 + F4 ──► F8 rich visuals and immersive UI
 ```
+
+F8 can start as soon as F3 (effects) and F4 (runtime) exit; its CSS-only
+parts (image filters, overlays, shapes, CSS 3D tilt) could even start after
+F3. Decisions made in F2 and F3 keep it possible: logical CSS properties,
+layering (`the layer is`), and media posters are designed with F8 in mind.
 
 F1–F3 are mostly table-driven additions and can move quickly once D-32 lands.
 F4 is the hard one, and its decision record should be drafted during F2 so it
@@ -396,10 +459,10 @@ is approved by the time F3 ships.
 | Field types: phone, date; min length; error message | · | F1 / F4 step 1 |
 | `it is disabled` | · | F1 |
 | Page description, language, icon | · | F1 |
-| Grid, wrap, space-evenly | · | F2 |
-| `%`, `vh`, `em`, `clamp()`, min/max width | · | F2 |
-| Sticky / positioned / scroll overflow | · | F2 |
-| Custom breakpoints | · | F2 |
+| Grid, wrap, space-evenly | ✓ (F2) | F2 |
+| `%`, `vh`, `em`, `clamp()`, min/max width | ✓ (F2) | F2 |
+| Sticky / positioned / scroll overflow | ✓ (F2) | F2 |
+| Custom breakpoints | ✓ (F2) | F2 |
 | `rgb()`, opacity, dashed and per-side borders | · | F3 |
 | Multi-stop gradient, background image | · | F3 |
 | Underline, uppercase, line height, letter spacing, custom font | · | F3 |
