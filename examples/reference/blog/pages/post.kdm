@@ -29,9 +29,9 @@ page "{the title of post}" for each post in posts {
         }
 
         body1 {
-            a paragraph
-            the text says "{the body of post}"
-            the text is 18px
+            a container
+            it has 16px gap between children
+            it shows the document "{the body of post}"
         }
     }
 }

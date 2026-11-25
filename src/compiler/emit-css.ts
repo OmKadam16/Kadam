@@ -239,6 +239,7 @@ export interface BaseCssUsage {
   readonly kinds: ReadonlySet<BuiltinKindName>;
   /** Any text uses an inline link span. */
   readonly inlineLinks: boolean;
+  readonly inlineCode?: boolean;
   /** kadam 0.3 (F4): a field has an error message. */
   readonly fieldErrors?: boolean;
   /** kadam 0.3 (F4): a card or container is a link. */
@@ -251,11 +252,13 @@ const EMPTY_USAGE: BaseCssUsage = { kinds: new Set(), inlineLinks: false };
 export function baseCssUsage(pages: readonly PageIR[]): BaseCssUsage {
   const kinds = new Set<BuiltinKindName>();
   let inlineLinks = false;
+  let inlineCode = false;
   let fieldErrors = false;
   let clickableBoxes = false;
   const visit = (element: IrElement): void => {
     kinds.add(element.kind);
     if (element.text?.segments?.some((segment) => segment.type === "link") === true) inlineLinks = true;
+    if (element.text?.segments?.some((segment) => segment.type === "code") === true) inlineCode = true;
     if (element.field?.error !== undefined) fieldErrors = true;
     if ((element.kind === "card" || element.kind === "container") && element.action !== null) clickableBoxes = true;
     element.children.forEach(visit);
@@ -264,6 +267,7 @@ export function baseCssUsage(pages: readonly PageIR[]): BaseCssUsage {
   return {
     kinds,
     inlineLinks,
+    ...(inlineCode ? { inlineCode } : {}),
     ...(fieldErrors ? { fieldErrors } : {}),
     ...(clickableBoxes ? { clickableBoxes } : {}),
   };
@@ -373,6 +377,15 @@ function f1BaseRules(usage: BaseCssUsage): string[] {
   }
   if (usage.inlineLinks) {
     out.push(cssRule(".kdm-inline-link", [["color", GLOBAL_TOKENS.accent], ["text-decoration", "underline"]]));
+  }
+  if (usage.inlineCode === true) {
+    out.push(cssRule(".kdm-inline-code", [
+      ["font-family", "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"],
+      ["font-size", "0.9em"],
+      ["padding", "0.1em 0.3em"],
+      ["border-radius", "4px"],
+      ["background-color", "rgba(127, 127, 127, 0.15)"],
+    ]));
   }
   return out;
 }

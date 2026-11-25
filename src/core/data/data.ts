@@ -125,10 +125,14 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
       );
       return [];
     }
-    if (element.children.length > 0) {
-      diagnostics.error("KDM3040", "a repeated instance cannot have child elements yet", element.children[0]!.nameSpan, "move the content into the component, and pass the values in as parameters");
-      return [];
-    }
+    // Children fill the component's slots; they may read the record too.
+    const childReads = new Set<string>();
+    mapStrings(element.children, (text) => {
+      for (const match of text.matchAll(RECORD_PLACEHOLDER)) {
+        if (match[2] === clause.item) childReads.add(match[1]!);
+      }
+      return text;
+    });
 
     let ok = true;
     /** The field's type, or null after reporting why it cannot be read. Undefined for an empty data set. */
@@ -168,6 +172,12 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
       }
     }
     if (clause.sort !== undefined) check(clause.sort.field);
+    for (const field of childReads) {
+      if (check({ name: field, item: clause.item, span: element.children[0]!.nameSpan }) === "yes/no") {
+        diagnostics.error("KDM3043", `the field "${field}" is true or false, which cannot be shown as a value`, element.children[0]!.nameSpan, "use a text or number field");
+        ok = false;
+      }
+    }
     if (!ok) return [];
 
     // Filter, then sort (stable; records without the field go last), then limit.
@@ -211,7 +221,30 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
         const { field: _field, ...literal } = binding;
         properties.push({ ...literal, value: String(value) });
       }
-      instances.push({ ...element, name, kind, properties, children: [] });
+      const missing = new Set<string>();
+      const children = mapStrings(renameTree(element.children, name), (text) =>
+        text.replace(RECORD_PLACEHOLDER, (placeholder, field: string, item: string) => {
+          if (item !== clause.item) return placeholder;
+          const value = record[field];
+          if (value === undefined || value === null) {
+            missing.add(field);
+            return placeholder;
+          }
+          return String(value);
+        }),
+      );
+      if (missing.size > 0) {
+        diagnostics.error("KDM3043", `record ${index + 1} in "${set.name}" has no ${[...missing].join(" or ")}, which ${element.name} shows`, element.nameSpan, "add the field to that record");
+        ok = false;
+        return;
+      }
+      for (const child of flattenNames(children)) {
+        if (names.has(child)) {
+          diagnostics.error("KDM3044", `the data list makes an element named "${child}", which is already used`, element.nameSpan, `rename the other "${child}"`);
+          ok = false;
+        }
+      }
+      instances.push({ ...element, name, kind, properties, children });
     });
     return ok ? instances : [];
   };
@@ -235,7 +268,7 @@ export interface GeneratedPage {
 /** True when any text in the page reads a record field. */
 export function readsRecordFields(page: PageNode): boolean {
   let found = false;
-  mapStrings(page, (text) => {
+  mapStrings(outsideLists(page), (text) => {
     if (!found && new RegExp(RECORD_PLACEHOLDER.source).test(text)) found = true;
     return text;
   });
@@ -295,9 +328,10 @@ export function generatePages(
   };
   for (const name of routeFields) ok = checkField(name, clause.sourceSpan, true) && ok;
 
-  // Check every placeholder once, against the template.
+  // Check every placeholder once, against the template. Children of a data
+  // list read that list's records, and are checked when the list expands.
   const reported = new Set<string>();
-  mapStrings(page, (text) => {
+  mapStrings(outsideLists(page), (text) => {
     for (const match of text.matchAll(RECORD_PLACEHOLDER)) {
       const [, field, item] = match;
       const key = `${field} ${item}`;
@@ -339,7 +373,8 @@ export function generatePages(
       })
       .join("/");
     const generated = mapStrings(page, (text) =>
-      text.replace(RECORD_PLACEHOLDER, (placeholder, field: string) => {
+      text.replace(RECORD_PLACEHOLDER, (placeholder, field: string, item: string) => {
+        if (item !== clause.item) return placeholder;
         const value = valueOf(field);
         if (value === null) {
           missing.add(field);
@@ -376,4 +411,24 @@ function mapStrings<T>(value: T, map: (text: string) => string): T {
     copy[key] = key === "span" || key.endsWith("Span") || key === "type" || key === "name" ? item : mapStrings(item, map);
   }
   return copy as T;
+}
+
+/** The page with every data list's children left out. */
+function outsideLists(page: PageNode): PageNode {
+  const strip = (elements: readonly ElementNode[]): ElementNode[] =>
+    elements.map((element) => ({ ...element, children: element.kind?.repeat === undefined ? strip(element.children) : [] }));
+  return { ...page, elements: strip(page.elements) };
+}
+
+/** `badge` in the third record of `project` becomes `project3Badge`. */
+function renameTree(elements: readonly ElementNode[], prefix: string): ElementNode[] {
+  return elements.map((element) => ({
+    ...element,
+    name: `${prefix}${element.name[0]!.toUpperCase()}${element.name.slice(1)}`,
+    children: renameTree(element.children, prefix),
+  }));
+}
+
+function flattenNames(elements: readonly ElementNode[]): string[] {
+  return elements.flatMap((element) => [element.name, ...flattenNames(element.children)]);
 }

@@ -1268,9 +1268,15 @@ building F5; open to revision. Covers build-time data only. Runtime loading
    that page. Each page is checked like a hand-written one, and titles and
    routes must be unique.
 
-**Not yet:** child content on a repeated
-instance; Markdown documents; runtime
-data. These are the next F5 steps.
+8. **Markdown documents (step 4).** `it shows the document "content/x.md"`
+   turns a strict CommonMark subset into ordinary Kadam elements before
+   validation, so page rules apply. Unsupported syntax is an error, and raw
+   HTML is never passed through. Inline code is a new span effect.
+9. **Child content on repeated instances (step 5).** Children fill slots as
+   for any instance, may read `{the <field> of <record>}`, and are renamed per
+   instance.
+
+**Not yet:** runtime data, which needs its own decision record.
 
 ---
 

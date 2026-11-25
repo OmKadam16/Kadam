@@ -588,6 +588,11 @@ function checkCapability(
     case "submit":
       if (kindName !== "button") reject("it submits the form applies only to a button");
       return;
+    case "document-source":
+      if (!["container", "card", "section", "article", "sidebar", "dialog"].includes(kindName)) {
+        reject("a document goes inside a container, card, section, article, sidebar, or dialog");
+      }
+      return;
     case "text-span":
       if (!SPAN_TEXT.has(kindName)) {
         reject("inline spans apply to headings, paragraphs, list items, and cells");
@@ -952,6 +957,8 @@ function describeStatement(statement: StatementNode): string {
       return "an it submits the form statement";
     case "text-span":
       return "an inline span statement";
+    case "document-source":
+      return "a document statement";
     case "size-limit":
       return "a size limit statement";
     case "aspect-ratio":
@@ -1146,6 +1153,7 @@ function propertyKeys(statement: StatementNode): string[] {
     case "text-span":
       // Several spans per text; overlaps are checked in semantic analysis.
       return [];
+    case "document-source":
     case "caption":
     case "media-source":
     case "captions":

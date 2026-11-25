@@ -20,6 +20,7 @@ import {
   matchGradientDirection,
   matchImageDescription,
   matchImageSource,
+  matchDocumentSource,
   matchLayoutAlign,
   matchLayoutDirection,
   matchPageSetting,
@@ -488,6 +489,13 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
     description: "Image source path",
     examples: ['it shows "assets/hero.png"'],
     match: (tokens) => matchImageSource(tokens),
+  },
+  {
+    id: "document-source",
+    description: "Markdown document shown inside the element",
+    since: "0.3",
+    examples: ['it shows the document "content/intro.md"'],
+    match: (tokens) => matchDocumentSource(tokens),
   },
   {
     id: "image-description",

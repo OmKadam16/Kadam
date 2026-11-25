@@ -696,6 +696,8 @@ export function matchImageSource(tokens: readonly Token[]): StatementMatchBody |
   if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "shows")) return null;
   // kadam 0.3: `it shows at most 2 lines` is truncation.
   if (tokens[2]?.text.toLowerCase() === "at") return null;
+  // kadam 0.3: `it shows the document "content/intro.md"`.
+  if (tokens[2]?.text.toLowerCase() === "the" && tokens[3]?.text.toLowerCase() === "document") return null;
   const span = spanFromTokens(tokens);
   const value = tokens[2];
   if (tokens.length !== 3 || !isString(value)) {
@@ -715,6 +717,21 @@ export function matchImageSource(tokens: readonly Token[]): StatementMatchBody |
     statement: { type: "image-source", value: value.value, valueSpan: value.span, span },
     diagnostics: [],
   };
+}
+
+/** kadam 0.3 (F5 step 4): `it shows the document "content/intro.md"`. */
+export function matchDocumentSource(tokens: readonly Token[]): StatementMatchBody | null {
+  if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "shows")) return null;
+  if (tokens[2]?.text.toLowerCase() !== "the" || tokens[3]?.text.toLowerCase() !== "document") return null;
+  const span = spanFromTokens(tokens);
+  const value = tokens[4];
+  if (tokens.length !== 5 || !isString(value) || !(value.value.endsWith(".md") || value.value.includes("{"))) {
+    return {
+      statement: null,
+      diagnostics: [{ code: "KDM3005", message: "a document needs one quoted .md path", span: value?.span ?? span, hint: 'for example: it shows the document "content/intro.md"' }],
+    };
+  }
+  return { statement: { type: "document-source", value: value.value, valueSpan: value.span, span }, diagnostics: [] };
 }
 
 export function matchImageDescription(

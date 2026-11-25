@@ -22,6 +22,7 @@ import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
 import { expandData, generatePages, parseDataFile, readsRecordFields, type DataSet } from "../core/data/data.js";
+import { expandDocuments } from "../core/data/markdown.js";
 import {
   analyzeDocument,
   type SemanticPage,
@@ -214,6 +215,29 @@ export function compileProject(
     data.set(name, dataSource === null ? null : parseDataFile(name, dataSource, diagnostics));
   }
 
+  // kadam 0.3 (F5 step 4): Markdown documents, read once per path.
+  const documents = new Map<string, SourceFile | null>();
+  const readDocument = (path: string, span: Span): SourceFile | null => {
+    if (!documents.has(path)) {
+      documents.set(
+        path,
+        loadProjectSource({
+          projectRoot,
+          realProjectRoot,
+          outDir,
+          sourcePath: path,
+          kind: "document",
+          code: "KDM4011",
+          missingSpan: span,
+          overrides: options.sourceOverrides,
+          diagnostics,
+          sources,
+        }),
+      );
+    }
+    return documents.get(path)!;
+  };
+
   for (const pageEntry of manifest.pages) {
     const sourcePath = pageEntry.source;
     const source = loadProjectSource({
@@ -275,8 +299,8 @@ export function compileProject(
         resolvedPath: resolve(projectRoot, sourcePath),
         route: normalizeRoute(route),
         source,
-        // Data lists become ordinary instances before any component check.
-        document: { ...parsed.document, page: expandData(page, data, diagnostics) },
+        // Documents and data lists become ordinary elements before any component check.
+        document: { ...parsed.document, page: expandData(expandDocuments(page, readDocument, diagnostics), data, diagnostics) },
       });
     }
   }
@@ -576,8 +600,8 @@ interface ProjectSourceRequest {
   readonly realProjectRoot: string;
   readonly outDir: string;
   readonly sourcePath: string;
-  readonly kind: "page" | "component" | "theme" | "data";
-  readonly code: "KDM4002" | "KDM4007" | "KDM4010";
+  readonly kind: "page" | "component" | "theme" | "data" | "document";
+  readonly code: "KDM4002" | "KDM4007" | "KDM4010" | "KDM4011";
   readonly missingSpan: Span;
   readonly overrides: ProjectCompileOptions["sourceOverrides"];
   readonly diagnostics: DiagnosticBag;

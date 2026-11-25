@@ -5,6 +5,7 @@ import {
   type Diagnostic,
 } from "../core/diagnostics/diagnostic.js";
 import { parseSource } from "../core/parser/parser.js";
+import { expandDocuments } from "../core/data/markdown.js";
 import { analyzeDocument, type SemanticPage } from "../core/semantics/analyze.js";
 import {
   createSourceFile,
@@ -71,7 +72,12 @@ function compileWithSource(
   options: CompileOptions,
 ): CompileResult {
   const parsed = parseSource(source, { breakpoints: options.breakpoints });
-  const document = parsed.document;
+  const documentDiagnostics = new DiagnosticBag();
+  // A single file has no project to read Markdown documents from.
+  const document =
+    parsed.document.page === null
+      ? parsed.document
+      : { ...parsed.document, page: expandDocuments(parsed.document.page, null, documentDiagnostics) };
   const route = normalizeRoute(options.route ?? "/");
   const pages =
     options.pages ??
@@ -82,6 +88,7 @@ function compileWithSource(
   const diagnostics = new DiagnosticBag();
   diagnostics.addAll(sourceDiagnostics);
   diagnostics.addAll(parsed.diagnostics);
+  diagnostics.addAll(documentDiagnostics.sorted());
   if (document.page !== null) {
     diagnostics.addAll(analyzeDocument(document, { pages, fonts: new Set(Object.keys(options.fonts ?? {})) }));
   }

@@ -528,8 +528,11 @@ function analyzeTextSpans(element: ElementNode, diagnostics: DiagnosticBag): voi
   for (const statement of element.statements) {
     if (statement.type !== "text-span") continue;
     if (text === null || text.type !== "text") continue;
-    const first = text.value.indexOf(statement.target);
-    const count = first === -1 ? 0 : text.value.split(statement.target).length - 1;
+    const first = statement.at ?? text.value.indexOf(statement.target);
+    const count =
+      statement.at !== undefined
+        ? text.value.slice(statement.at, statement.at + statement.target.length) === statement.target ? 1 : 0
+        : first === -1 ? 0 : text.value.split(statement.target).length - 1;
     if (count !== 1) {
       diagnostics.error(
         "KDM3005",

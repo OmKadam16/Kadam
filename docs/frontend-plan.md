@@ -295,8 +295,15 @@ posts {` plus a `/posts/:slug` route makes one page per record, with
 posts sorted by date and generates a page for each. Writing it also added
 `it is centered` (a box centered in its parent), which the language lacked.
 
-**Next steps:** Markdown documents; child content on repeated instances; then
-runtime data with required loading, empty and error states.
+**Steps 4 and 5 status: shipped.** `it shows the document "content/x.md"`
+turns a strict Markdown subset (headings, paragraphs, one-level lists, fenced
+code, dividers, images, bold, italic, inline code, links) into ordinary Kadam
+elements, so every page check applies; raw HTML is an error. The blog
+reference's post bodies are Markdown files. Repeated instances can now pass
+child content into slots, reading `{the <field> of <record>}`.
+
+**Next steps:** runtime data with required loading, empty and error states
+(needs a decision record), then URL state.
 
 
 - **Build-time data:** `kadam.json` declares typed data files (JSON/CSV in the

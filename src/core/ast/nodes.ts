@@ -398,7 +398,11 @@ export type F1Statement =
       readonly target: string;
       readonly targetSpan: Span;
       readonly effect: TextSpanEffect;
-    });
+      /** Set by Markdown documents: the span starts here, so repeated words are fine. */
+      readonly at?: number | undefined;
+    })
+  // kadam 0.3 (F5 step 4): `it shows the document "content/intro.md"`.
+  | (NodeBase & { readonly type: "document-source"; readonly value: string; readonly valueSpan: Span });
 
 /** kadam 0.3 (F2) layout statements; matched in `src/core/parser/matchers-f2.ts`. */
 export type F2Statement =
@@ -604,6 +608,8 @@ export type StatementScope =
 export type TextSpanEffect =
   | { readonly type: "bold" }
   | { readonly type: "italic" }
+  /** Inline code; only Markdown documents make it. */
+  | { readonly type: "code" }
   | { readonly type: "navigate"; readonly pageTitle: string; readonly pageSpan: Span }
   | { readonly type: "external"; readonly url: string; readonly urlSpan: Span };
 

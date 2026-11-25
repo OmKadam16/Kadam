@@ -86,6 +86,8 @@ export class DevSession {
   };
   #manifest: KadamManifest | null = null;
   #latestFiles: readonly OutputFile[] = [];
+  /** Markdown documents the last build read; they are inputs too. */
+  #latestDocuments: readonly string[] = [];
   #routes: readonly RouteSummary[] = [];
   #sourceOverrides: ReadonlyMap<string, string | Uint8Array> = new Map();
   #basePath = "";
@@ -140,6 +142,7 @@ export class DevSession {
     // The theme and data files feed every page too (kadam 0.3).
     if (this.#manifest.theme !== undefined) paths.add(this.#manifest.theme);
     for (const source of Object.values(this.#manifest.data ?? {})) paths.add(source);
+    for (const path of this.#latestDocuments) paths.add(path);
     for (const file of this.#latestFiles) {
       if (file.kind === "asset") paths.add(file.path);
     }
@@ -158,6 +161,7 @@ export class DevSession {
         : { sourceOverrides: this.#sourceOverrides }),
     };
     const result = compileProject(options);
+    this.#latestDocuments = result.sources.map((source) => source.path).filter((path) => path.endsWith(".md"));
     const compileMs = this.#now() - started;
 
     this.#manifest = result.manifest;

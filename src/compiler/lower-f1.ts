@@ -144,7 +144,7 @@ export function lowerTextSegments(
   if (spans.length === 0 && !text.value.includes("\n")) return undefined;
 
   const ranged = spans
-    .map((span) => ({ span, start: text.value.indexOf(span.target) }))
+    .map((span) => ({ span, start: span.at ?? text.value.indexOf(span.target) }))
     .sort((a, b) => a.start - b.start);
 
   const segments: IrTextSegment[] = [];
@@ -163,7 +163,7 @@ export function lowerTextSegments(
     pushPlain(text.value.slice(cursor, start));
     const words = span.target;
     const effect = span.effect;
-    if (effect.type === "bold" || effect.type === "italic") {
+    if (effect.type === "bold" || effect.type === "italic" || effect.type === "code") {
       segments.push({ type: effect.type, text: words });
     } else if (effect.type === "external") {
       segments.push({ type: "link", text: words, href: effect.url, external: true });

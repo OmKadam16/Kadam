@@ -4,20 +4,20 @@
     "title": "Why constrained English",
     "date": "2026-09-14",
     "summary": "A small grammar that reads like prose and compiles to plain HTML.",
-    "body": "Every sentence in Kadam matches exactly one template, so a page either compiles or tells you which line is wrong and why."
+    "body": "content/why-constrained-english.md"
   },
   {
     "slug": "build-time-data",
     "title": "Build-time data",
     "date": "2026-11-25",
     "summary": "Lists and pages from JSON files, checked before anything is written.",
-    "body": "A data file is just more source. Field names are checked against every sentence that reads them, and the output is still static HTML."
+    "body": "content/build-time-data.md"
   },
   {
     "slug": "a-runtime-you-can-read",
     "title": "A runtime you can read",
     "date": "2026-10-30",
     "summary": "State and dialogs without a framework.",
-    "body": "Pages that need state get one generated module with only the effects they use, and keep working with JavaScript off."
+    "body": "content/a-runtime-you-can-read.md"
   }
 ]

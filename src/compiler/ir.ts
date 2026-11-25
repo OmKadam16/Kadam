@@ -263,7 +263,7 @@ export interface IrTextContent {
 export type IrTextSegment =
   | { readonly type: "text"; readonly text: string }
   | { readonly type: "break" }
-  | { readonly type: "bold" | "italic"; readonly text: string }
+  | { readonly type: "bold" | "italic" | "code"; readonly text: string }
   | { readonly type: "link"; readonly text: string; readonly href: string; readonly external: boolean };
 
 /** kadam 0.3 content for kinds that need more than text, image, or field. */

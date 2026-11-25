@@ -184,3 +184,29 @@ test("shaping lines are checked", () => {
   assert.deepEqual(codes(project(shaped("sorted by the year of project", "sorted by the title of project"), { data: ROWS })), ["KDM3040"]);
   assert.deepEqual(codes(project(["x {", "    a paragraph", '    the text says "x"', "    showing at most 3", "}"])), ["KDM3041"]);
 });
+
+test("a repeated instance can pass child content that reads the record", () => {
+  const { root } = project(LIST);
+  writeFileSync(join(root, "components", "Panel.kdm"), [
+    "kadam 0.3", "", "component Panel takes a title as text {", "    frame1 {", "        a container",
+    "        heading1 {", "            a minor heading", '            the text says "{$title}"', "        }",
+    "        content1 {", "            a content slot", "        }", "    }", "}", "",
+  ].join("\n"));
+  const manifest = JSON.parse(readFileSync(join(root, "kadam.json"), "utf8"));
+  manifest.components.push("components/Panel.kdm");
+  writeFileSync(join(root, "kadam.json"), JSON.stringify(manifest));
+  const page = (inner) => {
+    writeFileSync(join(root, "pages", "home.kdm"), ["kadam 0.3", "", 'page "Home" {', "    panel {", "        a Panel for each project in projects", "        with a title of the title of project", ...inner.map((l) => `        ${l}`), "    }", "}", ""].join("\n"));
+    return compileProject({ projectRoot: root, write: false });
+  };
+  const ok = page(["content1 {", "    a content slot", "    note {", "        a paragraph", '        the text says "Made in {the year of project}"', "    }", "}"]);
+  // The second record has no year.
+  assert.deepEqual(codes(ok), ["KDM3043"]);
+  assert.match(ok.diagnostics[0].message, /record 2 in "projects" has no year, which panel shows/);
+  writeFileSync(join(root, "data", "projects.json"), '[{"title":"Kadam","year":2026},{"title":"Lens","year":2025}]');
+  const fixed = page(["content1 {", "    a content slot", "    note {", "        a paragraph", '        the text says "Made in {the year of project}"', "    }", "}"]);
+  assert.deepEqual(codes(fixed), []);
+  assert.match(html(fixed), /data-kdm-id="home-panel2[^"]*Note"[^>]*>Made in 2025</);
+  const typo = page(["content1 {", "    a content slot", "    note {", "        a paragraph", '        the text says "{the yeer of project}"', "    }", "}"]);
+  assert.deepEqual(codes(typo), ["KDM3043"]);
+});

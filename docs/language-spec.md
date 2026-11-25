@@ -1165,6 +1165,10 @@ project {
   checked exactly like a hand-written instance. A field that is missing or
   `null` leaves the parameter to its default.
 - The output is static HTML. Data lists never add a runtime.
+- Child elements fill the component's slots, as for any instance, and may read
+  the record: `the text says "Made in {the year of project}"`. In each copy
+  they are renamed after the instance (`note` in `panel2` becomes
+  `panel2Note`), and every record must have the fields they read.
 
 **Filtering, sorting, and limits.** Lines after the kind sentence shape the
 list. They apply in this order: filters, then the sort, then the limit.
@@ -1199,8 +1203,7 @@ the other.
 **Errors.** An unknown data name (`KDM3042`); an unknown field, the wrong
 record name, or a true/false field used as a value (`KDM3043`); a generated
 name that is already used (`KDM3044`); a field read outside a data list or
-inside a component (`KDM3041`); a built-in kind or child elements on a repeated
-instance (`KDM3040`); a data file that is not valid JSON, not an array, over
+inside a component (`KDM3041`); a built-in kind on a repeated instance (`KDM3040`); a data file that is not valid JSON, not an array, over
 1000 records, or that mixes types in one field (`KDM4010`).
 
 ---
@@ -1241,6 +1244,50 @@ segment:
   make the same route are `KDM4005`; two with the same title are `KDM3011`.
 - `{the ... of ...}` on a page that is not made for each record is `KDM3041`,
   and so is a `:field` route on such a page (`KDM3044`).
+
+---
+
+### 6.22 Markdown documents (*kadam 0.3*, F5 step 4, D-40)
+
+A container, card, section, article, sidebar, or dialog can show a Markdown
+file from the project:
+
+```kdm
+intro {
+    an article
+    it has 16px gap between children
+    it shows the document "content/intro.md"
+}
+```
+
+The path is relative to the project root and must end in `.md`. On a page
+made for each record it can come from the record:
+`it shows the document "{the body of post}"`.
+
+At build time the document becomes ordinary Kadam elements, after the
+element's own children, so every page rule applies to it: one main heading,
+heading order, contrast, dark mode, and image checks. The elements are named
+after the owner (`introPart1`, `introPart3Item2`, …).
+
+| Markdown | Becomes |
+| --- | --- |
+| `#`, `##`, `###`, `####` | main, section, minor, and small heading |
+| a paragraph (lines join with spaces) | paragraph |
+| `-`, `*`, `+` items / `1.` items | list / numbered list, one level |
+| ```` ``` ```` or `~~~` fenced code | code block |
+| `---`, `***`, `___` | divider |
+| `![description](assets/x.png)` on its own line | image with that description |
+| `**bold**`, `*italic*` or `_italic_`, `` `code` ``, `[text](https://...)` | inline spans |
+
+A backslash makes the next punctuation literal (`\*`). `_` only emphasizes at
+word edges, so `snake_case` stays as written.
+
+**Errors** (`KDM4011`, pointing at the line in the `.md` file): raw HTML, quotes,
+tables, headings deeper than `####`, nested lists, nested formatting, an
+unclosed code block, an image without a description, a link that is not a full
+`http`, `https`, or `mailto` address, an empty document, and more than 2000
+blocks. A document in a single-file build is `KDM3042`. `kadam dev` rebuilds
+when a document changes.
 
 ---
 
@@ -1838,7 +1885,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3015 | Hover background color is invalid on a gradient |
 | KDM3038 | Warning: two elements are pinned to the same spot (*kadam 0.3*) |
 | KDM3039 | Warning: text contrast is below WCAG AA (*kadam 0.3*, D-39) |
-| KDM3040 | Only a component can repeat for each record, and it cannot have child elements yet (*kadam 0.3*) |
+| KDM3040 | Only a component can repeat for each record; a data list has one sort and one limit (*kadam 0.3*) |
 | KDM3041 | A record field is read outside a data list, or a data list is inside a component (*kadam 0.3*) |
 | KDM3042 | Unknown data name, or a data list in a single-file build (*kadam 0.3*) |
 | KDM3043 | Unknown field, wrong record name, a true/false field used as a value, or a filter value of the wrong type (*kadam 0.3*) |
@@ -1855,6 +1902,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM4005 | Duplicate route |
 | KDM4006 | Project declares no pages |
 | KDM4010 | Data file is missing, not valid JSON, or not an array of flat records with one type per field (*kadam 0.3*) |
+| KDM4011 | Markdown document is missing, or uses something the Markdown subset does not support (*kadam 0.3*) |
 
 **Internal (`KDM9xxx`)**
 
