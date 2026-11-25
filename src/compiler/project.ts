@@ -28,7 +28,8 @@ import {
   type SourceFile,
   type Span,
 } from "../core/source/source-file.js";
-import { emitBaseCss, emitPageCss } from "./emit-css.js";
+import { baseCssUsage, emitBaseCss, emitPageCss } from "./emit-css.js";
+import { emitSitemap } from "./emit-sitemap.js";
 import { emitHtml } from "./emit-html.js";
 import { InternalCompilerError } from "./internal-error.js";
 import type { PageIR } from "./ir.js";
@@ -56,6 +57,16 @@ export const SUPPORTED_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([
   "gif",
   "woff",
   "woff2",
+  // kadam 0.3 media, captions, and page icons. Which extension fits which use
+  // is checked during semantic analysis (ASSET_EXTENSIONS).
+  "mp4",
+  "webm",
+  "mp3",
+  "ogg",
+  "wav",
+  "m4a",
+  "vtt",
+  "ico",
 ]);
 
 export interface ProjectCompileOptions {
@@ -340,7 +351,10 @@ export function compileProject(
   // navigation target may point at any declared page.
   for (const loaded of expandedPages) {
     diagnostics.addAll(
-      analyzeDocument(loaded.document, { pages: semanticPages }),
+      analyzeDocument(loaded.document, {
+        pages: semanticPages,
+        hasSiteUrl: manifest.siteUrl !== undefined,
+      }),
     );
   }
 
@@ -348,6 +362,11 @@ export function compileProject(
   const references = new Map<string, Span>();
   for (const loaded of expandedPages) {
     collectAssetReferences(loaded.document.page!.elements, references);
+    for (const setting of loaded.document.page!.settings) {
+      if ((setting.property === "icon" || setting.property === "share image") && !references.has(setting.value)) {
+        references.set(setting.value, setting.valueSpan);
+      }
+    }
   }
 
   const assets = new Map<string, ResolvedAsset>();
@@ -390,6 +409,7 @@ export function compileProject(
           route: loaded.route,
           pageRoutes,
           basePath,
+          siteUrl: manifest.siteUrl,
         }),
       );
     }
@@ -406,7 +426,7 @@ export function compileProject(
 
     files.push({
       path: "assets/kadam.css",
-      contents: emitBaseCss(),
+      contents: emitBaseCss(baseCssUsage(loweredPages)),
       kind: "css",
     });
 
@@ -416,6 +436,10 @@ export function compileProject(
         contents: emitPageCss(page),
         kind: "css",
       });
+    }
+
+    if (manifest.siteUrl !== undefined) {
+      files.push({ path: "sitemap.xml", contents: emitSitemap(loweredPages), kind: "xml" });
     }
 
     for (const asset of assets.values()) {
@@ -671,7 +695,13 @@ function collectAssetReferences(
 ): void {
   for (const element of elements) {
     for (const statement of element.statements) {
-      if (statement.type === "image-source" && statement.value.trim() !== "") {
+      if (
+        (statement.type === "image-source" ||
+          statement.type === "media-source" ||
+          statement.type === "captions" ||
+          statement.type === "poster") &&
+        statement.value.trim() !== ""
+      ) {
         if (!out.has(statement.value)) {
           out.set(statement.value, statement.valueSpan);
         }

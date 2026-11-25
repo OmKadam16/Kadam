@@ -1,4 +1,14 @@
 import { findProperty, isNativeProperty } from "../core/parser/properties.js";
+import {
+  collectSectionLabels,
+  fieldExtras,
+  lowerButtonControl,
+  lowerControlField,
+  lowerKindContent,
+  lowerPageMeta,
+  lowerTextSegments,
+  type F1LowerContext,
+} from "./lower-f1.js";
 import type {
   BackgroundStatement,
   BorderStatement,
@@ -83,6 +93,8 @@ export interface LowerOptions {
   readonly pageRoutes?: ReadonlyMap<string, string> | undefined;
   /** Optional deployment base path. */
   readonly basePath?: string | undefined;
+  /** kadam 0.3: the manifest siteUrl, for canonical and share URLs. */
+  readonly siteUrl?: string | undefined;
 }
 
 type MutableStyle = { -readonly [K in keyof IrComputedStyle]: IrComputedStyle[K] };
@@ -109,7 +121,29 @@ export function lowerDocument(
     options.pageRoutes ?? new Map<string, string>([[pageNode.title, route]]);
 
   const pageStyle = lowerPageStyle(pageNode.settings);
-  const context: LowerContext = { pageStyle, routes, slug, basePath };
+  const labels = collectSectionLabels(
+    pageNode.elements,
+    (element) => identityFor(element, slug).nodeId,
+  );
+  const f1: F1LowerContext = {
+    languageVersion: document.languageVersion,
+    routes,
+    basePath,
+    labelIds: labels.labelIds,
+    sectionLabels: labels.sectionLabels,
+  };
+  const meta =
+    document.languageVersion === "0.1"
+      ? undefined
+      : lowerPageMeta(pageNode.settings, route, basePath, options.siteUrl);
+  const context: LowerContext = {
+    pageStyle,
+    routes,
+    slug,
+    basePath,
+    f1,
+    pageLanguage: meta?.language ?? "en",
+  };
   const elements = pageNode.elements.map((element) =>
     lowerElement(element, context),
   );
@@ -127,6 +161,7 @@ export function lowerDocument(
     sourceMap: collectSourceMap(elements),
     usesMotion: elements.some(usesMotion),
     basePath: basePath || undefined,
+    ...(meta === undefined ? {} : { meta }),
   };
 }
 
@@ -135,6 +170,8 @@ interface LowerContext {
   readonly routes: ReadonlyMap<string, string>;
   readonly slug: string;
   readonly basePath: string;
+  readonly f1: F1LowerContext;
+  readonly pageLanguage: string;
 }
 
 function lowerPageStyle(
@@ -200,7 +237,18 @@ function lowerElement(element: ElementNode, context: LowerContext): IrElement {
 
   const text = findStatement(element, "text") as TextStatement | null;
   const image = lowerImage(element, kind, context.basePath);
-  const field = lowerField(element, kind, identity.nodeId);
+  const loweredField =
+    lowerField(element, kind, identity.nodeId) ??
+    lowerControlField(element, kind, identity.nodeId);
+  // kadam 0.3 pages can submit forms, so every control carries a name.
+  const field =
+    loweredField !== null && context.f1.languageVersion !== "0.1"
+      ? { ...loweredField, name: element.name }
+      : loweredField;
+  const segments = text === null ? undefined : lowerTextSegments(element, text, context.f1);
+  const content = lowerKindContent(element, kind, context.f1, context.pageLanguage);
+  const htmlId = context.f1.labelIds.get(element);
+  const control = lowerButtonControl(element, kind);
   const action = lowerAction(element, context);
   const hover = lowerHover(element);
   const motion = lowerMotion(element);
@@ -223,11 +271,14 @@ function lowerElement(element: ElementNode, context: LowerContext): IrElement {
     hover,
     motion,
     action,
-    text: text === null ? null : { text: text.value },
+    text: text === null ? null : segments === undefined ? { text: text.value } : { text: text.value, segments },
     image,
     field,
     accessibility: accessibilityFor(kind, text, image, field, action),
     children: element.children.map((child) => lowerElement(child, context)),
+    ...(content === undefined ? {} : { content }),
+    ...(htmlId === undefined ? {} : { htmlId }),
+    ...(control === undefined ? {} : { control }),
   };
 }
 
@@ -692,7 +743,7 @@ function lowerImage(
   kind: BuiltinKindName,
   basePath: string = "",
 ): IrImageContent | null {
-  if (kind !== "image") return null;
+  if (kind !== "image" && kind !== "icon") return null;
   const source = findStatement(element, "image-source") as ImageSourceStatement | null;
   if (source === null) {
     throw new InternalCompilerError(
@@ -739,6 +790,7 @@ function lowerField(
     required: findStatement(element, "required") !== null,
     inputId,
     labelFor: inputId,
+    ...fieldExtras(element),
   };
 }
 
@@ -861,6 +913,9 @@ function accessibilityFor(
   if (kind === "minor heading") {
     return { ...accessibility, headingLevel: 3 };
   }
+  if (kind === "small heading") {
+    return { ...accessibility, headingLevel: 4 };
+  }
   if (kind === "image") {
     return {
       ...accessibility,
@@ -894,6 +949,35 @@ function roleFor(kind: BuiltinKindName): IrAccessibility["role"] {
       return "navigation";
     case "divider":
       return "separator";
+    case "small heading":
+      return "heading";
+    case "header":
+    case "footer":
+    case "section":
+    case "article":
+    case "sidebar":
+      return "landmark";
+    case "list":
+    case "numbered list":
+    case "list item":
+    case "table":
+    case "header row":
+    case "row":
+    case "cell":
+      return "structure";
+    case "video":
+    case "audio clip":
+      return "media";
+    case "icon":
+      return "image";
+    case "code block":
+      return "paragraph";
+    case "form":
+    case "text area":
+    case "checkbox":
+    case "dropdown":
+    case "radio group":
+      return "text-field";
   }
 }
 

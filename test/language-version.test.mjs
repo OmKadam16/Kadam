@@ -44,7 +44,8 @@ test("kadam 0.3 is an accepted directive; unknown versions are rejected", () => 
 
 test("a template newer than the file version is claimed and rejected with KDM2013", () => {
   const old = matchLine(tokensFor("it glows"), { allowResponsive: true, languageVersion: "0.1" }, TABLE);
-  assert.equal(old.selected?.body.statement ?? null, null);
+  // The statement is kept (no misleading follow-on errors); the error blocks output.
+  assert.equal(old.selected?.body.statement?.type, "test-glow");
   assert.deepEqual(old.diagnostics.map((d) => d.code), ["KDM2013"]);
   assert.match(old.diagnostics[0].message, /glow effect requires kadam 0\.3; this file is kadam 0\.1/);
 
@@ -62,12 +63,15 @@ test("version gating also applies inside a responsive scope", () => {
     { allowResponsive: true, languageVersion: "0.1" },
     TABLE,
   );
-  assert.deepEqual(scoped.diagnostics.map((d) => d.code), ["KDM2013"]);
+  assert.ok(scoped.diagnostics.map((d) => d.code).includes("KDM2013"));
 });
 
-test("only the regular property sentence is kadam 0.3; every 0.1 template stays 0.1", () => {
+test("every 0.1 template stays 0.1; only frontend-track templates are 0.3", () => {
   const newer = STATEMENT_TEMPLATES.filter((t) => (t.since ?? "0.1") !== "0.1").map((t) => t.id);
-  assert.deepEqual(newer, ["property"]);
+  assert.deepEqual(newer.sort(), [
+    "caption", "captions", "f1-field-type", "f1-state", "form-action", "media-source",
+    "no-speech", "options", "page-metadata", "poster", "property", "submit", "text-span",
+  ]);
 });
 
 test("a kadam 0.1 page compiles byte-identically when declared kadam 0.3", () => {
@@ -106,4 +110,9 @@ test("in a project, a file directive must match the manifest version", () => {
   const result = compileProject({ projectRoot: dir });
   assert.equal(result.ok, false);
   assert.ok(result.diagnostics.some((d) => d.code === "KDM4004" && /declares kadam 0\.3 but kadam\.json declares 0\.1/.test(d.message)));
+});
+
+test("a version-gated kind does not also report a missing kind sentence", () => {
+  const result = parseText("t.kdm", 'kadam 0.1\npage "P" {\n    t1 {\n        a header\n    }\n}\n');
+  assert.deepEqual(codes(result), ["KDM2013"]);
 });

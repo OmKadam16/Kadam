@@ -158,6 +158,7 @@ class ComponentParser {
       type: "document",
       version: this.#version,
       versionSpan: this.#versionSpan,
+      languageVersion: this.#languageVersion,
       page: null,
       component: component === null ? null : this.#buildComponent(component),
       span: mergeSpans(startSpan, endSpan),

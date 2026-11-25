@@ -20,6 +20,31 @@ const TEXT_CONTENT: ReadonlySet<BuiltinKindName> = new Set([
   "section heading",
   "minor heading",
   "paragraph",
+  // kadam 0.3
+  "small heading",
+  "list item",
+  "cell",
+  "code block",
+]);
+
+/** Kinds whose text may carry inline spans (`the words "x" are bold`). */
+const SPAN_TEXT: ReadonlySet<BuiltinKindName> = new Set([
+  "main heading",
+  "section heading",
+  "minor heading",
+  "small heading",
+  "paragraph",
+  "list item",
+  "cell",
+]);
+
+/** Form controls: label, required, and disabled apply to all of them. */
+const FORM_CONTROLS: ReadonlySet<BuiltinKindName> = new Set([
+  "text field",
+  "text area",
+  "checkbox",
+  "dropdown",
+  "radio group",
 ]);
 
 const TEXT_BEARING: ReadonlySet<BuiltinKindName> = new Set([
@@ -31,6 +56,15 @@ const CONTAINERS: ReadonlySet<BuiltinKindName> = new Set([
   "card",
   "container",
   "navigation bar",
+  // kadam 0.3
+  "header",
+  "footer",
+  "section",
+  "article",
+  "sidebar",
+  "form",
+  "list",
+  "numbered list",
 ]);
 
 export interface ValidateOptions {
@@ -62,6 +96,68 @@ export function validateDocument(
   validateElementTree(page.elements, diagnostics, options);
 }
 
+/**
+ * kadam 0.3 parent/child rules: list items live in lists, rows in tables,
+ * cells in rows, and a header row comes first. Children whose kind is not a
+ * built-in (component instances before expansion, slots) are not judged.
+ */
+const PARENT_RULES: Readonly<Partial<Record<BuiltinKindName, readonly BuiltinKindName[]>>> = {
+  "list item": ["list", "numbered list"],
+  "header row": ["table"],
+  row: ["table"],
+  cell: ["header row", "row"],
+};
+const CHILD_RULES: Readonly<Partial<Record<BuiltinKindName, readonly BuiltinKindName[]>>> = {
+  list: ["list item"],
+  "numbered list": ["list item"],
+  table: ["header row", "row"],
+  "header row": ["cell"],
+  row: ["cell"],
+};
+
+function checkStructure(
+  elements: readonly ElementNode[],
+  parent: ElementNode | null,
+  insideForm: boolean,
+  diagnostics: DiagnosticBag,
+): void {
+  const parentKind = parent === null ? null : builtinKindName(parent.kind);
+  const allowedChildren = parentKind === null ? undefined : CHILD_RULES[parentKind];
+  elements.forEach((element, index) => {
+    const kind = builtinKindName(element.kind);
+    if (kind !== null) {
+      const allowedParents = PARENT_RULES[kind];
+      if (allowedParents !== undefined && (parentKind === null || !allowedParents.includes(parentKind))) {
+        diagnostics.error(
+          "KDM3010",
+          `${articleFor(kind)} ${kind} must be inside ${allowedParents.map((p) => `${articleFor(p)} ${p}`).join(" or ")}`,
+          element.nameSpan,
+          `move ${element.name} into ${articleFor(allowedParents[0]!)} ${allowedParents[0]}`,
+        );
+      } else if (allowedChildren !== undefined && !allowedChildren.includes(kind)) {
+        diagnostics.error(
+          "KDM3010",
+          `${articleFor(parentKind!)} ${parentKind} can only contain ${allowedChildren.join(" or ")} elements`,
+          element.nameSpan,
+          `put ${element.name} inside ${allowedChildren.length === 1 ? `${articleFor(allowedChildren[0]!)} ${allowedChildren[0]}` : "a row"}`,
+        );
+      }
+      if (kind === "header row" && index !== 0) {
+        diagnostics.error(
+          "KDM3010",
+          "a header row must be the first row of its table",
+          element.nameSpan,
+          "move the header row above the other rows",
+        );
+      }
+      if (kind === "form" && insideForm) {
+        diagnostics.error("KDM3010", "a form cannot contain another form", element.nameSpan, "move the inner form out");
+      }
+    }
+    checkStructure(element.children, element, insideForm || kind === "form", diagnostics);
+  });
+}
+
 /** Validate one element tree without requiring a page wrapper. */
 export function validateElementTree(
   elements: readonly ElementNode[],
@@ -69,6 +165,7 @@ export function validateElementTree(
   options: ValidateOptions = {},
 ): void {
   for (const element of elements) validateElement(element, diagnostics, options);
+  checkStructure(elements, null, false, diagnostics);
 }
 
 function checkPageSettingDuplicate(
@@ -292,16 +389,66 @@ function checkCapability(
     case "image-source":
     case "image-description":
     case "decorative":
-      if (kindName !== "image") {
-        reject("image statements apply only to an image");
+      if (kindName !== "image" && kindName !== "icon") {
+        reject("image statements apply only to an image or icon");
       }
       return;
     case "field-label":
-    case "field-placeholder":
-    case "field-type":
     case "required":
+      if (!FORM_CONTROLS.has(kindName)) {
+        reject("field statements apply to text field, text area, checkbox, dropdown, and radio group");
+      }
+      return;
+    case "field-placeholder":
+      if (kindName !== "text field" && kindName !== "text area" && kindName !== "dropdown") {
+        reject("a placeholder applies to a text field, text area, or dropdown");
+      }
+      return;
+    case "field-type":
       if (kindName !== "text field") {
         reject("field statements apply only to a text field");
+      }
+      return;
+    case "caption":
+      if (kindName !== "table") reject("a caption applies only to a table");
+      return;
+    case "media-source":
+      if (kindName !== "video" && kindName !== "audio clip") {
+        reject("it plays applies to a video or audio clip");
+      }
+      return;
+    case "captions":
+    case "poster":
+    case "no-speech":
+      if (kindName !== "video") reject("captions, posters, and no speech apply only to a video");
+      return;
+    case "options":
+      if (kindName !== "dropdown" && kindName !== "radio group") {
+        reject("options apply to a dropdown or radio group");
+      }
+      return;
+    case "checked":
+      if (kindName !== "checkbox") reject("it is checked applies only to a checkbox");
+      return;
+    case "disabled":
+      if (kindName !== "button" && !FORM_CONTROLS.has(kindName)) {
+        reject("it is disabled applies to a button or a form control");
+      }
+      return;
+    case "length-limit":
+      if (kindName !== "text field" && kindName !== "text area") {
+        reject("character limits apply to a text field or text area");
+      }
+      return;
+    case "form-action":
+      if (kindName !== "form") reject("it sends to applies only to a form");
+      return;
+    case "submit":
+      if (kindName !== "button") reject("it submits the form applies only to a button");
+      return;
+    case "text-span":
+      if (!SPAN_TEXT.has(kindName)) {
+        reject("inline spans apply to headings, paragraphs, list items, and cells");
       }
       return;
     case "hover":
@@ -339,7 +486,8 @@ function textNounMatches(
       return (
         kind === "main heading" ||
         kind === "section heading" ||
-        kind === "minor heading"
+        kind === "minor heading" ||
+        kind === "small heading"
       );
     case "paragraph":
       return kind === "paragraph";
@@ -508,13 +656,37 @@ function describeStatement(statement: StatementNode): string {
       return "an entrance animation";
     case "property":
       return `a ${statement.name} statement`;
+    case "caption":
+      return "a caption statement";
+    case "media-source":
+      return "an it plays statement";
+    case "captions":
+      return "a captions statement";
+    case "poster":
+      return "a poster statement";
+    case "no-speech":
+      return "an it has no speech statement";
+    case "options":
+      return "an options statement";
+    case "checked":
+      return "an it is checked statement";
+    case "disabled":
+      return "an it is disabled statement";
+    case "length-limit":
+      return "a character limit statement";
+    case "form-action":
+      return "an it sends to statement";
+    case "submit":
+      return "an it submits the form statement";
+    case "text-span":
+      return "an inline span statement";
     case "responsive":
       return "a responsive statement";
   }
 }
 
 function articleFor(kind: BuiltinKindName): string {
-  return kind === "image" ? "an" : "a";
+  return /^[aeiou]/.test(kind) ? "an" : "a";
 }
 
 function checkDuplicates(
@@ -606,6 +778,22 @@ function propertyKeys(statement: StatementNode): string[] {
       return ["motion"];
     case "property":
       return [statement.name];
+    case "length-limit":
+      return [`length-${statement.bound}`];
+    case "text-span":
+      // Several spans per text; overlaps are checked in semantic analysis.
+      return [];
+    case "caption":
+    case "media-source":
+    case "captions":
+    case "poster":
+    case "no-speech":
+    case "options":
+    case "checked":
+    case "disabled":
+    case "form-action":
+    case "submit":
+      return [statement.type];
     case "responsive":
       return [];
   }

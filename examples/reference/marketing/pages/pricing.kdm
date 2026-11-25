@@ -1,0 +1,76 @@
+page "Pricing" {
+    the page description says "Acme plans and prices."
+    the page icon is "assets/icon.svg"
+
+    siteHeader {
+        a header
+        mainNav {
+            a navigation bar
+            homeLink {
+                a link
+                the text says "Home"
+                when clicked, go to page "Home"
+            }
+        }
+    }
+
+    plans {
+        a section
+        it has 64px padding
+        it has 24px gap between children
+        plansTitle {
+            a main heading
+            the text says "Pricing"
+        }
+        planTable {
+            a table
+            the caption says "Monthly plans"
+            headRow {
+                a header row
+                planHead {
+                    a cell
+                    the text says "Plan"
+                }
+                priceHead {
+                    a cell
+                    the text says "Price"
+                }
+            }
+            freeRow {
+                a row
+                freeName {
+                    a cell
+                    the text says "Starter"
+                }
+                freePrice {
+                    a cell
+                    the text says "Free"
+                }
+            }
+            teamRow {
+                a row
+                teamName {
+                    a cell
+                    the text says "Team"
+                }
+                teamPrice {
+                    a cell
+                    the text says "$12 per seat"
+                }
+            }
+        }
+        plansNote {
+            a paragraph
+            the text says "Questions? Read the home page or write to us."
+            the words "home page" go to page "Home"
+        }
+    }
+
+    siteFooter {
+        a footer
+        footerNote {
+            a paragraph
+            the text says "© Acme."
+        }
+    }
+}

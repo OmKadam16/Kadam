@@ -1,0 +1,11 @@
+{
+  "kadam": "0.3",
+  "name": "reference-docs",
+  "siteUrl": "https://docs.example.com",
+  "pages": [
+    { "source": "pages/intro.kdm", "route": "/" },
+    { "source": "pages/install.kdm", "route": "/install" }
+  ],
+  "assets": "assets",
+  "outDir": "dist"
+}

@@ -199,9 +199,11 @@ kadam dev --project examples/portfolio
 kadam keywords
 ```
 
-UI files may declare `kadam 0.3` to use syntax added for the frontend track,
-starting with the regular property sentence (`the line height is 1.6`,
-`the padding is 24px`). A
+UI files may declare `kadam 0.3` to use syntax added for the frontend track:
+the regular property sentence (`the padding is 24px`), landmarks, lists,
+tables, media, forms that submit, inline links in text, and page metadata.
+`examples/reference/` holds a marketing site and a docs site written with
+it. A
 `kadam 0.1` file compiles exactly as before. Run `npm run probes` to see how
 many everyday frontend features compile today; see
 [the frontend plan](docs/frontend-plan.md).

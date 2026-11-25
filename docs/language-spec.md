@@ -664,6 +664,95 @@ Two rows exist only in the regular form:
 - On a text field, text properties apply to the input, as typography does.
 - In a `kadam 0.1` file the sentence is `KDM2013`.
 
+### 6.15 Frontend elements (*kadam 0.3*)
+
+Every kind, sentence, and behaviour in this section is new in `kadam 0.3`. In a
+`kadam 0.1` file each one is `KDM2013`. The new words are contextual, not
+reserved, so existing element names such as `list1` or `table` stay valid.
+
+**Kinds**
+
+| Kind phrase | HTML | Category | Required content |
+| --- | --- | --- | --- |
+| `a small heading` | `h4` | leaf, text | text |
+| `a header` / `a footer` | `header` / `footer` | container | none |
+| `a section` | `section aria-labelledby` | container | a heading inside it |
+| `an article` / `a sidebar` | `article` / `aside` | container | none |
+| `a list` / `a numbered list` | `ul` / `ol` | container of list items | none |
+| `a list item` | `li` | leaf, text | text; inside a list |
+| `a table` | `table` + `caption` | container of rows | a caption and a row |
+| `a header row` / `a row` | `tr` in `thead` / `tbody` | container of cells | inside a table; a header row comes first |
+| `a cell` | `th scope="col"` in a header row, else `td` | leaf, text | text; inside a row |
+| `a video` | `video controls` + `track` | leaf, media | a source, and captions or `it has no speech` |
+| `an audio clip` | `audio controls` | leaf, media | a source |
+| `an icon` | `img` (24px) | leaf, media | an SVG or PNG source, and a description or `it is decorative` |
+| `a code block` | `pre` > `code` | leaf, text | text; whitespace is preserved |
+| `a form` | `form method="post"` | container | a destination; no nested forms |
+| `a text area` | labelled `textarea` | leaf, form | label |
+| `a checkbox` | `input type="checkbox"` + label | leaf, form | label |
+| `a dropdown` | labelled `select` | leaf, form | label and at least two options |
+| `a radio group` | `fieldset` + `legend` + radios | leaf, form | label and at least two options |
+
+A page-level `header` before the content and `footer` after it are emitted
+outside `<main>`. Containers among these kinds accept layout statements (§6.9).
+
+**Sentences**
+
+| Sentence | Applies to |
+| --- | --- |
+| `the caption says "Plans"` | table |
+| `it plays "assets/intro.mp4"` | video (`mp4`, `webm`), audio clip (`mp3`, `ogg`, `wav`, `m4a`) |
+| `the captions are "assets/intro.vtt"` | video (`vtt`) |
+| `the poster is "assets/poster.jpg"` | video |
+| `it has no speech` | video; exclusive with captions |
+| `the options are "Small", "Medium", "Large"` | dropdown, radio group; at least two, unique |
+| `it is checked` | checkbox |
+| `it is disabled` | button and every form control |
+| `it is at least 8 characters` / `it is at most 200 characters` | text field, text area |
+| `it accepts phone numbers`, `dates`, `times`, `web addresses`, `search terms` | text field |
+| `it sends to "https://example.com/subscribe"` | form; absolute http(s) URL |
+| `it submits the form` | button inside a form; not combined with a click action |
+| `the label says`, `it is required` | every form control |
+| `the placeholder says` | text field, text area, dropdown (an unselectable first option) |
+| `it shows`, `the description says`, `it is decorative` | image and icon |
+
+In a `kadam 0.3` page every form control is submitted under its element name
+(`name="emailField"`).
+
+**Text**
+
+- A `\n` escape in text is a line break (`<br>`).
+- Inline spans are one sentence each, after the text they refer to:
+
+```kdm
+the text says "Read the guide, it is fast."
+the words "guide" go to page "Guide"
+the word "fast" is bold
+the words "source" open "https://example.com" in a new tab
+```
+
+  `word`/`words`, `is`/`are`, `goes`/`go`, and `opens`/`open` are
+  interchangeable. The quoted words must appear exactly once in the text, and
+  spans cannot overlap. Spans apply to headings, paragraphs, list items, and
+  cells.
+
+**Page metadata** (page settings)
+
+```kdm
+the page description says "Plans and pricing"
+the page language is "fr"
+the page icon is "assets/icon.png"
+the page share image is "assets/share.png"
+```
+
+The language must be a language tag such as `en` or `pt-BR`. A share image
+needs the manifest `siteUrl`, which also adds a canonical link, Open Graph
+tags, and `sitemap.xml`.
+
+**Outline.** A `kadam 0.3` page has at most one main heading (`KDM3009`).
+Skipping a heading level, for example from 1 to 4, is a warning: it is
+reported, but the page still builds.
+
 ---
 
 ## 7. Events and interactions

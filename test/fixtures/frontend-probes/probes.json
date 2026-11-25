@@ -6,81 +6,118 @@
       "phase": "F1",
       "kind": "section",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "t1 {",
+        "    a section heading",
+        "    the text says \"Plans\"",
+        "}"
+      ]
     },
     {
       "id": "p02",
       "phase": "F1",
       "kind": "header",
       "statement": "",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p03",
       "phase": "F1",
       "kind": "footer",
       "statement": "",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p04",
       "phase": "F1",
       "kind": "list",
       "statement": "",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p05",
       "phase": "F1",
       "kind": "table",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "the caption says \"Plans\"",
+        "r1 {",
+        "    a row",
+        "    c1 {",
+        "        a cell",
+        "        the text says \"Basic\"",
+        "    }",
+        "}"
+      ]
     },
     {
       "id": "p06",
       "phase": "F1",
       "kind": "video",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "it plays \"assets/intro.mp4\"",
+        "the captions are \"assets/intro.vtt\""
+      ]
     },
     {
       "id": "p07",
       "phase": "F1",
       "kind": "icon",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "it shows \"assets/check.svg\"",
+        "it is decorative"
+      ]
     },
     {
       "id": "p08",
       "phase": "F1",
       "kind": "checkbox",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "the label says \"Remember me\""
+      ]
     },
     {
       "id": "p09",
       "phase": "F1",
       "kind": "dropdown",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "the label says \"Size\"",
+        "the options are \"Small\", \"Large\""
+      ]
     },
     {
       "id": "p10",
       "phase": "F1",
       "kind": "text area",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "the label says \"Message\""
+      ]
     },
     {
       "id": "p11",
       "phase": "F1",
       "kind": "form",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "it sends to \"https://example.com/subscribe\""
+      ]
     },
     {
       "id": "p12",
-      "phase": "F1",
+      "phase": "F3",
       "kind": "badge",
       "statement": "",
       "compiles": false
@@ -96,15 +133,18 @@
       "id": "p14",
       "phase": "F1",
       "kind": "paragraph",
-      "statement": "the text says \"Line one\" then on a new line \"Line two\"",
-      "compiles": false
+      "statement": "the text says \"Line one\\nLine two\"",
+      "compiles": true
     },
     {
       "id": "p15",
       "phase": "F1",
       "kind": "paragraph",
-      "statement": "the text says \"Read the docs\" where \"docs\" goes to page \"P\"",
-      "compiles": false
+      "statement": "the text says \"Read the docs\"",
+      "compiles": true,
+      "body": [
+        "the words \"docs\" go to page \"P\""
+      ]
     },
     {
       "id": "p16",
@@ -356,49 +396,49 @@
       "phase": "F1",
       "kind": "page",
       "statement": "the page description says \"A landing page\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p52",
       "phase": "F1",
       "kind": "page",
       "statement": "the page language is \"fr\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p53",
       "phase": "F1",
       "kind": "page",
       "statement": "the page icon is \"assets/icon.png\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p54",
       "phase": "F1",
       "kind": "button",
       "statement": "it is disabled",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p55",
       "phase": "F1",
       "kind": "text field",
       "statement": "it accepts phone numbers",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p56",
       "phase": "F1",
       "kind": "text field",
       "statement": "it accepts dates",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p57",
       "phase": "F1",
       "kind": "text field",
       "statement": "it is at least 8 characters",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p58",

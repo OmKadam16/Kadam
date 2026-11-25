@@ -101,7 +101,7 @@ export interface IrFieldStyle {
 }
 
 export interface IrComputedStyle {
-  readonly display: "block" | "inline" | "inline-flex" | "flex";
+  readonly display: "block" | "inline" | "inline-flex" | "flex" | "inline-block" | "list-item" | "table" | "table-row" | "table-cell";
   readonly width: IrSize;
   readonly height: IrSize;
   readonly minHeight: IrLength | null;
@@ -207,7 +207,32 @@ export type IrAction =
 
 export interface IrTextContent {
   readonly text: string;
+  /**
+   * kadam 0.3: the text split into runs, present only when the text has a
+   * line break or inline spans. Emitters prefer it over `text`.
+   */
+  readonly segments?: readonly IrTextSegment[];
 }
+
+export type IrTextSegment =
+  | { readonly type: "text"; readonly text: string }
+  | { readonly type: "break" }
+  | { readonly type: "bold" | "italic"; readonly text: string }
+  | { readonly type: "link"; readonly text: string; readonly href: string; readonly external: boolean };
+
+/** kadam 0.3 content for kinds that need more than text, image, or field. */
+export type IrKindContent =
+  | {
+      readonly type: "media";
+      readonly media: "video" | "audio";
+      readonly url: string;
+      readonly captionsUrl: string | null;
+      readonly posterUrl: string | null;
+      readonly language: string;
+    }
+  | { readonly type: "table"; readonly caption: string }
+  | { readonly type: "section"; readonly labelledBy: string }
+  | { readonly type: "form"; readonly action: string };
 
 export interface IrImageContent {
   readonly sourcePath: string;
@@ -223,6 +248,14 @@ export interface IrFieldContent {
   readonly required: boolean;
   readonly inputId: string;
   readonly labelFor: string;
+  // kadam 0.3
+  /** Form field name: the element name, so submitted data is readable. */
+  readonly name?: string;
+  readonly disabled?: boolean;
+  readonly minLength?: number;
+  readonly maxLength?: number;
+  readonly options?: readonly string[];
+  readonly checked?: boolean;
 }
 
 export interface IrAccessibility {
@@ -235,9 +268,13 @@ export interface IrAccessibility {
     | "image"
     | "container"
     | "navigation"
-    | "separator";
+    | "separator"
+    // kadam 0.3
+    | "landmark"
+    | "structure"
+    | "media";
   readonly name: string | null;
-  readonly headingLevel?: 1 | 2 | 3;
+  readonly headingLevel?: 1 | 2 | 3 | 4;
   readonly focusable: boolean;
   readonly alt?: string | null;
   readonly decorative?: boolean;
@@ -271,6 +308,12 @@ export interface IrElement {
   readonly field: IrFieldContent | null;
   readonly accessibility: IrAccessibility;
   readonly children: readonly IrElement[];
+  // kadam 0.3; absent on every 0.1 element.
+  readonly content?: IrKindContent;
+  /** `id` attribute, set when another element references this one. */
+  readonly htmlId?: string;
+  /** Button state: disabled, or submits its form. */
+  readonly control?: { readonly disabled: boolean; readonly submit: boolean };
 }
 
 export interface IrPageStyle {
@@ -312,4 +355,16 @@ export interface PageIR {
   readonly sourceMap: readonly IrSourceMapping[];
   readonly usesMotion: boolean;
   readonly basePath?: string | undefined;
+  /** kadam 0.3 page metadata; absent when the page declares none. */
+  readonly meta?: IrPageMeta;
+}
+
+export interface IrPageMeta {
+  readonly description: string | null;
+  readonly language: string | null;
+  readonly iconUrl: string | null;
+  /** Absolute URL (requires the manifest siteUrl). */
+  readonly shareImageUrl: string | null;
+  /** Absolute canonical URL of this page, when the manifest has a siteUrl. */
+  readonly canonicalUrl: string | null;
 }

@@ -49,6 +49,7 @@ MyWebsite/
 | `assets` | string | no | `"assets"` | Conventional asset directory. Relative and inside the project. |
 | `outDir` | string | no | `"dist"` | Output directory, resolved against the project root. |
 | `basePath` | string | no | `""` | Deployment prefix such as `"/my-site"`. Must start with `/` or be empty. |
+| `siteUrl` | string | no | — | *kadam 0.3.* Absolute origin such as `"https://example.com"` (no path; use `basePath`). Adds canonical links, Open Graph URLs, share images, and `sitemap.xml`. |
 
 Unknown top-level keys and unknown page keys are errors, so a typo is never
 silently ignored.

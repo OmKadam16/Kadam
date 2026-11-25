@@ -29,7 +29,21 @@ import {
   matchTypography,
 } from "./matchers-appearance.js";
 import { matchClick, matchHover, matchMotion } from "./matchers-interaction.js";
-import { matchKindStatement } from "./kind.js";
+import { BUILTIN_KIND_INFO, matchKindStatement } from "./kind.js";
+import {
+  matchCaption,
+  matchCaptions,
+  matchF1FieldType,
+  matchF1State,
+  matchFormAction,
+  matchMediaSource,
+  matchNoSpeech,
+  matchOptions,
+  matchPageMetadata,
+  matchPoster,
+  matchSubmit,
+  matchTextSpan,
+} from "./matchers-f1.js";
 import { PROPERTIES, matchPropertySentence, propertyNamed } from "./properties.js";
 import { closestMatches } from "./suggest.js";
 import type {
@@ -55,6 +69,40 @@ const DEFAULT_CONTEXT: TemplateContext = { allowResponsive: true };
  * language specification. A line must match exactly one entry; the parser
  * never picks a best candidate.
  */
+/** kadam 0.3 (F1) templates. */
+const F1_TEMPLATES: readonly StatementTemplate[] = [
+  { id: "page-metadata", description: "Page metadata", since: "0.3",
+    examples: ['the page description says "Plans and pricing"', 'the page language is "fr"',
+      'the page icon is "assets/icon.png"', 'the page share image is "assets/share.png"'],
+    match: (tokens) => matchPageMetadata(tokens) },
+  { id: "caption", description: "Table caption", since: "0.3",
+    examples: ['the caption says "Plans"'], match: (tokens) => matchCaption(tokens) },
+  { id: "media-source", description: "Video or audio source", since: "0.3",
+    examples: ['it plays "assets/intro.mp4"'], match: (tokens) => matchMediaSource(tokens) },
+  { id: "captions", description: "Video captions file", since: "0.3",
+    examples: ['the captions are "assets/intro.vtt"'], match: (tokens) => matchCaptions(tokens) },
+  { id: "poster", description: "Video poster image", since: "0.3",
+    examples: ['the poster is "assets/poster.jpg"'], match: (tokens) => matchPoster(tokens) },
+  { id: "no-speech", description: "Video without speech", since: "0.3",
+    examples: ["it has no speech"], match: (tokens) => matchNoSpeech(tokens) },
+  { id: "options", description: "Choice options", since: "0.3",
+    examples: ['the options are "Small", "Medium", "Large"'], match: (tokens) => matchOptions(tokens) },
+  { id: "f1-state", description: "Checked, disabled, or length-limit state", since: "0.3",
+    examples: ["it is checked", "it is disabled", "it is at least 8 characters", "it is at most 200 characters"],
+    match: (tokens) => matchF1State(tokens) },
+  { id: "form-action", description: "Form destination", since: "0.3",
+    examples: ['it sends to "https://example.com/subscribe"'], match: (tokens) => matchFormAction(tokens) },
+  { id: "submit", description: "Submit button", since: "0.3",
+    examples: ["it submits the form"], match: (tokens) => matchSubmit(tokens) },
+  { id: "text-span", description: "Inline text span", since: "0.3",
+    examples: ['the words "docs" go to page "Docs"', 'the words "fast" are bold',
+      'the word "now" is italic', 'the words "source" open "https://example.com" in a new tab'],
+    match: (tokens) => matchTextSpan(tokens) },
+  { id: "f1-field-type", description: "Field input type", since: "0.3",
+    examples: ["it accepts phone numbers", "it accepts dates", "it accepts web addresses"],
+    match: (tokens) => matchF1FieldType(tokens) },
+];
+
 export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
   {
     id: "kind",
@@ -65,11 +113,26 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
       "a text field",
       "a navigation bar",
     ],
-    match: (tokens) => {
+    match: (tokens, context) => {
       const result = matchKindStatement(tokens);
-      return result === null
-        ? null
-        : { statement: result.kind, diagnostics: result.diagnostics };
+      if (result === null) return null;
+      const kind = result.kind;
+      const reference = kind?.reference;
+      const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
+      if (reference?.type === "builtin-kind") {
+        const since = BUILTIN_KIND_INFO[reference.name].since ?? "0.1";
+        if (!uiVersionAtLeast(version, since)) {
+          return {
+            // Keep the kind so the element is not also "missing a kind".
+            statement: kind,
+            diagnostics: [
+              ...result.diagnostics,
+              requiresVersion(tokens, `${kind!.article} ${reference.name}`, since, version),
+            ],
+          };
+        }
+      }
+      return { statement: kind, diagnostics: result.diagnostics };
     },
   },
   {
@@ -266,6 +329,7 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
     ],
     match: (tokens) => matchMotion(tokens),
   },
+  ...F1_TEMPLATES,
   {
     id: "property",
     description: "Regular property sentence",
@@ -376,13 +440,18 @@ function collectMatches(
     if (body.statement === null && body.diagnostics.length === 0) continue;
     const since = template.since ?? "0.1";
     if (!uiVersionAtLeast(version, since)) {
-      // The line is well-formed newer syntax. Claim it (so it is not reported
-      // as unrecognized) but reject it with an explicit version diagnostic.
+      // The line is newer syntax. Claim it (so it is not reported as
+      // unrecognized) and add an explicit version error. The statement is kept
+      // so later checks do not add misleading follow-on errors ("no kind
+      // sentence", "requires a caption"); the error still blocks all output.
       matches.push({
         template,
         body: {
-          statement: null,
-          diagnostics: [requiresVersion(tokens, constructName(template, tokens), since, version)],
+          statement: body.statement,
+          diagnostics: [
+            ...body.diagnostics,
+            requiresVersion(tokens, constructName(template, tokens), since, version),
+          ],
         },
       });
       continue;

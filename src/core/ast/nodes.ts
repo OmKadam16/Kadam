@@ -10,7 +10,19 @@ export type GradientDirection =
   | "right to left"
   | "top to bottom"
   | "bottom to top";
-export type FieldType = "text" | "email" | "password" | "number";
+export type FieldType =
+  | "text"
+  | "email"
+  | "password"
+  | "number"
+  // kadam 0.3
+  | "tel"
+  | "date"
+  | "time"
+  | "url"
+  | "search";
+import type { UiLanguageVersion } from "../../version.js";
+
 export type BuiltinKindName =
   | "button"
   | "link"
@@ -23,7 +35,30 @@ export type BuiltinKindName =
   | "card"
   | "container"
   | "navigation bar"
-  | "divider";
+  | "divider"
+  // kadam 0.3 (F1)
+  | "small heading"
+  | "header"
+  | "footer"
+  | "section"
+  | "article"
+  | "sidebar"
+  | "list"
+  | "numbered list"
+  | "list item"
+  | "table"
+  | "header row"
+  | "row"
+  | "cell"
+  | "video"
+  | "audio clip"
+  | "icon"
+  | "code block"
+  | "form"
+  | "text area"
+  | "checkbox"
+  | "dropdown"
+  | "radio group";
 
 export type KindCategory = "leaf" | "container";
 
@@ -119,6 +154,11 @@ export interface DocumentNode extends NodeBase {
   readonly type: "document";
   readonly version: string | null;
   readonly versionSpan: Span | null;
+  /**
+   * Effective UI language version: the directive, else the project default,
+   * else 0.1. Version-dependent behaviour reads this, never `version`.
+   */
+  readonly languageVersion: UiLanguageVersion;
   readonly page: PageNode | null;
   readonly component: ComponentNode | null;
 }
@@ -225,6 +265,13 @@ export type PageSettingNode =
       readonly type: "page-setting";
       readonly property: "font";
       readonly value: FontFamily;
+    })
+  // kadam 0.3 page metadata
+  | (NodeBase & {
+      readonly type: "page-setting";
+      readonly property: "description" | "language" | "icon" | "share image";
+      readonly value: string;
+      readonly valueSpan: Span;
     });
 
 export type StatementNode =
@@ -251,7 +298,42 @@ export type StatementNode =
   | ClickStatement
   | MotionStatement
   | PropertyStatement
+  | F1Statement
   | ResponsiveStatement;
+
+/** kadam 0.3 (F1) statements; matched in `src/core/parser/matchers-f1.ts`. */
+export type F1Statement =
+  | (NodeBase & { readonly type: "caption"; readonly value: string; readonly valueSpan: Span })
+  | (NodeBase & { readonly type: "media-source"; readonly value: string; readonly valueSpan: Span })
+  | (NodeBase & { readonly type: "captions"; readonly value: string; readonly valueSpan: Span })
+  | (NodeBase & { readonly type: "poster"; readonly value: string; readonly valueSpan: Span })
+  | (NodeBase & { readonly type: "no-speech" })
+  | (NodeBase & {
+      readonly type: "options";
+      readonly values: readonly string[];
+      readonly valueSpans: readonly Span[];
+    })
+  | (NodeBase & { readonly type: "checked" })
+  | (NodeBase & { readonly type: "disabled" })
+  | (NodeBase & {
+      readonly type: "length-limit";
+      readonly bound: "min" | "max";
+      readonly value: number;
+    })
+  | (NodeBase & { readonly type: "form-action"; readonly url: string; readonly urlSpan: Span })
+  | (NodeBase & { readonly type: "submit" })
+  | (NodeBase & {
+      readonly type: "text-span";
+      readonly target: string;
+      readonly targetSpan: Span;
+      readonly effect: TextSpanEffect;
+    });
+
+export type TextSpanEffect =
+  | { readonly type: "bold" }
+  | { readonly type: "italic" }
+  | { readonly type: "navigate"; readonly pageTitle: string; readonly pageSpan: Span }
+  | { readonly type: "external"; readonly url: string; readonly urlSpan: Span };
 
 export interface SizeStatement extends NodeBase {
   readonly type: "size";

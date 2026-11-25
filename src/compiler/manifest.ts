@@ -43,6 +43,12 @@ export interface KadamManifest {
   readonly outDir?: string | undefined;
   /** Deployment base path, e.g. "/subpath". Defaults to "". */
   readonly basePath?: string | undefined;
+  /**
+   * kadam 0.3: absolute origin the site is served from, e.g.
+   * "https://example.com". Enables canonical URLs, share images, and
+   * sitemap.xml.
+   */
+  readonly siteUrl?: string | undefined;
 }
 
 export interface LoadedManifest {
@@ -61,6 +67,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "assets",
   "outDir",
   "basePath",
+  "siteUrl",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -291,6 +298,25 @@ export function loadManifest(
           rootSpan,
         );
       }
+    }
+  }
+
+  // Validate siteUrl (kadam 0.3)
+  if ("siteUrl" in raw) {
+    if (raw.kadam !== "0.3") {
+      diagnostics.error(
+        "KDM4001",
+        "'siteUrl' in kadam.json requires \"kadam\": \"0.3\"",
+        rootSpan,
+        'set "kadam": "0.3", or remove siteUrl',
+      );
+    } else if (!isSiteOrigin(raw.siteUrl)) {
+      diagnostics.error(
+        "KDM4001",
+        `'siteUrl' ${JSON.stringify(raw.siteUrl)} must be an absolute http or https origin`,
+        rootSpan,
+        'use an origin such as "https://example.com"; put any subpath in basePath',
+      );
     }
   }
 
@@ -634,6 +660,7 @@ export function loadManifest(
     assets: typeof raw.assets === "string" ? raw.assets : "assets",
     outDir: typeof raw.outDir === "string" ? raw.outDir : "dist",
     basePath: typeof raw.basePath === "string" ? raw.basePath : undefined,
+    siteUrl: typeof raw.siteUrl === "string" ? raw.siteUrl.replace(/\/$/, "") : undefined,
   };
 
   return {
@@ -642,6 +669,24 @@ export function loadManifest(
     manifestPath,
     manifestSource,
   };
+}
+
+/** An absolute http(s) origin with no path, query, or fragment. */
+function isSiteOrigin(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.hostname.length > 0 &&
+      (url.pathname === "/" || url.pathname === "") &&
+      url.search === "" &&
+      url.hash === "" &&
+      !value.includes("@")
+    );
+  } catch {
+    return false;
+  }
 }
 
 function routeSegments(route: string): string[] {

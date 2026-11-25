@@ -1,0 +1,128 @@
+// Reference project: marketing site (frontend plan §3). F1 static content.
+page "Home" {
+    the page description says "Acme builds deterministic websites from plain English."
+    the page icon is "assets/icon.svg"
+    the page background is #F7F5F0
+
+    siteHeader {
+        a header
+        it has 16px padding on the left and right
+        mainNav {
+            a navigation bar
+            has no background
+            brand {
+                a minor heading
+                the text says "Acme"
+            }
+            pricingLink {
+                a link
+                the text says "Pricing"
+                when clicked, go to page "Pricing"
+            }
+        }
+    }
+
+    hero {
+        a section
+        it has 64px padding
+        it has 16px gap between children
+        heroTitle {
+            a main heading
+            the text says "Ship pages you can read"
+        }
+        heroLead {
+            a paragraph
+            the text says "Write your site in plain, exact English.\nKadam turns it into fast HTML and CSS."
+            the words "plain, exact English" are bold
+        }
+        heroCta {
+            a button
+            the text says "See pricing"
+            when clicked, go to page "Pricing"
+        }
+    }
+
+    features {
+        a section
+        it has 64px padding on the left and right
+        it has 16px gap between children
+        featuresTitle {
+            a section heading
+            the text says "Why teams pick Acme"
+        }
+        featureList {
+            a list
+            featureFast {
+                a list item
+                the text says "No runtime: pages are static HTML and CSS."
+            }
+            featureSafe {
+                a list item
+                the text says "Every sentence is checked before anything is built."
+            }
+            featureSame {
+                a list item
+                the text says "The same source always builds the same bytes."
+            }
+        }
+        doneRow {
+            a container
+            it arranges its children in a row
+            it has 8px gap between children
+            doneIcon {
+                an icon
+                it shows "assets/check.svg"
+                it is decorative
+            }
+            doneText {
+                a paragraph
+                the text says "Accessible by default."
+            }
+        }
+    }
+
+    signup {
+        a section
+        it has 64px padding
+        signupTitle {
+            a section heading
+            the text says "Get the newsletter"
+        }
+        signupForm {
+            a form
+            it sends to "https://example.com/subscribe"
+            emailField {
+                a text field
+                the label says "Email"
+                the placeholder says "you@example.com"
+                it accepts email addresses
+                it is required
+            }
+            topicChoice {
+                a dropdown
+                the label says "Topic"
+                the options are "Product news", "Engineering", "Both"
+            }
+            consentBox {
+                a checkbox
+                the label says "Email me at most once a month"
+                it is required
+            }
+            subscribeButton {
+                a button
+                the text says "Subscribe"
+                it submits the form
+            }
+        }
+    }
+
+    siteFooter {
+        a footer
+        it has 24px padding
+        footerNote {
+            a paragraph
+            the text says "© Acme. Built with Kadam."
+            the text is #555555
+        }
+    }
+}

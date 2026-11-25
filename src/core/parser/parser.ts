@@ -165,6 +165,7 @@ class Parser {
       type: "document",
       version: this.#version,
       versionSpan: this.#versionSpan,
+      languageVersion: this.#languageVersion,
       page: page === null ? null : this.#buildPage(page),
       component: null,
       span: mergeSpans(startSpan, endSpan),

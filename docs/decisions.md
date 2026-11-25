@@ -1099,6 +1099,18 @@ with a concrete rename (`email` → `email1`), and the parser still opens the
 block, so the body and closing brace are not misattributed to the parent.
 `kadam keywords` prints the frozen reserved set, generated from the lexicon.
 
+### D-37 — Frontend vocabulary is contextual, not reserved
+
+**Status:** Implemented (F1)
+
+**Decision.** Words introduced for `kadam 0.3` (`header`, `list`, `table`,
+`row`, `form`, `plays`, `options`, ...) are matched by position, not added to
+the reserved set. Reserving them would make existing `kadam 0.1` element names
+such as `list1 {` or `table {` invalid, which breaks the promise that 0.1 files
+keep compiling. D-34 still holds for the 0.1 vocabulary. Each new sentence is
+anchored by its leading words (`the caption says`, `it plays`), and the
+template-overlap test proves no line matches two templates.
+
 ### D-35 — Browser support matrix
 
 **Status:** Approved 2026-11-24
@@ -1154,6 +1166,7 @@ changing it requires at least a minor version bump.
 | D-33 | Version gating for UI syntax (`kadam 0.3`, KDM2013) | F1 | Implemented | Implemented |
 | D-34 | Reserved element names; single-diagnostic recovery | F0 | Implemented | Implemented |
 | D-35 | Browser support matrix | F2 | Approve | Approved |
+| D-37 | Frontend vocabulary is contextual, not reserved | F1 | Implemented | Implemented |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

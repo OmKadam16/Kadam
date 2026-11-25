@@ -116,6 +116,7 @@ function report(
     process.exit(1);
   }
 
+  if (diagnostics.length > 0) console.error("");
   console.log(
     `kadam check: ${target} is valid (${pages} page${
       pages === 1 ? "" : "s"

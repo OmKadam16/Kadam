@@ -1,3 +1,4 @@
+import { F1_FIELD_TYPES, isF1State } from "./matchers-f1.js";
 import type {
   ColorValue,
   FieldType,
@@ -323,6 +324,8 @@ export function matchFont(tokens: readonly Token[]): StatementMatchBody | null {
 
 export function matchSizeState(tokens: readonly Token[]): StatementMatchBody | null {
   if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "is")) return null;
+  // kadam 0.3 states (checked, disabled, character limits) have their own template.
+  if (isF1State(tokens)) return null;
   const rest = tokens.slice(2);
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];
@@ -772,6 +775,8 @@ export function matchFieldAccepts(tokens: readonly Token[]): StatementMatchBody 
   if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "accepts")) return null;
   const rest = tokens.slice(2);
   const span = spanFromTokens(tokens);
+  // kadam 0.3 field types have their own template.
+  if (F1_FIELD_TYPES[normalizeWords(rest)] !== undefined) return null;
   const value = FIELD_TYPES[normalizeWords(rest)];
   if (value === undefined) {
     return {

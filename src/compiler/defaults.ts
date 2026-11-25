@@ -222,8 +222,77 @@ export function createDefaultStyle(
           left: zeroLength(),
         },
       };
+    // kadam 0.3 (F1). Base rules for these kinds are emitted only when a page
+    // uses them, so 0.1 projects keep a byte-identical kadam.css.
+    case "small heading":
+      return { ...base, typography: typography(page.font, 16, 600, "left", page.text, 1.4) };
+    case "header":
+    case "footer":
+    case "section":
+    case "article":
+    case "sidebar":
+      return { ...base, display: "flex", gap: zeroLength(), layout: COLUMN };
+    case "form":
+      return { ...base, display: "flex", gap: length(16), layout: COLUMN };
+    case "list":
+    case "numbered list":
+      return {
+        ...base,
+        display: "flex",
+        gap: length(4),
+        layout: COLUMN,
+        padding: { top: zeroLength(), right: zeroLength(), bottom: zeroLength(), left: length(24) },
+      };
+    case "list item":
+      return { ...base, display: "list-item", typography: typography(page.font, 16, 400, "left", page.text, 1.6) };
+    case "table":
+      return { ...base, display: "table", width: { kind: "full" } };
+    case "header row":
+    case "row":
+      return { ...base, display: "table-row" };
+    case "cell":
+      return {
+        ...base,
+        display: "table-cell",
+        padding: { top: length(8), right: length(12), bottom: length(8), left: length(12) },
+        typography: typography(page.font, 16, 400, "left", page.text, 1.5),
+      };
+    case "video":
+    case "audio clip":
+      return { ...base, width: { kind: "full" } };
+    case "icon":
+      return {
+        ...base,
+        display: "inline-block",
+        width: { kind: "length", value: length(24) },
+        height: { kind: "length", value: length(24) },
+      };
+    case "code block":
+      return {
+        ...base,
+        background: { kind: "solid", color: hexColor("#F5F5F5") },
+        corners: { kind: "length", value: length(GLOBAL_TOKENS.defaultRadius) },
+        padding: allSides(length(16)),
+        typography: typography("monospace", 14, 400, "left", "#171717", 1.5),
+      };
+    case "text area":
+    case "dropdown":
+      return {
+        ...base,
+        display: "flex",
+        width: { kind: "full" },
+        layout: COLUMN,
+        gap: length(8),
+        field: defaultFieldStyle(page),
+      };
+    case "checkbox":
+      return { ...base, display: "flex", gap: length(8), layout: { direction: "row", horizontal: "start", vertical: "center" } };
+    case "radio group":
+      return { ...base, display: "flex", gap: length(8), layout: COLUMN };
   }
 }
+
+const COLUMN: IrLayout = { direction: "column", horizontal: "start", vertical: "start" };
 
 function defaultFieldStyle(page: IrPageStyle): IrFieldStyle {
   return {

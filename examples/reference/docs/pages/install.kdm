@@ -1,0 +1,86 @@
+// Reference project: docs site (frontend plan §3). F1 skeleton.
+page "Install" {
+    the page description says "Kadam documentation: Install."
+    the page icon is "assets/icon.svg"
+
+    siteHeader {
+        a header
+        it has 16px padding on the left and right
+        topNav {
+            a navigation bar
+            brand {
+                a minor heading
+                the text says "Kadam docs"
+            }
+        }
+    }
+
+    layout {
+        a container
+        it arranges its children in a row
+        it has 32px gap between children
+        it has 32px padding
+        on phones, it arranges its children in a column
+
+        sideNav {
+            a sidebar
+            it is 220px wide
+            on phones, it is full width
+            sideTitle {
+                a small heading
+                the text says "Guides"
+            }
+            guideList {
+                a list
+                introItem {
+                    a list item
+                    the text says "Introduction"
+                    the words "Introduction" go to page "Introduction"
+                }
+                installItem {
+                    a list item
+                    the text says "Install"
+                    the words "Install" go to page "Install"
+                }
+            }
+        }
+
+        content {
+            an article
+            it has 16px gap between children
+            pageTitle {
+                a main heading
+                the text says "Install"
+            }
+            requirements {
+                a paragraph
+                the text says "You need Node.js 22.18 or newer."
+            }
+            stepsTitle {
+                a section heading
+                the text says "From a checkout"
+            }
+            installCode {
+                a code block
+                the text says "bash install.sh\nkadam --version"
+            }
+            checkTitle {
+                a section heading
+                the text says "Check a project"
+            }
+            checkCode {
+                a code block
+                the text says "kadam check --project examples/reference/docs"
+            }
+        }
+    }
+
+    siteFooter {
+        a footer
+        it has 24px padding
+        footNote {
+            a paragraph
+            the text says "Kadam is licensed under Apache-2.0."
+        }
+    }
+}

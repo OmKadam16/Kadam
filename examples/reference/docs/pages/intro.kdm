@@ -1,0 +1,128 @@
+// Reference project: docs site (frontend plan §3). F1 skeleton.
+page "Introduction" {
+    the page description says "Kadam documentation: Introduction."
+    the page icon is "assets/icon.svg"
+
+    siteHeader {
+        a header
+        it has 16px padding on the left and right
+        topNav {
+            a navigation bar
+            brand {
+                a minor heading
+                the text says "Kadam docs"
+            }
+        }
+    }
+
+    layout {
+        a container
+        it arranges its children in a row
+        it has 32px gap between children
+        it has 32px padding
+        on phones, it arranges its children in a column
+
+        sideNav {
+            a sidebar
+            it is 220px wide
+            on phones, it is full width
+            sideTitle {
+                a small heading
+                the text says "Guides"
+            }
+            guideList {
+                a list
+                introItem {
+                    a list item
+                    the text says "Introduction"
+                    the words "Introduction" go to page "Introduction"
+                }
+                installItem {
+                    a list item
+                    the text says "Install"
+                    the words "Install" go to page "Install"
+                }
+            }
+        }
+
+        content {
+            an article
+            it has 16px gap between children
+            pageTitle {
+                a main heading
+                the text says "Introduction"
+            }
+            lead {
+                a paragraph
+                the text says "Kadam is a deterministic language written in constrained English. Start with the install guide."
+                the words "install guide" go to page "Install"
+                the word "deterministic" is italic
+            }
+            conceptsTitle {
+                a section heading
+                the text says "Core ideas"
+            }
+            concepts {
+                a numbered list
+                ideaOne {
+                    a list item
+                    the text says "Every sentence matches exactly one rule."
+                }
+                ideaTwo {
+                    a list item
+                    the text says "Unknown sentences are errors, never guesses."
+                }
+            }
+            kindsTitle {
+                a section heading
+                the text says "Element kinds"
+            }
+            kinds {
+                a table
+                the caption says "A few element kinds"
+                kindsHead {
+                    a header row
+                    kindHead {
+                        a cell
+                        the text says "Kind"
+                    }
+                    tagHead {
+                        a cell
+                        the text says "HTML"
+                    }
+                }
+                kindRow1 {
+                    a row
+                    kindName1 {
+                        a cell
+                        the text says "a section"
+                    }
+                    kindTag1 {
+                        a cell
+                        the text says "section"
+                    }
+                }
+                kindRow2 {
+                    a row
+                    kindName2 {
+                        a cell
+                        the text says "a numbered list"
+                    }
+                    kindTag2 {
+                        a cell
+                        the text says "ol"
+                    }
+                }
+            }
+        }
+    }
+
+    siteFooter {
+        a footer
+        it has 24px padding
+        footNote {
+            a paragraph
+            the text says "Kadam is licensed under Apache-2.0."
+        }
+    }
+}

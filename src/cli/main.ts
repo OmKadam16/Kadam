@@ -142,6 +142,9 @@ if (first === "build") {
       );
       process.exit(1);
     }
+    if (result.diagnostics.length > 0) {
+      console.error(`${formatDiagnostics(result.diagnostics, result.sources)}\n`);
+    }
 
     try {
       writeOutputFiles(projectDir, result.outDir, result.files);
@@ -223,6 +226,9 @@ if (first === "build") {
       }; no files were written.`,
     );
     process.exit(1);
+  }
+  if (result.diagnostics.length > 0) {
+    console.error(`${formatDiagnostics(result.diagnostics, [new SourceFile(file, text)])}\n`);
   }
 
   try {

@@ -1,0 +1,11 @@
+{
+  "kadam": "0.3",
+  "name": "reference-marketing",
+  "siteUrl": "https://example.com",
+  "pages": [
+    { "source": "pages/home.kdm", "route": "/" },
+    { "source": "pages/pricing.kdm", "route": "/pricing" }
+  ],
+  "assets": "assets",
+  "outDir": "dist"
+}

@@ -1,26 +1,71 @@
 import { InternalCompilerError } from "./internal-error.js";
-import type { IrElement, IrSize, PageIR } from "./ir.js";
+import type { IrElement, IrFieldContent, IrPageMeta, IrSize, IrTextSegment, PageIR } from "./ir.js";
 import { baseCssHref, pageCssHref } from "./routes.js";
 
 export function emitHtml(page: PageIR): string {
+  // kadam 0.3: a page-level header or footer is a landmark of the whole page,
+  // so it is emitted outside <main>. Only leading headers and trailing
+  // footers move; source order is otherwise preserved.
+  const elements = [...page.elements];
+  const before: IrElement[] = [];
+  const after: IrElement[] = [];
+  while (elements.length > 0 && elements[0]!.kind === "header") before.push(elements.shift()!);
+  while (elements.length > 0 && elements[elements.length - 1]!.kind === "footer") after.unshift(elements.pop()!);
+
+  const meta = page.meta;
   const lines: string[] = [
     "<!doctype html>",
-    '<html lang="en">',
+    `<html lang="${escapeAttribute(meta?.language ?? "en")}">`,
     "<head>",
     '  <meta charset="utf-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1">',
     `  <title>${escapeText(page.title)}</title>`,
+    ...(meta === undefined ? [] : metaLines(page.title, meta)),
     `  <link rel="stylesheet" href="${escapeAttribute(baseCssHref(page.basePath))}">`,
     `  <link rel="stylesheet" href="${escapeAttribute(pageCssHref(page.routeSlug, page.basePath))}">`,
     "</head>",
     "<body>",
+    ...before.map((element) => renderElement(asPageLandmark(element), 1)),
     '  <main class="kdm-page">',
-    ...page.elements.map((element) => renderElement(element, 2)),
+    ...elements.map((element) => renderElement(element, 2)),
     "  </main>",
+    ...after.map((element) => renderElement(asPageLandmark(element), 1)),
     "</body>",
     "</html>",
   ];
   return `${lines.join("\n")}\n`;
+}
+
+/** A header or footer outside <main> takes the page font and text color. */
+function asPageLandmark(element: IrElement): IrElement {
+  return { ...element, kindClass: `${element.kindClass} kdm-page-landmark` };
+}
+
+function metaLines(title: string, meta: IrPageMeta): string[] {
+  const lines: string[] = [];
+  if (meta.description !== null) {
+    lines.push(`  <meta name="description" content="${escapeAttribute(meta.description)}">`);
+  }
+  if (meta.canonicalUrl !== null) {
+    lines.push(`  <link rel="canonical" href="${escapeAttribute(meta.canonicalUrl)}">`);
+  }
+  if (meta.iconUrl !== null) {
+    lines.push(`  <link rel="icon" href="${escapeAttribute(meta.iconUrl)}">`);
+  }
+  if (meta.description !== null || meta.shareImageUrl !== null || meta.canonicalUrl !== null) {
+    lines.push(`  <meta property="og:title" content="${escapeAttribute(title)}">`);
+    if (meta.description !== null) {
+      lines.push(`  <meta property="og:description" content="${escapeAttribute(meta.description)}">`);
+    }
+    if (meta.canonicalUrl !== null) {
+      lines.push(`  <meta property="og:url" content="${escapeAttribute(meta.canonicalUrl)}">`);
+    }
+    if (meta.shareImageUrl !== null) {
+      lines.push(`  <meta property="og:image" content="${escapeAttribute(meta.shareImageUrl)}">`);
+      lines.push('  <meta name="twitter:card" content="summary_large_image">');
+    }
+  }
+  return lines;
 }
 
 function renderElement(element: IrElement, depth: number): string {
@@ -31,7 +76,9 @@ function renderElement(element: IrElement, depth: number): string {
     case "button": {
       const text = requireText(element);
       if (element.action === null) {
-        return `${indent}<button class="${classAttribute}" data-kdm-id="${element.nodeId}" type="button">${escapeText(text)}</button>`;
+        const type = element.control?.submit === true ? "submit" : "button";
+        const disabled = element.control?.disabled === true ? " disabled" : "";
+        return `${indent}<button class="${classAttribute}" data-kdm-id="${element.nodeId}" type="${type}"${disabled}>${escapeText(text)}</button>`;
       }
       return `${indent}<a${linkAttributes(element)}>${escapeText(text)}</a>`;
     }
@@ -45,22 +92,63 @@ function renderElement(element: IrElement, depth: number): string {
       }
       return `${indent}<a${linkAttributes(element)}>${escapeText(text)}</a>`;
     }
-    case "main heading": {
-      const text = requireText(element);
-      return `${indent}<h1 class="${classAttribute}" data-kdm-id="${element.nodeId}">${escapeText(text)}</h1>`;
+    case "main heading":
+      return textElement(element, "h1", indent, classAttribute);
+    case "section heading":
+      return textElement(element, "h2", indent, classAttribute);
+    case "minor heading":
+      return textElement(element, "h3", indent, classAttribute);
+    case "paragraph":
+      return textElement(element, "p", indent, classAttribute);
+    // kadam 0.3 (F1)
+    case "small heading":
+      return textElement(element, "h4", indent, classAttribute);
+    case "list item":
+      return textElement(element, "li", indent, classAttribute);
+    case "cell":
+      return textElement(element, "td", indent, classAttribute);
+    case "code block":
+      return `${indent}<pre class="${classAttribute}" data-kdm-id="${element.nodeId}"><code>${escapeText(requireText(element))}</code></pre>`;
+    case "header":
+      return renderContainer(element, "header", indent, classAttribute);
+    case "footer":
+      return renderContainer(element, "footer", indent, classAttribute);
+    case "article":
+      return renderContainer(element, "article", indent, classAttribute);
+    case "sidebar":
+      return renderContainer(element, "aside", indent, classAttribute);
+    case "list":
+      return renderContainer(element, "ul", indent, classAttribute);
+    case "numbered list":
+      return renderContainer(element, "ol", indent, classAttribute);
+    case "section": {
+      const content = element.content;
+      const labelled = content?.type === "section" ? ` aria-labelledby="${escapeAttribute(content.labelledBy)}"` : "";
+      return renderContainer(element, "section", indent, classAttribute, labelled);
     }
-    case "section heading": {
-      const text = requireText(element);
-      return `${indent}<h2 class="${classAttribute}" data-kdm-id="${element.nodeId}">${escapeText(text)}</h2>`;
+    case "form": {
+      const content = element.content;
+      const action = content?.type === "form" ? ` action="${escapeAttribute(content.action)}" method="post"` : "";
+      return renderContainer(element, "form", indent, classAttribute, action);
     }
-    case "minor heading": {
-      const text = requireText(element);
-      return `${indent}<h3 class="${classAttribute}" data-kdm-id="${element.nodeId}">${escapeText(text)}</h3>`;
-    }
-    case "paragraph": {
-      const text = requireText(element);
-      return `${indent}<p class="${classAttribute}" data-kdm-id="${element.nodeId}">${escapeText(text)}</p>`;
-    }
+    case "table":
+      return renderTable(element, indent, classAttribute);
+    case "header row":
+    case "row":
+      return renderContainer(element, "tr", indent, classAttribute);
+    case "video":
+    case "audio clip":
+      return renderMedia(element, indent, classAttribute);
+    case "icon":
+      return renderImage(element, indent, classAttribute);
+    case "text area":
+      return renderTextArea(element, indent, classAttribute);
+    case "checkbox":
+      return renderCheckbox(element, indent, classAttribute);
+    case "dropdown":
+      return renderDropdown(element, indent, classAttribute);
+    case "radio group":
+      return renderRadioGroup(element, indent, classAttribute);
     case "image":
       return renderImage(element, indent, classAttribute);
     case "text field":
@@ -77,15 +165,16 @@ function renderElement(element: IrElement, depth: number): string {
 
 function renderContainer(
   element: IrElement,
-  tag: "div" | "nav",
+  tag: string,
   indent: string,
   classAttribute: string,
+  extra: string = "",
 ): string {
   if (element.children.length === 0) {
-    return `${indent}<${tag} class="${classAttribute}" data-kdm-id="${element.nodeId}"></${tag}>`;
+    return `${indent}<${tag} class="${classAttribute}" data-kdm-id="${element.nodeId}"${extra}></${tag}>`;
   }
   return [
-    `${indent}<${tag} class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
+    `${indent}<${tag} class="${classAttribute}" data-kdm-id="${element.nodeId}"${extra}>`,
     ...element.children.map((child) => renderElement(child, indent.length / 2 + 1)),
     `${indent}</${tag}>`,
   ].join("\n");
@@ -139,12 +228,183 @@ function renderField(
     inputAttributes.push(`placeholder="${escapeAttribute(field.placeholder)}"`);
   }
   if (field.required) inputAttributes.push("required");
+  inputAttributes.push(...fieldExtraAttributes(field));
 
   return [
     `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
     `${indent}  <label class="kdm-field-label" for="${field.labelFor}">${escapeText(field.label)}</label>`,
     `${indent}  <input ${inputAttributes.join(" ")}>`,
     `${indent}</div>`,
+  ].join("\n");
+}
+
+/** A text element, with an optional `id` and inline runs (kadam 0.3). */
+function textElement(element: IrElement, tag: string, indent: string, classAttribute: string): string {
+  const id = element.htmlId === undefined ? "" : ` id="${escapeAttribute(element.htmlId)}"`;
+  return `${indent}<${tag} class="${classAttribute}" data-kdm-id="${element.nodeId}"${id}>${renderText(element)}</${tag}>`;
+}
+
+function renderText(element: IrElement): string {
+  const segments = element.text?.segments;
+  if (segments === undefined) return escapeText(requireText(element));
+  return segments.map(renderSegment).join("");
+}
+
+function renderSegment(segment: IrTextSegment): string {
+  switch (segment.type) {
+    case "text":
+      return escapeText(segment.text);
+    case "break":
+      return "<br>";
+    case "bold":
+      return `<strong>${escapeText(segment.text)}</strong>`;
+    case "italic":
+      return `<em>${escapeText(segment.text)}</em>`;
+    case "link": {
+      const external = segment.external ? ' target="_blank" rel="noopener noreferrer"' : "";
+      return `<a class="kdm-inline-link" href="${escapeAttribute(segment.href)}"${external}>${escapeText(segment.text)}</a>`;
+    }
+  }
+}
+
+function fieldExtraAttributes(field: IrFieldContent): string[] {
+  const attributes: string[] = [];
+  if (field.name !== undefined) attributes.push(`name="${escapeAttribute(field.name)}"`);
+  if (field.minLength !== undefined) attributes.push(`minlength="${field.minLength}"`);
+  if (field.maxLength !== undefined) attributes.push(`maxlength="${field.maxLength}"`);
+  if (field.disabled === true) attributes.push("disabled");
+  return attributes;
+}
+
+function requireField(element: IrElement): IrFieldContent {
+  if (element.field === null) {
+    throw new InternalCompilerError(`${element.kind} reached emission without field content`, element.nameSpan);
+  }
+  return element.field;
+}
+
+function renderTable(element: IrElement, indent: string, classAttribute: string): string {
+  const caption = element.content?.type === "table" ? element.content.caption : "";
+  const rows = element.children;
+  const head = rows.filter((row) => row.kind === "header row");
+  const body = rows.filter((row) => row.kind !== "header row");
+  const renderRow = (row: IrElement, depth: string, header: boolean): string[] => [
+    `${depth}<tr class="${row.className} ${row.kindClass}" data-kdm-id="${row.nodeId}">`,
+    ...row.children.map((cell) => {
+      const tag = header ? "th" : "td";
+      const scope = header ? ' scope="col"' : "";
+      return `${depth}  <${tag} class="${cell.className} ${cell.kindClass}" data-kdm-id="${cell.nodeId}"${scope}>${renderText(cell)}</${tag}>`;
+    }),
+    `${depth}</tr>`,
+  ];
+  return [
+    `${indent}<table class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
+    `${indent}  <caption>${escapeText(caption)}</caption>`,
+    ...(head.length === 0 ? [] : [`${indent}  <thead>`, ...head.flatMap((row) => renderRow(row, `${indent}    `, true)), `${indent}  </thead>`]),
+    `${indent}  <tbody>`,
+    ...body.flatMap((row) => renderRow(row, `${indent}    `, false)),
+    `${indent}  </tbody>`,
+    `${indent}</table>`,
+  ].join("\n");
+}
+
+function renderMedia(element: IrElement, indent: string, classAttribute: string): string {
+  const content = element.content;
+  if (content?.type !== "media") {
+    throw new InternalCompilerError(`${element.kind} reached emission without a source`, element.nameSpan);
+  }
+  const tag = content.media === "video" ? "video" : "audio";
+  const attributes = [
+    `class="${classAttribute}"`,
+    `data-kdm-id="${element.nodeId}"`,
+    `src="${escapeAttribute(content.url)}"`,
+    "controls",
+    'preload="metadata"',
+  ];
+  if (content.posterUrl !== null) attributes.push(`poster="${escapeAttribute(content.posterUrl)}"`);
+  const width = htmlDimension(element.authored.width);
+  const height = htmlDimension(element.authored.height);
+  if (width !== null) attributes.push(`width="${width}"`);
+  if (height !== null) attributes.push(`height="${height}"`);
+  if (content.captionsUrl === null) {
+    return `${indent}<${tag} ${attributes.join(" ")}></${tag}>`;
+  }
+  return [
+    `${indent}<${tag} ${attributes.join(" ")}>`,
+    `${indent}  <track kind="captions" src="${escapeAttribute(content.captionsUrl)}" srclang="${escapeAttribute(content.language)}" label="Captions" default>`,
+    `${indent}</${tag}>`,
+  ].join("\n");
+}
+
+function labelLine(indent: string, field: IrFieldContent): string {
+  return `${indent}  <label class="kdm-field-label" for="${field.labelFor}">${escapeText(field.label)}</label>`;
+}
+
+function renderTextArea(element: IrElement, indent: string, classAttribute: string): string {
+  const field = requireField(element);
+  const attributes = ['class="kdm-field-input"', `id="${field.inputId}"`, 'rows="4"'];
+  if (field.placeholder !== null) attributes.push(`placeholder="${escapeAttribute(field.placeholder)}"`);
+  if (field.required) attributes.push("required");
+  attributes.push(...fieldExtraAttributes(field));
+  return [
+    `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
+    labelLine(indent, field),
+    `${indent}  <textarea ${attributes.join(" ")}></textarea>`,
+    `${indent}</div>`,
+  ].join("\n");
+}
+
+function renderCheckbox(element: IrElement, indent: string, classAttribute: string): string {
+  const field = requireField(element);
+  const attributes = ['class="kdm-checkbox-input"', `id="${field.inputId}"`, 'type="checkbox"'];
+  if (field.checked === true) attributes.push("checked");
+  if (field.required) attributes.push("required");
+  attributes.push(...fieldExtraAttributes(field));
+  return [
+    `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
+    `${indent}  <input ${attributes.join(" ")}>`,
+    labelLine(indent, field),
+    `${indent}</div>`,
+  ].join("\n");
+}
+
+function renderDropdown(element: IrElement, indent: string, classAttribute: string): string {
+  const field = requireField(element);
+  const attributes = ['class="kdm-field-input"', `id="${field.inputId}"`];
+  if (field.required) attributes.push("required");
+  attributes.push(...fieldExtraAttributes(field));
+  const options = [
+    ...(field.placeholder === null ? [] : [`${indent}    <option value="" disabled selected>${escapeText(field.placeholder)}</option>`]),
+    ...(field.options ?? []).map((option) => `${indent}    <option value="${escapeAttribute(option)}">${escapeText(option)}</option>`),
+  ];
+  return [
+    `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
+    labelLine(indent, field),
+    `${indent}  <select ${attributes.join(" ")}>`,
+    ...options,
+    `${indent}  </select>`,
+    `${indent}</div>`,
+  ].join("\n");
+}
+
+function renderRadioGroup(element: IrElement, indent: string, classAttribute: string): string {
+  const field = requireField(element);
+  const disabled = field.disabled === true ? " disabled" : "";
+  const options = (field.options ?? []).flatMap((option, index) => {
+    const id = `${element.nodeId}-${index + 1}`;
+    const required = field.required && index === 0 ? " required" : "";
+    return [
+      `${indent}  <div class="kdm-radio-option">`,
+      `${indent}    <input class="kdm-radio-input" id="${id}" type="radio" name="${escapeAttribute(field.name ?? element.nodeId)}" value="${escapeAttribute(option)}"${required}>`,
+      `${indent}    <label for="${id}">${escapeText(option)}</label>`,
+      `${indent}  </div>`,
+    ];
+  });
+  return [
+    `${indent}<fieldset class="${classAttribute}" data-kdm-id="${element.nodeId}"${disabled}>`,
+    `${indent}  <legend class="kdm-field-label">${escapeText(field.label)}</legend>`,
+    ...options,
+    `${indent}</fieldset>`,
   ].join("\n");
 }
 

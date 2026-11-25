@@ -9,6 +9,7 @@ import type {
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Token } from "../lexer/token.js";
 import { closestMatches } from "./suggest.js";
+import type { UiLanguageVersion } from "../../version.js";
 import {
   describeTokens,
   isAnyWord,
@@ -21,6 +22,8 @@ import {
 export interface BuiltinKindInfo {
   readonly name: BuiltinKindName;
   readonly category: KindCategory;
+  /** First UI language version with this kind. Default "0.1". */
+  readonly since?: UiLanguageVersion;
 }
 
 export const BUILTIN_KIND_INFO: Readonly<Record<BuiltinKindName, BuiltinKindInfo>> = {
@@ -36,6 +39,29 @@ export const BUILTIN_KIND_INFO: Readonly<Record<BuiltinKindName, BuiltinKindInfo
   container: { name: "container", category: "container" },
   "navigation bar": { name: "navigation bar", category: "container" },
   divider: { name: "divider", category: "leaf" },
+  // kadam 0.3 (F1)
+  "small heading": { name: "small heading", category: "leaf", since: "0.3" },
+  header: { name: "header", category: "container", since: "0.3" },
+  footer: { name: "footer", category: "container", since: "0.3" },
+  section: { name: "section", category: "container", since: "0.3" },
+  article: { name: "article", category: "container", since: "0.3" },
+  sidebar: { name: "sidebar", category: "container", since: "0.3" },
+  list: { name: "list", category: "container", since: "0.3" },
+  "numbered list": { name: "numbered list", category: "container", since: "0.3" },
+  "list item": { name: "list item", category: "leaf", since: "0.3" },
+  table: { name: "table", category: "container", since: "0.3" },
+  "header row": { name: "header row", category: "container", since: "0.3" },
+  row: { name: "row", category: "container", since: "0.3" },
+  cell: { name: "cell", category: "leaf", since: "0.3" },
+  video: { name: "video", category: "leaf", since: "0.3" },
+  "audio clip": { name: "audio clip", category: "leaf", since: "0.3" },
+  icon: { name: "icon", category: "leaf", since: "0.3" },
+  "code block": { name: "code block", category: "leaf", since: "0.3" },
+  form: { name: "form", category: "container", since: "0.3" },
+  "text area": { name: "text area", category: "leaf", since: "0.3" },
+  checkbox: { name: "checkbox", category: "leaf", since: "0.3" },
+  dropdown: { name: "dropdown", category: "leaf", since: "0.3" },
+  "radio group": { name: "radio group", category: "leaf", since: "0.3" },
 };
 
 export const BUILTIN_KIND_NAMES: readonly BuiltinKindName[] = Object.keys(
@@ -43,6 +69,28 @@ export const BUILTIN_KIND_NAMES: readonly BuiltinKindName[] = Object.keys(
 ) as BuiltinKindName[];
 
 const KIND_PHRASES: readonly (readonly string[])[] = [
+  ["numbered", "list"],
+  ["list", "item"],
+  ["header", "row"],
+  ["audio", "clip"],
+  ["code", "block"],
+  ["text", "area"],
+  ["radio", "group"],
+  ["small", "heading"],
+  ["header"],
+  ["footer"],
+  ["section"],
+  ["article"],
+  ["sidebar"],
+  ["list"],
+  ["table"],
+  ["row"],
+  ["cell"],
+  ["video"],
+  ["icon"],
+  ["form"],
+  ["checkbox"],
+  ["dropdown"],
   ["navigation", "bar"],
   ["text", "field"],
   ["main", "heading"],

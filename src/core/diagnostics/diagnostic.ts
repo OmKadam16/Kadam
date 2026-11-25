@@ -148,6 +148,24 @@ export class DiagnosticBag {
     });
   }
 
+  /** A warning never blocks output (spec Appendix B.1). */
+  warning(
+    code: DiagnosticCode,
+    message: string,
+    span: Span,
+    hint?: string,
+    related?: readonly RelatedDiagnostic[],
+  ): void {
+    this.add({
+      code,
+      severity: "warning",
+      message,
+      span,
+      ...(hint === undefined ? {} : { hint }),
+      ...(related === undefined || related.length === 0 ? {} : { related }),
+    });
+  }
+
   addSpec(spec: DiagnosticSpec): void {
     this.error(spec.code, spec.message, spec.span, spec.hint, spec.related);
   }

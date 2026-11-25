@@ -19,7 +19,7 @@ export function formatDiagnostic(
   const caretLength = Math.max(1, endColumn - column);
 
   const lines = [
-    `error[${diagnostic.code}]: ${diagnostic.message}`,
+    `${diagnostic.severity}[${diagnostic.code}]: ${diagnostic.message}`,
     `${pad}--> ${source.path}:${line}:${column}`,
     `${pad} |`,
     `${line} | ${text}`,
@@ -40,7 +40,7 @@ export function formatDiagnostics(
     .map((diagnostic) => {
       const source = byPath.get(diagnostic.span.file);
       return source === undefined
-        ? `error[${diagnostic.code}]: ${diagnostic.message} (${diagnostic.span.file}:${diagnostic.span.start.line}:${diagnostic.span.start.column})`
+        ? `${diagnostic.severity}[${diagnostic.code}]: ${diagnostic.message} (${diagnostic.span.file}:${diagnostic.span.start.line}:${diagnostic.span.start.column})`
         : formatDiagnostic(diagnostic, source);
     })
     .join("\n\n");

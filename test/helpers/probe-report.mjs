@@ -16,7 +16,7 @@ for (const phase of [...byPhase.keys()].sort()) {
   const ok = group.filter((r) => r.compiles).length;
   console.log(`${phase === "-" ? "baseline" : phase}  ${ok}/${group.length}`);
   for (const r of group) {
-    const what = r.probe.statement === "" ? `a ${r.probe.kind}` : `${r.probe.kind}: ${r.probe.statement}`;
+    const what = r.probe.statement === "" ? `${/^[aeiou]/.test(r.probe.kind) ? "an" : "a"} ${r.probe.kind}` : `${r.probe.kind}: ${r.probe.statement}`;
     console.log(`  ${r.compiles ? "✓" : "·"} ${what}${r.compiles ? "" : `   (${r.firstError})`}`);
   }
 }

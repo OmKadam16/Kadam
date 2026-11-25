@@ -1,6 +1,6 @@
 # Kadam Frontend Plan — from static pages to a full UI language
 
-**Status:** Approved (2026-11-24). F0 is implemented; F1 is next.
+**Status:** Approved (2026-11-24). F0 and F1 are implemented; F2 is next.
 **Replaces as current priority:** the backend half of M8. The v0.2 core and its
 TypeScript/Python adapters stay as they are (maintained, not extended) until
 this plan reaches F6.
@@ -103,38 +103,26 @@ Fix what hurts every user before adding surface.
 **Exit:** met. Every pre-existing test and golden output is unchanged, and
 `kadam 0.1` and `kadam 0.3` builds of the same page are byte-identical (tested).
 
-### F1 — Element catalogue and document structure (medium)
+### F1 — Element catalogue and document structure (medium) — implemented 2026-11-24
 
-- ~~Move the existing shorthands onto the property table~~ — done with F0.
-- **Landmarks:** `a header`, `a footer`, `a section` (requires a heading
-  child or a label), `an article`, `a sidebar` (`aside`). Placement rules:
-  header/footer at page level are emitted outside `<main>`, and the navigation
-  bar moves into the header when one is present.
-- **Headings:** keep `main`/`section`/`minor`, add `a small heading` (`h4`).
-  Add an outline check: warn on skipped levels and error on more than one main
-  heading.
-- **Text:** line breaks via `then on a new line` or a multi-line string, and
-  inline spans within text: `the text says "Read the [docs] now" where "docs"
-  goes to page "Docs"` and `where "fast" is bold`. Spans are plain text plus
-  a range annotation and are never parsed as markup.
-- **Lists:** `a list`, `a numbered list`, `a list item`.
-- **Tables:** `a table` with `a header row`/`a row`/`a cell`, a required
-  caption, and scope attributes emitted automatically.
-- **Media:** `a video` (source, poster, captions file required unless
-  `it has no speech`), `an audio clip`, `an icon` (SVG file from assets,
-  inlined, decorative or labelled), and `a code block` (monospace, preserved
-  whitespace, no highlighting yet).
-- **Form controls (static):** `a form`, `a text area`, `a checkbox`,
-  `a radio group` with options, `a dropdown` with options, more field types
-  (`phone numbers`, `dates`, `times`, `urls`, `search terms`), min/max length,
-  and `it is disabled`.
-- **Page metadata:** `the page description says`, `the page language is`,
-  `the page icon is`, `the page share image is`, plus a manifest-level `siteUrl`
-  for canonical URLs and an emitted `sitemap.xml`.
+All F1 syntax is `kadam 0.3`; `kadam 0.1` output stays byte-identical. The
+normative description is spec §6.15.
 
-**Exit:** the docs-site skeleton and the marketing site's static content build
-with correct landmarks, and an automated axe-core pass on the output reports
-zero violations.
+| Item | Result |
+| --- | --- |
+| Shorthands on the property table | Done with F0. |
+| Landmarks | `a header`, `a footer`, `a section` (labelled by its first heading, which it requires), `an article`, `a sidebar`. A page-level header and footer are emitted outside `<main>`. |
+| Headings | `a small heading` (`h4`). A 0.3 page has at most one main heading (error); skipped levels are the compiler's first **warning**, which never blocks output. |
+| Text | `\n` is a line break. Inline spans are separate sentences (`the words "docs" go to page "Docs"`, `are bold`, `are italic`, `open "..." in a new tab`), checked to appear exactly once and never overlap. The plan's single-line `where ...` form was dropped: one sentence per span reads better and keeps lines short. |
+| Lists, tables | `a list`, `a numbered list`, `a list item`; `a table` with a required caption, `a header row` (`th scope="col"`), `a row`, `a cell`. Parent/child rules are enforced. |
+| Media | `a video` (captions required unless `it has no speech`; optional poster), `an audio clip`, `an icon`, `a code block`. **Changed from the plan:** icons are emitted as `<img>`, not inlined SVG. Inlining would mean reading and sanitising SVG markup, which is not worth the risk yet. |
+| Form controls | `a form` with `it sends to "https://..."` (pulled forward from F4 step 1 because a form with no destination is meaningless), `a text area`, `a checkbox`, `a dropdown`, `a radio group`, five more field types, character limits, `it is disabled`, `it submits the form`. Controls on 0.3 pages are named after their element. |
+| Page metadata | Description, language, icon, share image; manifest `siteUrl` adds canonical and Open Graph URLs and `sitemap.xml`. |
+| Reference projects | `examples/reference/marketing` and `examples/reference/docs`. |
+| Accessibility | `test/accessibility.test.mjs` runs axe-core (WCAG 2.x A/AA plus best practices) over both reference projects with **zero violations**. Colour contrast cannot be measured in jsdom; it moves to the F2 browser tests. |
+| Probes | 26/66 compile (20/20 F1). `a badge` was never in F1's scope and moved to F3. |
+
+**Exit:** met.
 
 ### F2 — Layout and sizing (medium)
 

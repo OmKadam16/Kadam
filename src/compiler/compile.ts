@@ -8,14 +8,14 @@ import {
   createSourceFile,
   type SourceFile,
 } from "../core/source/source-file.js";
-import { emitBaseCss, emitPageCss } from "./emit-css.js";
+import { baseCssUsage, emitBaseCss, emitPageCss } from "./emit-css.js";
 import { emitHtml } from "./emit-html.js";
 import { InternalCompilerError } from "./internal-error.js";
 import type { PageIR } from "./ir.js";
 import { lowerDocument } from "./lower.js";
 import { normalizeRoute, pageCssFileName } from "./routes.js";
 
-export type OutputFileKind = "html" | "css" | "asset";
+export type OutputFileKind = "html" | "css" | "asset" | "xml";
 
 export interface OutputFile {
   /** Path relative to the output directory, using `/` separators. */
@@ -98,7 +98,7 @@ function compileWithSource(
       },
       {
         path: "assets/kadam.css",
-        contents: emitBaseCss(),
+        contents: emitBaseCss(baseCssUsage([page])),
         kind: "css",
       },
       {

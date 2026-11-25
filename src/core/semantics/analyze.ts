@@ -23,6 +23,8 @@ export interface SemanticPage {
 
 export interface SemanticOptions {
   readonly pages?: readonly SemanticPage[];
+  /** The project manifest declares a siteUrl (needed for share images). */
+  readonly hasSiteUrl?: boolean;
 }
 
 const TEXT_CONTENT_KINDS: ReadonlySet<BuiltinKindName> = new Set([
@@ -56,6 +58,19 @@ export function analyzeDocument(
 
   for (const element of page.elements) {
     analyzeElement(element, routes, diagnostics);
+  }
+  if (document.languageVersion !== "0.1") {
+    analyzeF1Page(page, routes, diagnostics);
+    for (const setting of page.settings) {
+      if (setting.property === "share image" && options.hasSiteUrl !== true) {
+        diagnostics.error(
+          "KDM3005",
+          "a share image needs an absolute address; add siteUrl to kadam.json",
+          setting.span,
+          'set "siteUrl": "https://example.com" in kadam.json (project mode only)',
+        );
+      }
+    }
   }
 
   return diagnostics.sorted();
@@ -94,6 +109,9 @@ function analyzeElement(
       case "container":
       case "navigation bar":
       case "divider":
+        break;
+      default:
+        analyzeF1Element(element, kind, diagnostics);
         break;
     }
   }
@@ -265,17 +283,18 @@ function analyzeField(
   diagnostics: DiagnosticBag,
 ): void {
   const label = findStatement(element, "field-label") as FieldLabelStatement | null;
+  const kindName = builtinKind(element) ?? "text field";
   if (label === null) {
     diagnostics.error(
       "KDM3009",
-      `text field ${JSON.stringify(element.name)} requires a label`,
+      `${kindName} ${JSON.stringify(element.name)} requires a label`,
       element.nameSpan,
       'add the label says "Email"',
     );
   } else if (label.value.length === 0) {
     diagnostics.error(
       "KDM3009",
-      "a text field label cannot be empty",
+      `a ${kindName} label cannot be empty`,
       label.valueSpan,
       "provide a visible, non-empty label",
     );
@@ -297,7 +316,265 @@ function analyzeField(
 }
 
 function articleFor(kind: BuiltinKindName): string {
-  return kind === "image" ? "an" : "a";
+  return /^[aeiou]/.test(kind) ? "an" : "a";
+}
+
+// ---------------------------------------------------------------------------
+// kadam 0.3 (F1) content requirements.
+
+const HEADING_LEVELS: Readonly<Partial<Record<BuiltinKindName, number>>> = {
+  "main heading": 1,
+  "section heading": 2,
+  "minor heading": 3,
+  "small heading": 4,
+};
+
+/** Allowed asset extensions, per use. */
+export const ASSET_EXTENSIONS = {
+  image: ["png", "jpg", "jpeg", "webp", "avif", "gif", "svg"],
+  icon: ["svg", "png"],
+  video: ["mp4", "webm"],
+  audio: ["mp3", "ogg", "wav", "m4a"],
+  captions: ["vtt"],
+  pageIcon: ["png", "svg", "ico"],
+  shareImage: ["png", "jpg", "jpeg", "webp"],
+} as const;
+
+/** Shared path rules for every asset reference (spec §6.11). */
+export function checkAssetPath(
+  value: string,
+  span: Span,
+  extensions: readonly string[],
+  what: string,
+  diagnostics: DiagnosticBag,
+): void {
+  const normalized = value.replaceAll("\\", "/");
+  const segments = normalized.split("/");
+  const extension = normalized.slice(normalized.lastIndexOf(".") + 1).toLowerCase();
+  const invalid =
+    value.length === 0 ||
+    normalized.startsWith("/") ||
+    /^[A-Za-z]:/.test(normalized) ||
+    value.includes("\\") ||
+    normalized.includes("?") ||
+    normalized.includes("#") ||
+    segments.includes("..") ||
+    !normalized.includes(".") ||
+    !extensions.includes(extension);
+  if (invalid) {
+    diagnostics.error(
+      "KDM3005",
+      `invalid ${what} ${JSON.stringify(value)}`,
+      span,
+      `use a project-root-relative path without .., ending in ${extensions.join(", ")}`,
+    );
+  }
+}
+
+function require(
+  element: ElementNode,
+  present: boolean,
+  what: string,
+  hint: string,
+  diagnostics: DiagnosticBag,
+): void {
+  if (present) return;
+  diagnostics.error("KDM3009", `${JSON.stringify(element.name)} requires ${what}`, element.nameSpan, hint);
+}
+
+function analyzeF1Element(
+  element: ElementNode,
+  kind: BuiltinKindName,
+  diagnostics: DiagnosticBag,
+): void {
+  const has = (type: StatementNode["type"]): boolean => findStatement(element, type) !== null;
+  switch (kind) {
+    case "small heading":
+    case "list item":
+    case "cell":
+    case "code block":
+      requireText(element, kind, diagnostics);
+      analyzeTextSpans(element, diagnostics);
+      return;
+    case "section":
+      require(
+        element,
+        containsHeading(element),
+        "a heading inside it, which names the section",
+        "add a section heading (or any heading) as a child",
+        diagnostics,
+      );
+      return;
+    case "table":
+      require(element, has("caption"), "a caption", 'add the caption says "..."', diagnostics);
+      require(element, element.children.length > 0, "at least one row", "add a row with cells", diagnostics);
+      return;
+    case "video": {
+      const source = findStatement(element, "media-source");
+      require(element, source !== null, "a source", 'add it plays "assets/intro.mp4"', diagnostics);
+      if (source !== null) checkAssetPath(source.value, source.valueSpan, ASSET_EXTENSIONS.video, "video source", diagnostics);
+      const captions = findStatement(element, "captions");
+      const noSpeech = findStatement(element, "no-speech");
+      if (captions !== null && noSpeech !== null) {
+        diagnostics.error("KDM3005", "a video cannot have captions and no speech", noSpeech.span, "remove one of the two statements");
+      }
+      require(
+        element,
+        captions !== null || noSpeech !== null,
+        "captions, or it has no speech",
+        'add the captions are "assets/intro.vtt", or it has no speech if nothing is said',
+        diagnostics,
+      );
+      if (captions !== null) checkAssetPath(captions.value, captions.valueSpan, ASSET_EXTENSIONS.captions, "captions file", diagnostics);
+      const poster = findStatement(element, "poster");
+      if (poster !== null) checkAssetPath(poster.value, poster.valueSpan, ASSET_EXTENSIONS.image, "poster image", diagnostics);
+      return;
+    }
+    case "audio clip": {
+      const source = findStatement(element, "media-source");
+      require(element, source !== null, "a source", 'add it plays "assets/episode.mp3"', diagnostics);
+      if (source !== null) checkAssetPath(source.value, source.valueSpan, ASSET_EXTENSIONS.audio, "audio source", diagnostics);
+      return;
+    }
+    case "icon": {
+      const source = findStatement(element, "image-source");
+      require(element, source !== null, "a source", 'add it shows "assets/check.svg"', diagnostics);
+      if (source !== null) checkAssetPath(source.value, source.valueSpan, ASSET_EXTENSIONS.icon, "icon source", diagnostics);
+      require(
+        element,
+        has("image-description") || has("decorative"),
+        "a description or an explicit decorative marker",
+        'add the description says "..." or it is decorative',
+        diagnostics,
+      );
+      return;
+    }
+    case "text area":
+    case "checkbox":
+      analyzeField(element, diagnostics);
+      return;
+    case "dropdown":
+    case "radio group":
+      analyzeField(element, diagnostics);
+      require(element, has("options"), "options", 'add the options are "One", "Two"', diagnostics);
+      return;
+    case "form":
+      require(element, has("form-action"), "a destination", 'add it sends to "https://example.com/subscribe"', diagnostics);
+      return;
+    default:
+      return;
+  }
+}
+
+function containsHeading(element: ElementNode): boolean {
+  return element.children.some((child) => {
+    const kind = builtinKind(child);
+    return (kind !== null && HEADING_LEVELS[kind] !== undefined) || containsHeading(child);
+  });
+}
+
+/** Each span's words appear exactly once in the text, and spans never overlap. */
+function analyzeTextSpans(element: ElementNode, diagnostics: DiagnosticBag): void {
+  const text = findText(element);
+  const ranges: { start: number; end: number; span: Span }[] = [];
+  for (const statement of element.statements) {
+    if (statement.type !== "text-span") continue;
+    if (text === null) continue;
+    const first = text.value.indexOf(statement.target);
+    const count = first === -1 ? 0 : text.value.split(statement.target).length - 1;
+    if (count !== 1) {
+      diagnostics.error(
+        "KDM3005",
+        count === 0
+          ? `the words ${JSON.stringify(statement.target)} do not appear in the text`
+          : `the words ${JSON.stringify(statement.target)} appear ${count} times in the text`,
+        statement.targetSpan,
+        "an inline span must name words that appear exactly once; quote a longer phrase",
+      );
+      continue;
+    }
+    const range = { start: first, end: first + statement.target.length, span: statement.targetSpan };
+    const overlap = ranges.find((other) => range.start < other.end && other.start < range.end);
+    if (overlap !== undefined) {
+      diagnostics.error(
+        "KDM3005",
+        `inline span ${JSON.stringify(statement.target)} overlaps another span`,
+        statement.targetSpan,
+        "spans cannot overlap or nest",
+        [{ span: overlap.span, message: "overlapping span" }],
+      );
+      continue;
+    }
+    ranges.push(range);
+  }
+}
+
+function analyzeF1Page(
+  page: import("../ast/nodes.js").PageNode,
+  routes: ReadonlyMap<string, string>,
+  diagnostics: DiagnosticBag,
+): void {
+  // Page metadata assets.
+  for (const setting of page.settings) {
+    if (setting.property === "icon") {
+      checkAssetPath(setting.value, setting.valueSpan, ASSET_EXTENSIONS.pageIcon, "page icon", diagnostics);
+    } else if (setting.property === "share image") {
+      checkAssetPath(setting.value, setting.valueSpan, ASSET_EXTENSIONS.shareImage, "share image", diagnostics);
+    }
+  }
+
+  // Heading outline, submit buttons, and inline-span links, in document order.
+  const mainHeadings: ElementNode[] = [];
+  let previousLevel = 0;
+  const visit = (elements: readonly ElementNode[], insideForm: boolean): void => {
+    for (const element of elements) {
+      const kind = builtinKind(element);
+      const level = kind === null ? undefined : HEADING_LEVELS[kind];
+      if (level !== undefined) {
+        if (level === 1) mainHeadings.push(element);
+        if (previousLevel > 0 && level > previousLevel + 1) {
+          diagnostics.warning(
+            "KDM3009",
+            `heading levels skip from ${previousLevel} to ${level}`,
+            element.nameSpan,
+            "use the next heading level down so the outline stays navigable",
+          );
+        }
+        previousLevel = level;
+      }
+      for (const statement of element.statements) {
+        if (statement.type === "submit") {
+          if (!insideForm) {
+            diagnostics.error("KDM3005", "a submit button must be inside a form", statement.span, "move the button into a form");
+          }
+          if (findStatement(element, "click") !== null) {
+            diagnostics.error("KDM3005", "a submit button cannot also have a click action", statement.span, "remove the click action");
+          }
+        }
+        if (statement.type === "text-span" && statement.effect.type === "navigate" && !routes.has(statement.effect.pageTitle)) {
+          diagnostics.error(
+            "KDM3007",
+            `unknown page reference ${JSON.stringify(statement.effect.pageTitle)}`,
+            statement.effect.pageSpan,
+            "use the exact title of a page in the project",
+          );
+        }
+      }
+      if (kind !== null && TEXT_CONTENT_KINDS.has(kind)) analyzeTextSpans(element, diagnostics);
+      visit(element.children, insideForm || kind === "form");
+    }
+  };
+  visit(page.elements, false);
+
+  if (mainHeadings.length > 1) {
+    diagnostics.error(
+      "KDM3009",
+      "a page has at most one main heading",
+      mainHeadings[1]!.nameSpan,
+      "use a section heading for the second title",
+      [{ span: mainHeadings[0]!.nameSpan, message: "first main heading" }],
+    );
+  }
 }
 
 export function isTextContentKind(kind: BuiltinKindName): boolean {

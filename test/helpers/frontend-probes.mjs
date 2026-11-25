@@ -32,6 +32,8 @@ export function probeSource(probe) {
   }
   if (probe.kind === "text field") lines.push('the label says "Name"');
   if (probe.statement !== "") lines.push(probe.statement);
+  // Optional extra body lines: the minimum content a kind requires.
+  for (const line of probe.body ?? []) lines.push(line);
   const body = lines.map((line) => `        ${line}`).join("\n");
   return `kadam 0.3\npage "P" {\n    x1 {\n${body}\n    }\n}\n`;
 }
