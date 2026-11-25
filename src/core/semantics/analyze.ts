@@ -25,6 +25,8 @@ export interface SemanticOptions {
   readonly pages?: readonly SemanticPage[];
   /** The project manifest declares a siteUrl (needed for share images). */
   readonly hasSiteUrl?: boolean;
+  /** kadam 0.3: custom font names declared in kadam.json. */
+  readonly fonts?: ReadonlySet<string>;
 }
 
 const TEXT_CONTENT_KINDS: ReadonlySet<BuiltinKindName> = new Set([
@@ -61,6 +63,7 @@ export function analyzeDocument(
   }
   if (document.languageVersion !== "0.1") {
     analyzeF1Page(page, routes, diagnostics);
+    checkCustomFonts(page.elements, options.fonts ?? new Set(), diagnostics);
     for (const setting of page.settings) {
       if (setting.property === "share image" && options.hasSiteUrl !== true) {
         diagnostics.error(
@@ -74,6 +77,30 @@ export function analyzeDocument(
   }
 
   return diagnostics.sorted();
+}
+
+/** Every `the font is "Name"` must name a font declared in kadam.json. */
+function checkCustomFonts(
+  elements: readonly ElementNode[],
+  fonts: ReadonlySet<string>,
+  diagnostics: DiagnosticBag,
+): void {
+  for (const element of elements) {
+    for (const statement of element.statements) {
+      const inner = statement.type === "responsive" || statement.type === "scoped" ? statement.statement : statement;
+      if (inner.type === "custom-font" && !fonts.has(inner.name)) {
+        diagnostics.error(
+          "KDM3005",
+          `unknown font ${JSON.stringify(inner.name)}`,
+          inner.nameSpan,
+          fonts.size === 0
+            ? `declare it in kadam.json: "fonts": { "${inner.name}": { "source": "assets/fonts/${inner.name.replaceAll(" ", "")}.woff2" } }`
+            : `declared fonts: ${[...fonts].map((name) => JSON.stringify(name)).join(", ")}`,
+        );
+      }
+    }
+    checkCustomFonts(element.children, fonts, diagnostics);
+  }
 }
 
 function analyzeElement(
@@ -393,6 +420,7 @@ function analyzeF1Element(
     case "list item":
     case "cell":
     case "code block":
+    case "badge":
       requireText(element, kind, diagnostics);
       analyzeTextSpans(element, diagnostics);
       return;

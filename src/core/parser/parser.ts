@@ -47,6 +47,8 @@ export interface ParseOptions {
   readonly defaultLanguageVersion?: UiLanguageVersion | undefined;
   /** kadam 0.3 custom breakpoints from kadam.json: name to min-width px. */
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
+  /** kadam 0.3 theme color names from the project theme (D-38). */
+  readonly colorTokens?: ReadonlySet<string> | undefined;
 }
 
 export interface LogicalLine {
@@ -92,6 +94,7 @@ export function parseSource(
     diagnostics,
     options.defaultLanguageVersion ?? LANGUAGE_VERSION,
     options.breakpoints,
+    options.colorTokens,
   ).parse();
   if (options.validate !== false) {
     validateDocument(document, diagnostics, {
@@ -133,6 +136,8 @@ class Parser {
   #versionSpan: Span | null = null;
   #languageVersion: UiLanguageVersion;
   readonly #breakpoints: ReadonlyMap<string, number> | undefined;
+  /** Theme color names: the project theme plus those this file declares. */
+  readonly #colorTokens: Set<string>;
   #sawTopLevelLine = false;
   #pageSeen = false;
   #page: PageBuilder | null = null;
@@ -146,8 +151,10 @@ class Parser {
     diagnostics: DiagnosticBag,
     defaultLanguageVersion: UiLanguageVersion,
     breakpoints: ReadonlyMap<string, number> | undefined = undefined,
+    colorTokens: ReadonlySet<string> | undefined = undefined,
   ) {
     this.#breakpoints = breakpoints;
+    this.#colorTokens = new Set(colorTokens ?? []);
     this.#languageVersion = defaultLanguageVersion;
     this.#source = source;
     this.#lines = lines;
@@ -536,6 +543,7 @@ class Parser {
       allowResponsive: true,
       languageVersion: this.#languageVersion,
       breakpoints: this.#breakpoints,
+      colorTokens: this.#colorTokens,
     };
     const match = matchLine(tokens, context);
     for (const diagnostic of match.diagnostics) this.#diagnostics.addSpec(diagnostic);
@@ -549,6 +557,8 @@ class Parser {
       if (node.type === "page-setting") {
         const page = this.#page!;
         page.settings.push(node);
+        // A theme color is usable on the lines after its declaration (D-38).
+        if (node.property === "color token") this.#colorTokens.add(node.name);
         return;
       }
       this.#error(

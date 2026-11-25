@@ -852,6 +852,144 @@ when its parent is wider than 50rem, it has 32px gap between children
   increasing width, then `wider than` conditions by increasing width, then
   `narrower than` conditions by decreasing width, so the more specific rule wins.
 
+### 6.17 Styling, themes, states, and motion (*kadam 0.3*)
+
+Everything here is new in `kadam 0.3`; in a `kadam 0.1` file each sentence,
+`rgb()`/`hsl()` color, and `deg` angle is `KDM2013`.
+
+**Colors.** Besides named colors and hex, a color may be `rgb(37, 99, 235)`,
+`rgb(37 99 235 / 50%)`, `rgba(...)`, `hsl(220, 83%, 53%)`, or `hsla(...)`. Each
+is converted to hex at compile time (`#2563eb`, or `#2563eb80` with alpha).
+`the opacity is 50%` sets the opacity of any kind (property table row).
+
+**Borders, corners, outline**
+
+| Sentence | CSS |
+| --- | --- |
+| `has a 2px dashed red border` / `has a dotted blue border` | `border` plus `border-style` |
+| `has a 1px #E5E5E5 border on the bottom` / `on the left and right` | `border-bottom` / `border-left`, `border-right` |
+| `has 12px rounded corners on the top` / `on the bottom right` | `border-top-left-radius`, ... |
+| `has fully rounded corners on the left` | the same, as a pill |
+| `has a 2px blue outline` | `outline` with a 2px offset |
+
+A side border refines a full border, so both may be written. On a form field,
+borders, outlines, backgrounds, shadows, and text styles apply to the input;
+layout and size apply to the field.
+
+**Backgrounds**
+
+| Sentence | CSS |
+| --- | --- |
+| `has a blue and white and red gradient` (2 to 8 colors) | `linear-gradient(to bottom, ...)` |
+| `has a radial white and blue gradient` | `radial-gradient(circle, ...)` |
+| `the gradient goes at 135deg` | the angle of any linear gradient |
+| `has a "assets/hero.jpg" background image` | `background-image`, `cover`, centered, no repeat |
+| `the background image fits inside its box` / `covers its box` / `repeats` | `background-size`, `background-repeat` |
+| `the background image keeps the top in view` | `background-position` |
+
+`the gradient goes from left to right` also applies to a multi-color gradient.
+A radial gradient has no direction. An element has a background image or a
+gradient, not both; a solid background color may sit under an image.
+Background images are copied like other assets.
+
+**Text**
+
+| Sentence | CSS |
+| --- | --- |
+| `the text is underlined` / `struck through` / `not underlined` | `text-decoration-line` |
+| `the text is uppercase` / `lowercase` / `capitalized` | `text-transform` |
+| `the text is at most 65 characters wide` (10 to 200) | `max-width: 65ch` |
+| `it shows at most 2 lines` (1 to 10) | line clamp; one line is an ellipsis |
+| `the font is "Inter"` | a custom font from `kadam.json` |
+
+A custom font must be declared in `kadam.json` `fonts` (a local `.woff2` or
+`.woff` file; no remote fonts), or the sentence is `KDM3005`. It applies to
+text kinds and to containers, whose text inherits it. The page stylesheet gets
+an `@font-face` rule with `font-display: swap`, and the fallback stack is used
+while the font loads.
+
+**Shadows and effects**
+
+| Sentence | CSS |
+| --- | --- |
+| `has a soft blue shadow` (any preset and color) | `box-shadow` |
+| `has an inner shadow` / `has an inner strong shadow` | `box-shadow: inset ...` |
+| `has a #0000001A shadow that is 24px blurred and 8px down` | a custom shadow (`up`, `left`, `right` too) |
+| `it is blurred by 4px` | `filter: blur(4px)` |
+| `it blurs the background behind it by 12px` | `backdrop-filter` (with the Safari prefix) |
+| `it is rotated by 10deg` / `it is moved 8px down` / `it is scaled to 110%` | `rotate` / `translate` / `scale` |
+
+**Interaction states**
+
+```kdm
+when focused, the border turns blue
+when pressed, it scales to 102%
+when disabled, the background turns gray
+when checked, the background turns honeydew
+when invalid, the border turns red
+when hovered, it rotates by 10deg
+```
+
+States use the hover effects (`the background|text|border turns`,
+`it lifts by`, `it scales to`) plus `it rotates by`, with an optional
+`over <duration>`. `focused` applies to buttons, links, and form controls
+(`:focus-visible`; the built-in focus ring always stays); `pressed` to buttons
+and links (`:active`); `disabled` to buttons and form controls; `checked` to a
+checkbox; `invalid` to a text field, text area, or dropdown (`:user-invalid`,
+so the style appears after the user has interacted; Safari 16.5 and later).
+A border color effect needs a base border (`KDM3014`). Every transition is
+turned off under `prefers-reduced-motion`.
+
+**Motion**
+
+| Sentence | Result |
+| --- | --- |
+| `it fades in when it scrolls into view` / `it slides in from the left when it scrolls into view` | a scroll-driven entrance behind `@supports (animation-timeline: view())`; browsers without it show the element at once |
+| `it spins forever` / `it pulses every 2s` / `it bounces` / `it floats` | a looping animation; keyframes are emitted only on pages that use them |
+| `its children fade in one after another` / `slide in from the bottom one after another` | each child enters 100ms after the previous one |
+
+An entrance and a loop are the element's one animation (`KDM3004`). All motion
+is turned off under `prefers-reduced-motion`.
+
+**A badge.** `a badge` is a short pill of text (`span`); it requires text.
+
+**Theme colors and dark mode** (decision D-38)
+
+```kdm
+the brand color is #4F46E5
+in dark mode, the brand color is #818CF8
+the page is dark when the system is dark
+
+heroCta {
+    a button
+    the text says "Start"
+    has a brand background
+    in dark mode, the text is #111418
+}
+```
+
+- `the <name> color is <color>` declares a theme color; the name is one
+  lower-case word that is not a reserved word or a CSS color name. It is
+  usable anywhere a color is, on the lines after the declaration. Page colors
+  apply to that page; a project theme file (`"theme": "theme.kdm"` in
+  `kadam.json`, holding a `theme { ... }` block of theme colors) applies to
+  every page and component, and a page color with the same name replaces it.
+- Theme colors are CSS custom properties (`--kdm-color-brand` on `:root`).
+- `in dark mode, ...` wraps one statement, like `on phones,`, and applies under
+  `@media (prefers-color-scheme: dark)`. It also accepts the page background,
+  the page text, and theme colors. It cannot be nested with other scopes.
+- `the page is dark when the system is dark` turns on dark versions of Kadam's
+  own default colors (page, text, cards, navigation bars, fields, code blocks,
+  dividers, cells, badges, links) and `color-scheme: light dark`. Colors the
+  author wrote are not changed; override them with `in dark mode,`.
+
+**Contrast** (decision D-39). For every element with text whose color and
+background are known at compile time (through ancestors, the page, theme
+colors, and in dark mode when the page uses it), the compiler checks WCAG
+2.2 AA: 4.5:1, or 3:1 for text 24px and up or bold text 18.66px and up. A
+failure is warning `KDM3039`; it never blocks a build. Gradients, background
+images, semi-transparent colors, and opacity are not guessed at.
+
 ---
 
 ## 7. Events and interactions
@@ -1446,6 +1584,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3014 | Hover border color requires a base border |
 | KDM3015 | Hover background color is invalid on a gradient |
 | KDM3038 | Warning: two elements are pinned to the same spot (*kadam 0.3*) |
+| KDM3039 | Warning: text contrast is below WCAG AA (*kadam 0.3*, D-39) |
 
 **Project (`KDM4xxx`)**
 

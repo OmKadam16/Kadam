@@ -74,6 +74,8 @@ export interface ComponentParseOptions {
   readonly defaultLanguageVersion?: UiLanguageVersion | undefined;
   /** kadam 0.3 custom breakpoints from kadam.json. */
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
+  /** kadam 0.3 theme color names from the project theme (D-38). */
+  readonly colorTokens?: ReadonlySet<string> | undefined;
 }
 
 export function parseComponentSource(
@@ -91,6 +93,7 @@ export function parseComponentSource(
     diagnostics,
     options.defaultLanguageVersion ?? LANGUAGE_VERSION,
     options.breakpoints,
+    options.colorTokens,
   ).parse();
 
   return {
@@ -123,6 +126,8 @@ class ComponentParser {
   #versionSpan: Span | null = null;
   #languageVersion: UiLanguageVersion;
   readonly #breakpoints: ReadonlyMap<string, number> | undefined;
+  /** Theme color names: the project theme plus those this file declares. */
+  readonly #colorTokens: Set<string>;
   #sawTopLevelLine = false;
   #componentSeen = false;
   #component: ComponentBuilder | null = null;
@@ -138,8 +143,10 @@ class ComponentParser {
     diagnostics: DiagnosticBag,
     defaultLanguageVersion: UiLanguageVersion,
     breakpoints: ReadonlyMap<string, number> | undefined = undefined,
+    colorTokens: ReadonlySet<string> | undefined = undefined,
   ) {
     this.#breakpoints = breakpoints;
+    this.#colorTokens = new Set(colorTokens ?? []);
     this.#languageVersion = defaultLanguageVersion;
     this.#source = source;
     this.#lines = lines;
@@ -740,6 +747,7 @@ class ComponentParser {
       allowResponsive: true,
       languageVersion: this.#languageVersion,
       breakpoints: this.#breakpoints,
+      colorTokens: this.#colorTokens,
     });
     for (const diagnostic of match.diagnostics) this.#diagnostics.addSpec(diagnostic);
     const node = match.selected?.body.statement ?? null;

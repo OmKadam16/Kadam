@@ -1125,6 +1125,56 @@ Features outside the matrix (for example scroll-driven animations or the
 explicit capability diagnostic. The matrix is part of the language version, so
 changing it requires at least a minor version bump.
 
+### D-38 — Theme colors and dark mode
+
+**Status:** Approved 2026-11-25; implemented behind `kadam 0.3` (F3)
+**Answers:** open question 5 (design tokens), for colors
+
+**Decision.**
+
+1. **Color tokens.** `the brand color is #FF0066` declares a named color. A
+   name is one lower-case word that is not a reserved word or a CSS color
+   name. It is used anywhere a color is accepted: `has a brand background`,
+   `the text is brand`, `when hovered, the border turns brand`. An undeclared
+   word in a color position stays the existing "expected a color" error.
+2. **Where tokens live.** In a project theme file named by `kadam.json`
+   (`"theme": "theme.kdm"`, a `theme { ... }` block), shared by every page, or
+   in a page body, for that page only. A page token with the same name as a
+   theme token replaces it on that page.
+3. **Output.** Tokens are CSS custom properties (`--kdm-color-brand`) on
+   `:root` in the page stylesheet, and uses are `var(--kdm-color-brand)`. The
+   compiler still knows every value, so contrast checks (D-39) see through
+   tokens.
+4. **Dark mode follows the system.** `in dark mode, ...` is a scope like
+   `on phones,`, emitted as `@media (prefers-color-scheme: dark)`. It works for
+   element statements, for `the page background is` and `the page text is`,
+   and for tokens (`in dark mode, the brand color is #FF4D8D`).
+5. **Built-in dark palette.** `the page is dark when the system is dark` opts a
+   page into dark versions of Kadam's own defaults (page, text, cards, fields,
+   code blocks, dividers, badges, links) and sets `color-scheme: light dark`,
+   so native form controls and scrollbars match. Colors the author wrote are
+   never changed automatically; the author overrides them with `in dark mode,`.
+   A user-facing toggle arrives with the F4 runtime.
+
+**Deferred.** Spacing, radius, font, and shadow tokens. Color tokens are the
+part dark mode needs; the others need a typed-scale design (`small`, `medium`,
+`large` spacing) and are planned for F7 with completion support.
+
+### D-39 — Contrast check severity
+
+**Status:** Approved 2026-11-25; implemented as a warning (F3)
+**Answers:** open question 14 (accessibility errors versus warnings)
+
+**Decision.** When an element's text color and the background behind it are
+both known at compile time (solid colors and tokens, through ancestors and
+the page, in light and in dark mode), the compiler checks them against WCAG
+2.2 AA: 4.5:1 for normal text, 3:1 for large text (24px and up, or 18.66px and
+up when bold). In `kadam 0.3` a failure is warning `KDM3039`, which never
+blocks a build. Pairs that are not known statically (gradients, background
+images, semi-transparent colors) are not guessed at; the browser test suite
+measures them. The plan is that the warning becomes an error in Kadam 1.0,
+with an explicit per-element opt-out for decorative text.
+
 ---
 
 ## Approval checklist
@@ -1167,6 +1217,8 @@ changing it requires at least a minor version bump.
 | D-34 | Reserved element names; single-diagnostic recovery | F0 | Implemented | Implemented |
 | D-35 | Browser support matrix | F2 | Approve | Approved |
 | D-37 | Frontend vocabulary is contextual, not reserved | F1 | Implemented | Implemented |
+| D-38 | Theme colors and dark mode | F3 | Approve | Approved — implemented behind kadam 0.3 |
+| D-39 | Contrast check is a warning in 0.3 | F3 | Approve | Approved — implemented |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

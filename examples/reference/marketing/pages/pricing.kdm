@@ -1,6 +1,7 @@
 page "Pricing" {
     the page description says "Acme plans and prices."
     the page icon is "assets/icon.svg"
+    the page is dark when the system is dark
 
     siteHeader {
         a header
@@ -24,6 +25,8 @@ page "Pricing" {
         }
         planTable {
             a table
+            it is full width
+            it is at most 640px wide
             the caption says "Monthly plans"
             headRow {
                 a header row

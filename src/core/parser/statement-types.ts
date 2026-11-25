@@ -13,6 +13,8 @@ export interface TemplateContext {
   readonly languageVersion?: UiLanguageVersion | undefined;
   /** kadam 0.3 custom breakpoints from kadam.json: name to min-width in px. */
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
+  /** kadam 0.3 theme color names declared so far (D-38). */
+  readonly colorTokens?: ReadonlySet<string> | undefined;
 }
 
 /**

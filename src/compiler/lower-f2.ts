@@ -250,6 +250,8 @@ function describeScope(statement: ScopedStatement): { query: string; order: numb
   if (scope.kind === "breakpoint") {
     return { query: `@media (min-width: ${scope.minWidth}px)`, order: scope.minWidth };
   }
+  // Dark mode comes last, so it overrides every other scope (D-38).
+  if (scope.kind === "dark") return { query: "@media (prefers-color-scheme: dark)", order: 5_000_000 };
   const width = px(scope.width);
   const operator = scope.comparison === "narrower" ? "<" : ">";
   return {

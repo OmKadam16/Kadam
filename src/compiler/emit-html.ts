@@ -21,6 +21,8 @@ export function emitHtml(page: PageIR): string {
     '  <meta name="viewport" content="width=device-width, initial-scale=1">',
     `  <title>${escapeText(page.title)}</title>`,
     ...(meta === undefined ? [] : metaLines(page.title, meta)),
+    // kadam 0.3 (D-38): native controls and scrollbars follow the system theme.
+    ...(page.pageStyle.autoDark === true ? ['  <meta name="color-scheme" content="light dark">'] : []),
     `  <link rel="stylesheet" href="${escapeAttribute(baseCssHref(page.basePath))}">`,
     `  <link rel="stylesheet" href="${escapeAttribute(pageCssHref(page.routeSlug, page.basePath))}">`,
     "</head>",
@@ -111,6 +113,8 @@ function renderElementTag(element: IrElement, depth: number): string {
     // kadam 0.3 (F1)
     case "small heading":
       return textElement(element, "h4", indent, classAttribute);
+    case "badge":
+      return textElement(element, "span", indent, classAttribute);
     case "list item":
       return textElement(element, "li", indent, classAttribute);
     case "cell":

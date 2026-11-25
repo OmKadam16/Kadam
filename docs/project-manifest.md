@@ -51,6 +51,8 @@ MyWebsite/
 | `basePath` | string | no | `""` | Deployment prefix such as `"/my-site"`. Must start with `/` or be empty. |
 | `siteUrl` | string | no | — | *kadam 0.3.* Absolute origin such as `"https://example.com"` (no path; use `basePath`). Adds canonical links, Open Graph URLs, share images, and `sitemap.xml`. |
 | `breakpoints` | object | no | — | *kadam 0.3.* Extra min-width breakpoints, e.g. `{ "wide": 1440 }`, used as `on wide screens, ...`. Names are one lower-case word other than `phones`, `tablets`, `desktops`; widths are whole pixels from 1 to 10000; at most 8. |
+| `fonts` | object | no | — | *kadam 0.3.* Local font files used as `the font is "Inter"`: `{ "Inter": { "source": "assets/fonts/Inter.woff2", "weight": "100 900", "style": "normal", "fallback": "sans serif" } }`. `source` is a project `.woff2` or `.woff` file (no remote fonts); `weight` defaults to `"400"`, `style` to `"normal"`, `fallback` to `"sans serif"`. Only fonts a page uses are copied. |
+| `theme` | string | no | — | *kadam 0.3.* A `.kdm` file with a `theme { ... }` block of theme colors (`the brand color is #4F46E5`, `in dark mode, the brand color is #818CF8`), shared by every page and component (D-38). |
 
 Unknown top-level keys and unknown page keys are errors, so a typo is never
 silently ignored.

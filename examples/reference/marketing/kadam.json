@@ -2,9 +2,16 @@
   "kadam": "0.3",
   "name": "reference-marketing",
   "siteUrl": "https://example.com",
+  "theme": "theme.kdm",
   "pages": [
-    { "source": "pages/home.kdm", "route": "/" },
-    { "source": "pages/pricing.kdm", "route": "/pricing" }
+    {
+      "source": "pages/home.kdm",
+      "route": "/"
+    },
+    {
+      "source": "pages/pricing.kdm",
+      "route": "/pricing"
+    }
   ],
   "assets": "assets",
   "outDir": "dist"

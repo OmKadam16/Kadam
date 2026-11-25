@@ -17,8 +17,11 @@ export interface IrLength {
 }
 
 export interface IrColor {
-  readonly kind: "named" | "hex";
+  /** `token` (kadam 0.3): `value` is `var(--kdm-color-<name>)`. */
+  readonly kind: "named" | "hex" | "token";
   readonly value: string;
+  /** The theme color name, for a token. */
+  readonly token?: string;
 }
 
 export interface IrDuration {
@@ -162,6 +165,38 @@ export interface IrAuthoredStyle {
 export interface IrDeclaration {
   readonly property: string;
   readonly value: string;
+}
+
+/** kadam 0.3 (F3) interaction state: one selector and its declarations. */
+export interface IrStateStyle {
+  readonly state: "hovered" | "focused" | "pressed" | "disabled" | "checked" | "invalid";
+  readonly selector: string;
+  readonly declarations: readonly IrDeclaration[];
+}
+
+/** A transitioned property for state effects, merged with hover transitions. */
+export interface IrTransition {
+  readonly property: string;
+  readonly duration: string;
+}
+
+/** An extra rule an element needs (scroll entrance, staggered children). */
+export interface IrRule {
+  /** An at-rule wrapper such as `@supports (...)`, or null. */
+  readonly at: string | null;
+  readonly selector: string;
+  readonly declarations: readonly IrDeclaration[];
+  /** Turned off (`animation: none`) under prefers-reduced-motion. */
+  readonly reducedMotion: boolean;
+}
+
+/** A custom font from kadam.json, emitted as @font-face where used. */
+export interface IrFontFace {
+  readonly family: string;
+  readonly url: string;
+  readonly format: "woff2" | "woff";
+  readonly weight: string;
+  readonly style: "normal" | "italic";
 }
 
 export interface IrTextProperty {
@@ -338,6 +373,12 @@ export interface IrElement {
   readonly scopes?: readonly IrScopedStyle[];
   /** A scroll container: keyboard users can focus and scroll it. */
   readonly scrollable?: true;
+  /** kadam 0.3 (F3) interaction states. */
+  readonly states?: readonly IrStateStyle[];
+  readonly stateTransitions?: readonly IrTransition[];
+  readonly rules?: readonly IrRule[];
+  /** Looping animation names used by this element (`spin`, `pulse`, ...). */
+  readonly loops?: readonly string[];
 }
 
 export interface IrPageStyle {
@@ -349,6 +390,17 @@ export interface IrPageStyle {
     readonly text: boolean;
     readonly font: boolean;
   };
+  /** kadam 0.3: `in dark mode, the page background|text is ...` (D-38). */
+  readonly dark?: { readonly background?: IrColor; readonly text?: IrColor };
+  /** kadam 0.3: `the page is dark when the system is dark` (D-38). */
+  readonly autoDark?: true;
+}
+
+/** A theme color (D-38): a CSS custom property with light and dark values. */
+export interface IrColorToken {
+  readonly name: string;
+  readonly light: string;
+  readonly dark: string | null;
 }
 
 export interface IrSourceMapping {
@@ -381,6 +433,10 @@ export interface PageIR {
   readonly basePath?: string | undefined;
   /** kadam 0.3 page metadata; absent when the page declares none. */
   readonly meta?: IrPageMeta;
+  /** kadam 0.3 custom fonts used on this page. */
+  readonly fonts?: readonly IrFontFace[];
+  /** kadam 0.3 theme colors available on this page (theme plus page). */
+  readonly colorTokens?: readonly IrColorToken[];
 }
 
 export interface IrPageMeta {

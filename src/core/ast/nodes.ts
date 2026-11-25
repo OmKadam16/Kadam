@@ -55,6 +55,8 @@ export type BuiltinKindName =
   | "audio clip"
   | "icon"
   | "code block"
+  // kadam 0.3 (F3)
+  | "badge"
   | "form"
   | "text area"
   | "checkbox"
@@ -69,7 +71,8 @@ export interface NodeBase {
 
 export interface ColorValue {
   readonly type: "color";
-  readonly kind: "named" | "hex";
+  /** `token` (kadam 0.3, D-38): `value` is the theme color name. */
+  readonly kind: "named" | "hex" | "token";
   readonly value: string;
   readonly raw: string;
   /** An unresolved `{$name}` color parameter, replaced during expansion. */
@@ -262,6 +265,21 @@ export type PageSettingNode =
       readonly type: "page-setting";
       readonly property: "background" | "text";
       readonly value: ColorValue;
+      /** kadam 0.3: `in dark mode, the page background is #111111`. */
+      readonly dark?: true;
+    })
+  // kadam 0.3 (F3, D-38) theme colors and dark mode
+  | (NodeBase & {
+      readonly type: "page-setting";
+      readonly property: "color token";
+      readonly name: string;
+      readonly nameSpan: Span;
+      readonly value: ColorValue;
+      readonly dark?: true;
+    })
+  | (NodeBase & {
+      readonly type: "page-setting";
+      readonly property: "auto dark";
     })
   | (NodeBase & {
       readonly type: "page-setting";
@@ -302,6 +320,7 @@ export type StatementNode =
   | PropertyStatement
   | F1Statement
   | F2Statement
+  | F3Statement
   | ResponsiveStatement
   | ScopedStatement;
 
@@ -375,6 +394,85 @@ export type F2Statement =
     })
   | (NodeBase & { readonly type: "loading"; readonly mode: "lazy" | "eager" });
 
+export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+/** An interaction state effect: the hover effects plus rotation. */
+export type StateEffect = HoverEffect | { readonly type: "rotate"; readonly degrees: number };
+
+export type InteractionState = "hovered" | "focused" | "pressed" | "disabled" | "checked" | "invalid";
+
+/** kadam 0.3 (F3) styling statements; matched in `src/core/parser/matchers-f3.ts`. */
+export type F3Statement =
+  | (NodeBase & {
+      readonly type: "side-border";
+      readonly sides: readonly Side[];
+      readonly width: LengthValue;
+      readonly color: ColorValue;
+      readonly line: "solid" | "dashed" | "dotted";
+    })
+  | (NodeBase & {
+      readonly type: "corner-radius";
+      readonly corners: readonly Corner[];
+      /** Null means fully rounded. */
+      readonly radius: LengthValue | null;
+    })
+  | (NodeBase & { readonly type: "outline"; readonly width: LengthValue; readonly color: ColorValue })
+  | (NodeBase & {
+      readonly type: "gradient";
+      readonly shape: "linear" | "radial";
+      readonly colors: readonly ColorValue[];
+    })
+  | (NodeBase & { readonly type: "gradient-angle"; readonly degrees: number })
+  | (NodeBase & { readonly type: "background-image"; readonly value: string; readonly valueSpan: Span })
+  | (NodeBase & { readonly type: "background-fit"; readonly fit: "cover" | "contain" | "repeat" })
+  | (NodeBase & {
+      readonly type: "background-focus";
+      readonly vertical: "top" | "center" | "bottom";
+      readonly horizontal: "left" | "center" | "right";
+    })
+  | (NodeBase & {
+      readonly type: "text-decoration";
+      readonly value: "underline" | "line-through" | "none";
+    })
+  | (NodeBase & { readonly type: "text-case"; readonly value: "uppercase" | "lowercase" | "capitalize" })
+  | (NodeBase & { readonly type: "text-measure"; readonly characters: number })
+  | (NodeBase & { readonly type: "line-clamp"; readonly lines: number })
+  | (NodeBase & { readonly type: "custom-font"; readonly name: string; readonly nameSpan: Span })
+  | (NodeBase & {
+      readonly type: "custom-shadow";
+      readonly inner: boolean;
+      readonly preset: "soft" | "medium" | "strong" | null;
+      readonly color: ColorValue | null;
+      readonly blur: LengthValue | null;
+      readonly x: LengthValue | null;
+      readonly y: LengthValue | null;
+    })
+  | (NodeBase & { readonly type: "filter"; readonly mode: "blur" | "backdrop-blur"; readonly amount: LengthValue })
+  | (NodeBase & { readonly type: "rotate"; readonly degrees: number })
+  | (NodeBase & { readonly type: "move"; readonly x: LengthValue | null; readonly y: LengthValue | null })
+  | (NodeBase & { readonly type: "scale"; readonly percentage: number })
+  | (NodeBase & {
+      readonly type: "state";
+      readonly state: InteractionState;
+      readonly effect: StateEffect;
+      readonly duration?: DurationValue;
+    })
+  | (NodeBase & {
+      readonly type: "scroll-entrance";
+      readonly effect: "fade" | "slide";
+      readonly direction?: "left" | "right" | "top" | "bottom";
+    })
+  | (NodeBase & {
+      readonly type: "loop";
+      readonly effect: "spin" | "pulse" | "bounce" | "float";
+      readonly duration: DurationValue | null;
+    })
+  | (NodeBase & {
+      readonly type: "stagger";
+      readonly effect: "fade" | "slide";
+      readonly direction?: "left" | "right" | "top" | "bottom";
+    });
+
 /**
  * kadam 0.3 scoped statement: `on wide screens, ...` (a breakpoint from
  * kadam.json) or `when its parent is narrower than 400px, ...` (a container
@@ -387,6 +485,7 @@ export interface ScopedStatement extends NodeBase {
 }
 
 export type StatementScope =
+  | { readonly kind: "dark" }
   | { readonly kind: "breakpoint"; readonly name: string; readonly minWidth: number }
   | {
       readonly kind: "container";
@@ -440,6 +539,8 @@ export type BorderStatement =
       readonly mode: "solid";
       readonly width: LengthValue;
       readonly color: ColorValue;
+      /** kadam 0.3: `has a dashed red border`. Absent means solid. */
+      readonly line?: "dashed" | "dotted";
     });
 
 export type CornersStatement =

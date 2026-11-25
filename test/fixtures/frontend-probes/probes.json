@@ -120,7 +120,7 @@
       "phase": "F3",
       "kind": "badge",
       "statement": "",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p13",
@@ -236,56 +236,56 @@
       "phase": "F3",
       "kind": "container",
       "statement": "has a rgb(255, 0, 0) background",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p29",
       "phase": "F3",
       "kind": "container",
       "statement": "has a dashed red border",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p30",
       "phase": "F3",
       "kind": "container",
       "statement": "has a 2px red border on the bottom",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p31",
       "phase": "F3",
       "kind": "container",
       "statement": "the opacity is 50%",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p32",
       "phase": "F3",
       "kind": "container",
       "statement": "has a blue and white and red gradient",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p33",
       "phase": "F3",
       "kind": "container",
       "statement": "has a \"assets/bg.png\" background image",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p34",
       "phase": "F3",
       "kind": "paragraph",
       "statement": "the text is underlined",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p35",
       "phase": "F3",
       "kind": "paragraph",
       "statement": "the text is uppercase",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p36",
@@ -306,7 +306,7 @@
       "phase": "F3",
       "kind": "paragraph",
       "statement": "the font is \"Inter\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p39",
@@ -348,49 +348,52 @@
       "phase": "F3",
       "kind": "page",
       "statement": "the page is dark when the system is dark",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p45",
       "phase": "F3",
       "kind": "page",
       "statement": "the brand color is #FF0066",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p46",
       "phase": "F3",
       "kind": "button",
       "statement": "when pressed, the background turns red",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p47",
       "phase": "F3",
       "kind": "button",
       "statement": "when focused, the border turns red",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "has a 2px blue border"
+      ]
     },
     {
       "id": "p48",
       "phase": "F3",
       "kind": "container",
       "statement": "it spins forever",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p49",
       "phase": "F3",
       "kind": "container",
       "statement": "it fades in when it scrolls into view",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p50",
       "phase": "F3",
       "kind": "container",
       "statement": "when hovered, it rotates by 10deg",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p51",

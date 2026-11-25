@@ -12,6 +12,8 @@ export type TokenKind =
   | "length"
   | "duration"
   | "percentage"
+  /** kadam 0.3: an angle such as `10deg`. */
+  | "angle"
   | "color"
   | "hex-color"
   | "lbrace"
@@ -29,6 +31,6 @@ export interface Token {
   readonly text: string;
   /** Normalized value: lower-case keyword/color, decoded string, or number. */
   readonly value?: string | number;
-  readonly unit?: LengthUnit | "ms" | "s";
+  readonly unit?: LengthUnit | "ms" | "s" | "deg";
   readonly span: Span;
 }

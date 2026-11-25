@@ -203,7 +203,11 @@ UI files may declare `kadam 0.3` to use syntax added for the frontend track:
 the regular property sentence (`the padding is 24px`), landmarks, lists,
 tables, media, forms that submit, inline links in text, page metadata, and
 layout: grids, `%`/`vw`/`vh`/`em` units, fluid text, size limits, sticky and
-pinned elements, scroll regions, custom breakpoints, and container conditions.
+pinned elements, scroll regions, custom breakpoints, and container conditions;
+and styling: `rgb()`/`hsl()` colors, dashed and per-side borders, multi-color
+gradients, background images, custom fonts, shadows and blur, interaction
+states (`when focused,`, `when pressed,`), scroll and looping animation, theme
+colors, dark mode, and a compile-time contrast check.
 `examples/reference/` holds a marketing site, a docs site, and a dashboard
 written with it. `npm run test:browser` renders them in Chrome at four widths.
 A

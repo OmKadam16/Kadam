@@ -267,6 +267,15 @@ export function createDefaultStyle(
         width: { kind: "length", value: length(24) },
         height: { kind: "length", value: length(24) },
       };
+    case "badge":
+      return {
+        ...base,
+        display: "inline-flex",
+        background: { kind: "solid", color: hexColor("#EEF2FF") },
+        corners: { kind: "pill" },
+        padding: { top: length(2), right: length(10), bottom: length(2), left: length(10) },
+        typography: typography(page.font, 12, 600, "left", "#1E3A8A", 1.5),
+      };
     case "code block":
       return {
         ...base,

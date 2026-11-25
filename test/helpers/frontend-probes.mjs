@@ -17,7 +17,7 @@ export function loadProbes() {
   return JSON.parse(readFileSync(fixture, "utf8")).probes;
 }
 
-const TEXT_KINDS = new Set(["button", "paragraph", "main heading", "section heading", "minor heading"]);
+const TEXT_KINDS = new Set(["button", "paragraph", "main heading", "section heading", "minor heading", "badge"]);
 
 /** Build the smallest page that exercises one probe. */
 export function probeSource(probe) {
@@ -47,8 +47,13 @@ export function probeSource(probe) {
 /** Probes compile against one custom breakpoint, as if kadam.json declared it. */
 export const PROBE_BREAKPOINTS = new Map([["wide", 1440]]);
 
+/** Probes compile against one custom font, as if kadam.json declared it. */
+export const PROBE_FONTS = {
+  Inter: { source: "assets/fonts/Inter.woff2", weight: "100 900", style: "normal", fallback: "sans serif" },
+};
+
 export function runProbe(probe) {
-  const result = compileText("probe.kdm", probeSource(probe), { breakpoints: PROBE_BREAKPOINTS });
+  const result = compileText("probe.kdm", probeSource(probe), { breakpoints: PROBE_BREAKPOINTS, fonts: PROBE_FONTS });
   const first = result.diagnostics[0];
   return {
     probe,

@@ -17,6 +17,8 @@ import {
 } from "../core/components/validate.js";
 import { parseComponentSource } from "../core/parser/component.js";
 import { parseSource } from "../core/parser/parser.js";
+import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
+import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
 import {
@@ -168,6 +170,29 @@ export function compileProject(
   const breakpoints =
     manifest.breakpoints === undefined ? undefined : new Map(Object.entries(manifest.breakpoints));
 
+  // kadam 0.3 project theme (D-38): its colors are usable in every page and component.
+  let themeColors: readonly ThemeColor[] = [];
+  if (manifest.theme !== undefined) {
+    const themeSource = loadProjectSource({
+      projectRoot,
+      realProjectRoot,
+      outDir,
+      sourcePath: manifest.theme,
+      kind: "theme",
+      code: "KDM4002",
+      missingSpan: manifestSpan,
+      overrides: options.sourceOverrides,
+      diagnostics,
+      sources,
+    });
+    if (themeSource !== null) {
+      const theme = parseThemeSource(themeSource);
+      diagnostics.addAll(theme.diagnostics);
+      themeColors = theme.colors;
+    }
+  }
+  const colorTokens = new Set(themeColors.map((color) => color.name));
+
   for (const pageEntry of manifest.pages) {
     const sourcePath = pageEntry.source;
     const source = loadProjectSource({
@@ -189,6 +214,7 @@ export function compileProject(
       allowComponentKinds: true,
       defaultLanguageVersion,
       breakpoints,
+      colorTokens,
     });
     diagnostics.addAll(parsed.diagnostics);
 
@@ -224,7 +250,7 @@ export function compileProject(
     });
     if (source === null) continue;
 
-    const parsed = parseComponentSource(source, { defaultLanguageVersion, breakpoints });
+    const parsed = parseComponentSource(source, { defaultLanguageVersion, breakpoints, colorTokens });
     reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     componentFiles.push({
       source,
@@ -357,6 +383,7 @@ export function compileProject(
       analyzeDocument(loaded.document, {
         pages: semanticPages,
         hasSiteUrl: manifest.siteUrl !== undefined,
+        fonts: new Set(Object.keys(manifest.fonts ?? {})),
       }),
     );
   }
@@ -364,7 +391,7 @@ export function compileProject(
   // Step 8: validate every referenced asset before any output exists.
   const references = new Map<string, Span>();
   for (const loaded of expandedPages) {
-    collectAssetReferences(loaded.document.page!.elements, references);
+    collectAssetReferences(loaded.document.page!.elements, references, manifest.fonts ?? {});
     for (const setting of loaded.document.page!.settings) {
       if ((setting.property === "icon" || setting.property === "share image") && !references.has(setting.value)) {
         references.set(setting.value, setting.valueSpan);
@@ -413,8 +440,14 @@ export function compileProject(
           pageRoutes,
           basePath,
           siteUrl: manifest.siteUrl,
+          fonts: manifest.fonts,
+          themeColors,
         }),
       );
+      // D-39: contrast warnings for kadam 0.3 pages; they never block output.
+      if (loaded.document.languageVersion !== "0.1") {
+        for (const warning of checkContrast(loweredPages.at(-1)!)) diagnostics.warning(warning.code, warning.message, warning.span, warning.hint);
+      }
     }
 
     const files: OutputFile[] = [];
@@ -490,7 +523,7 @@ interface ProjectSourceRequest {
   readonly realProjectRoot: string;
   readonly outDir: string;
   readonly sourcePath: string;
-  readonly kind: "page" | "component";
+  readonly kind: "page" | "component" | "theme";
   readonly code: "KDM4002" | "KDM4007";
   readonly missingSpan: Span;
   readonly overrides: ProjectCompileOptions["sourceOverrides"];
@@ -695,8 +728,20 @@ function readAssetContents(
 function collectAssetReferences(
   elements: readonly ElementNode[],
   out: Map<string, Span>,
+  fonts: Readonly<Record<string, { readonly source: string }>>,
 ): void {
   for (const element of elements) {
+    for (const scoped of element.statements) {
+      // kadam 0.3: background images (any scope) and the files of used fonts.
+      const statement = scoped.type === "responsive" || scoped.type === "scoped" ? scoped.statement : scoped;
+      if (statement.type === "background-image" && !out.has(statement.value)) {
+        out.set(statement.value, statement.valueSpan);
+      }
+      if (statement.type === "custom-font") {
+        const source = fonts[statement.name]?.source;
+        if (source !== undefined && !out.has(source)) out.set(source, statement.nameSpan);
+      }
+    }
     for (const statement of element.statements) {
       if (
         (statement.type === "image-source" ||
@@ -710,7 +755,7 @@ function collectAssetReferences(
         }
       }
     }
-    collectAssetReferences(element.children, out);
+    collectAssetReferences(element.children, out, fonts);
   }
 }
 

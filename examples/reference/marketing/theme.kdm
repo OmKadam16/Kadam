@@ -1,0 +1,14 @@
+// Reference project: marketing site theme (D-38). Shared by every page.
+kadam 0.3
+theme {
+    the paper color is #F7F5F0
+    the brand color is #4F46E5
+    the tint color is #EEF2FF
+    the muted color is #4B5563
+    the line color is #E5E7EB
+    in dark mode, the paper color is #111418
+    in dark mode, the brand color is #818CF8
+    in dark mode, the tint color is #1E1B4B
+    in dark mode, the muted color is #A1A1AA
+    in dark mode, the line color is #2D333D
+}

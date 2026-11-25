@@ -234,7 +234,7 @@ export function lowerPageMeta(
 ): IrPageMeta | undefined {
   const value = (property: string): string | null => {
     for (const setting of settings) {
-      if (setting.property === property && typeof setting.value === "string") return setting.value;
+      if (setting.property === property && "value" in setting && typeof setting.value === "string") return setting.value;
     }
     return null;
   };

@@ -31,6 +31,8 @@ export function matchHover(tokens: readonly Token[]): StatementMatchBody | null 
   if (!isKeyword(tokens[0], "when") || !isKeyword(tokens[1], "hovered")) {
     return null;
   }
+  // kadam 0.3: `when hovered, it rotates by 10deg` is an F3 state sentence.
+  if (isKeyword(tokens[3], "it") && tokens[4]?.text.toLowerCase() === "rotates") return null;
   const span = spanFromTokens(tokens);
   if (!isComma(tokens[2])) {
     return {
@@ -69,7 +71,7 @@ type HoverEffectResult = {
   readonly length: number;
 };
 
-function parseHoverEffect(
+export function parseHoverEffect(
   tokens: readonly Token[],
   fallbackSpan: Span,
   diagnostics: DiagnosticSpec[],
@@ -271,6 +273,8 @@ export function matchClick(tokens: readonly Token[]): StatementMatchBody | null 
 /** `it fades in ...` or `it slides in from <side> ...` */
 export function matchMotion(tokens: readonly Token[]): StatementMatchBody | null {
   if (!isKeyword(tokens[0], "it")) return null;
+  // kadam 0.3: `... when it scrolls into view` is an F3 scroll entrance.
+  if (endsWithScrollIntoView(tokens)) return null;
 
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];
@@ -370,7 +374,7 @@ export function matchMotion(tokens: readonly Token[]): StatementMatchBody | null
   return { statement, diagnostics };
 }
 
-function parseOptionalDuration(
+export function parseOptionalDuration(
   tokens: readonly Token[],
   index: number,
   diagnostics: DiagnosticSpec[],
@@ -400,6 +404,12 @@ function parseOptionalDuration(
     return undefined;
   }
   return duration;
+}
+
+/** `... when it scrolls into view` (kadam 0.3). */
+export function endsWithScrollIntoView(tokens: readonly Token[]): boolean {
+  const tail = tokens.slice(-5).map((token) => token.text.toLowerCase()).join(" ");
+  return tail === "when it scrolls into view";
 }
 
 function isComma(token: Token | undefined): boolean {

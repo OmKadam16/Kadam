@@ -65,8 +65,24 @@ for (const name of PROJECTS) {
       });
     }
 
-    for (const width of [360, 1280]) {
-      test(`passes axe with color contrast at ${width}px`, async ({ page }) => {
+    // F3 exit: the marketing site in dark mode (D-38), screenshots and axe.
+    if (name === "marketing") {
+      for (const width of [360, 1280]) {
+        test(`renders in dark mode at ${width}px`, async ({ page }) => {
+          await page.emulateMedia({ colorScheme: "dark" });
+          await page.setViewportSize({ width, height: 900 });
+          for (const route of site.routes) {
+            await page.goto(`${site.origin}${route}`);
+            const slug = route === "/" ? "home" : route.replaceAll("/", "-").replace(/^-|-$/g, "");
+            await expect(page).toHaveScreenshot(`${name}-${slug}-${width}-dark.png`, { fullPage: true });
+          }
+        });
+      }
+    }
+
+    for (const [width, scheme] of [[360, "light"], [1280, "light"], [1280, "dark"]]) {
+      test(`passes axe with color contrast at ${width}px (${scheme})`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme: scheme });
         await page.setViewportSize({ width, height: 900 });
         for (const route of site.routes) {
           await page.goto(`${site.origin}${route}`);
@@ -78,7 +94,7 @@ for (const name of PROJECTS) {
             });
             return results.violations.map((v) => ({ id: v.id, targets: v.nodes.map((n) => n.target.join(" ")) }));
           });
-          expect(violations, `${name}${route} at ${width}px`).toEqual([]);
+          expect(violations, `${name}${route} at ${width}px (${scheme})`).toEqual([]);
         }
       });
     }

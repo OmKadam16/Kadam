@@ -42,6 +42,7 @@ import type {
   VisibilityStatement,
 } from "../core/ast/nodes.js";
 import {
+  FONT_STACKS,
   GLOBAL_TOKENS,
   cloneComputedStyle,
   createDefaultStyle,
@@ -50,6 +51,15 @@ import {
   length,
 } from "./defaults.js";
 import { InternalCompilerError } from "./internal-error.js";
+import { tokenVar } from "./lower-f3.js";
+import type { ManifestFont } from "./manifest.js";
+import type { ThemeColor } from "../core/parser/theme.js";
+import {
+  f3ScopeDeclarations,
+  lowerExtraRules,
+  lowerStates,
+  type F3Context,
+} from "./lower-f3.js";
 import {
   allStatements,
   arrangementOf,
@@ -79,6 +89,8 @@ import type {
   IrPageStyle,
   IrResponsive,
   IrScopedStyle,
+  IrFontFace,
+  IrColorToken,
   IrShadow,
   IrSize,
   IrSourceMapping,
@@ -104,6 +116,10 @@ export interface LowerOptions {
   readonly basePath?: string | undefined;
   /** kadam 0.3: the manifest siteUrl, for canonical and share URLs. */
   readonly siteUrl?: string | undefined;
+  /** kadam 0.3: custom fonts from kadam.json. */
+  readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
+  /** kadam 0.3: colors from the project theme file (D-38). */
+  readonly themeColors?: readonly ThemeColor[] | undefined;
 }
 
 type MutableStyle = { -readonly [K in keyof IrComputedStyle]: IrComputedStyle[K] };
@@ -153,6 +169,9 @@ export function lowerDocument(
     f1,
     pageLanguage: meta?.language ?? "en",
     firstImage: document.languageVersion === "0.1" ? null : firstImage(pageNode.elements),
+    fontStacks: new Map(
+      Object.entries(options.fonts ?? {}).map(([name, font]) => [name, FONT_STACKS[font.fallback]]),
+    ),
   };
   const elements = pageNode.elements.map((element) =>
     lowerElement(element, context, PAGE_PARENT),
@@ -172,6 +191,8 @@ export function lowerDocument(
     usesMotion: elements.some(usesMotion),
     basePath: basePath || undefined,
     ...(meta === undefined ? {} : { meta }),
+    ...fontFaces(pageNode.elements, options.fonts ?? {}, basePath),
+    ...colorTokens(options.themeColors ?? [], pageNode.settings),
   };
 }
 
@@ -184,6 +205,8 @@ interface LowerContext {
   readonly pageLanguage: string;
   /** kadam 0.3: the first image loads right away; later ones lazily. */
   readonly firstImage: ElementNode | null;
+  /** kadam 0.3: custom font fallback stacks by family name. */
+  readonly fontStacks: ReadonlyMap<string, string>;
 }
 
 /** Top-level elements sit in the page, which is a plain block. */
@@ -208,7 +231,17 @@ function lowerPageStyle(
   let authoredText = false;
   let authoredFont = false;
 
+  let dark: { background?: IrColor; text?: IrColor } | undefined;
+  let autoDark = false;
   for (const setting of settings) {
+    if (setting.property === "auto dark") {
+      autoDark = true;
+      continue;
+    }
+    if ((setting.property === "background" || setting.property === "text") && setting.dark === true) {
+      dark = { ...dark, [setting.property]: toIrColor(setting.value) };
+      continue;
+    }
     switch (setting.property) {
       case "background":
         background = toIrColor(setting.value);
@@ -234,6 +267,8 @@ function lowerPageStyle(
       text: authoredText,
       font: authoredFont,
     },
+    ...(dark === undefined ? {} : { dark }),
+    ...(autoDark ? { autoDark: true as const } : {}),
   };
 }
 
@@ -260,13 +295,27 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
   const baseStatements = element.statements.filter(
     (statement) => statement.type !== "responsive" && statement.type !== "scoped",
   );
+  const f3: F3Context = {
+    kind,
+    className: identity.className,
+    basePath: context.basePath,
+    fonts: context.fontStacks,
+  };
   const declarations = [
     ...scopeDeclarations(baseStatements, parent, null),
+    ...f3ScopeDeclarations(baseStatements, f3),
     ...parentDeclarations(element, baseStatements, parent),
   ];
   if (declarations.length > 0) authored.declarations = declarations;
-  const responsive = lowerResponsive(element, style, kind, parent, baseStatements);
-  const scopes = lowerScopes(element, style, kind, parent, baseStatements);
+  const responsive = lowerResponsive(element, style, kind, parent, baseStatements, f3);
+  const scopes = lowerScopes(element, style, kind, parent, baseStatements, f3);
+  const { states, transitions } = lowerStates(element, f3);
+  const rules = lowerExtraRules(element, f3);
+  const loops = [
+    ...new Set(
+      allStatements(element).flatMap((statement) => (statement.type === "loop" ? [statement.effect] : [])),
+    ),
+  ];
   const childParent: F2ParentInfo = {
     arrangement: arrangementOf(baseStatements, style.layout?.direction ?? null),
   };
@@ -324,7 +373,70 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     ...(control === undefined ? {} : { control }),
     ...(scopes.length === 0 ? {} : { scopes }),
     ...(scrollable ? { scrollable: true as const } : {}),
+    ...(states.length === 0 ? {} : { states, stateTransitions: transitions }),
+    ...(rules.length === 0 ? {} : { rules }),
+    ...(loops.length === 0 ? {} : { loops }),
   };
+}
+
+/** Theme colors (D-38): the project theme, then the page's own, which win. */
+function colorTokens(
+  theme: readonly ThemeColor[],
+  settings: readonly import("../core/ast/nodes.js").PageSettingNode[],
+): { colorTokens?: readonly IrColorToken[] } {
+  const tokens = new Map<string, { light: string; dark: string | null }>();
+  for (const color of theme) {
+    tokens.set(color.name, { light: color.light.value, dark: color.dark?.value ?? null });
+  }
+  for (const setting of settings) {
+    if (setting.property !== "color token") continue;
+    const current = tokens.get(setting.name);
+    if (setting.dark === true) {
+      tokens.set(setting.name, { light: current?.light ?? setting.value.value, dark: setting.value.value });
+    } else {
+      // A page color replaces the theme color, including its dark value.
+      tokens.set(setting.name, { light: setting.value.value, dark: null });
+    }
+  }
+  // Page dark values declared before the light one still apply.
+  for (const setting of settings) {
+    if (setting.property === "color token" && setting.dark === true) {
+      const current = tokens.get(setting.name)!;
+      tokens.set(setting.name, { ...current, dark: setting.value.value });
+    }
+  }
+  if (tokens.size === 0) return {};
+  return { colorTokens: [...tokens].map(([name, value]) => ({ name, ...value })) };
+}
+
+/** @font-face entries for the custom fonts a page uses, in first-use order. */
+function fontFaces(
+  elements: readonly ElementNode[],
+  fonts: Readonly<Record<string, ManifestFont>>,
+  basePath: string,
+): { fonts?: readonly IrFontFace[] } {
+  const used: string[] = [];
+  const visit = (list: readonly ElementNode[]): void => {
+    for (const element of list) {
+      for (const statement of allStatements(element)) {
+        if (statement.type === "custom-font" && !used.includes(statement.name)) used.push(statement.name);
+      }
+      visit(element.children);
+    }
+  };
+  visit(elements);
+  const faces = used.flatMap((name): IrFontFace[] => {
+    const font = fonts[name];
+    if (font === undefined) return [];
+    return [{
+      family: name,
+      url: assetUrl(font.source, basePath),
+      format: font.source.toLowerCase().endsWith(".woff2") ? "woff2" : "woff",
+      weight: font.weight,
+      style: font.style,
+    }];
+  });
+  return faces.length === 0 ? {} : { fonts: faces };
 }
 
 function isLazy(element: ElementNode, context: LowerContext): boolean {
@@ -340,12 +452,16 @@ function lowerScopes(
   kind: BuiltinKindName,
   parent: F2ParentInfo,
   baseStatements: readonly StatementNode[],
+  f3: F3Context,
 ): readonly IrScopedStyle[] {
   return groupScopes(element).map((group) => {
     const style = cloneComputedStyle(baseStyle) as MutableStyle;
     const authored: MutableAuthored = {};
     applyScope(group.statements, style, authored, kind);
-    const declarations = scopeDeclarations(group.statements, parent, baseStatements);
+    const declarations = [
+      ...scopeDeclarations(group.statements, parent, baseStatements),
+      ...f3ScopeDeclarations(group.statements, f3),
+    ];
     if (declarations.length > 0) authored.declarations = declarations;
     return { query: group.query, order: group.order, authored: authored as IrAuthoredStyle, style };
   });
@@ -377,6 +493,7 @@ function lowerResponsive(
   kind: BuiltinKindName,
   parent: F2ParentInfo,
   baseStatements: readonly StatementNode[],
+  f3: F3Context,
 ): readonly IrResponsive[] {
   const result: IrResponsive[] = [];
 
@@ -392,7 +509,10 @@ function lowerResponsive(
     const style = cloneComputedStyle(baseStyle) as MutableStyle;
     const authored: MutableAuthored = {};
     applyScope(scoped, style, authored, kind);
-    const declarations = scopeDeclarations(scoped, parent, baseStatements);
+    const declarations = [
+      ...scopeDeclarations(scoped, parent, baseStatements),
+      ...f3ScopeDeclarations(scoped, f3),
+    ];
     if (declarations.length > 0) authored.declarations = declarations;
     result.push({
       breakpoint,
@@ -411,11 +531,13 @@ function applyScope(
   kind: BuiltinKindName,
 ): void {
   let gradientDirection: GradientDirection | null = null;
+  // kadam 0.3: a multi-color gradient lowers its own direction (lower-f3).
+  const f3Gradient = statements.some((statement) => statement.type === "gradient");
 
   for (const statement of statements) {
     if (statement.type === "responsive" || statement.type === "scoped") continue;
     if (statement.type === "gradient-direction") {
-      gradientDirection = statement.direction;
+      if (!f3Gradient) gradientDirection = statement.direction;
       continue;
     }
     applyStatement(statement, style, authored, kind);
@@ -1046,6 +1168,7 @@ function roleFor(kind: BuiltinKindName): IrAccessibility["role"] {
     case "icon":
       return "image";
     case "code block":
+    case "badge":
       return "paragraph";
     case "form":
     case "text area":
@@ -1115,6 +1238,7 @@ function toIrDuration(duration: DurationValue): IrDuration {
 }
 
 function toIrColor(color: ColorValue): IrColor {
+  if (color.kind === "token") return { kind: "token", value: tokenVar(color.value), token: color.value };
   return { kind: color.kind, value: color.value };
 }
 

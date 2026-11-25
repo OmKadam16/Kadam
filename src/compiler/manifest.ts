@@ -54,6 +54,23 @@ export interface KadamManifest {
    * `on wide screens, ...`. Values are viewport widths in px.
    */
   readonly breakpoints?: Readonly<Record<string, number>> | undefined;
+  /**
+   * kadam 0.3: local font files, e.g.
+   * { "Inter": { "source": "assets/fonts/Inter.woff2", "weight": "100 900" } },
+   * used as `the font is "Inter"`. No remote fonts: builds stay network-free.
+   */
+  readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
+  /** kadam 0.3: project theme file with theme colors (D-38). */
+  readonly theme?: string | undefined;
+}
+
+export interface ManifestFont {
+  readonly source: string;
+  /** A CSS weight or range, e.g. "400" or "100 900". Defaults to "400". */
+  readonly weight: string;
+  readonly style: "normal" | "italic";
+  /** Preset stack used while the font loads, or when it is missing. */
+  readonly fallback: "sans serif" | "serif" | "monospace";
 }
 
 export interface LoadedManifest {
@@ -74,6 +91,8 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "basePath",
   "siteUrl",
   "breakpoints",
+  "fonts",
+  "theme",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -356,6 +375,40 @@ export function loadManifest(
           );
         }
       }
+    }
+  }
+
+  // Validate fonts (kadam 0.3)
+  if ("fonts" in raw) {
+    const value = raw.fonts;
+    const hint = 'use "fonts": { "Inter": { "source": "assets/fonts/Inter.woff2", "weight": "100 900", "fallback": "sans serif" } }';
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'fonts' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove fonts');
+    } else if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      diagnostics.error("KDM4001", "'fonts' in kadam.json must be an object", rootSpan, hint);
+    } else {
+      for (const [name, font] of Object.entries(value as Record<string, unknown>)) {
+        const entry = font as Record<string, unknown>;
+        const problem =
+          !FONT_NAME.test(name) ? `invalid font name ${JSON.stringify(name)}; use letters, digits, spaces, and hyphens`
+          : typeof font !== "object" || font === null || Array.isArray(font) ? `font ${JSON.stringify(name)} must be an object`
+          : Object.keys(entry).some((key) => !FONT_KEYS.has(key)) ? `font ${JSON.stringify(name)} has an unknown key; use source, weight, style, fallback`
+          : typeof entry.source !== "string" || !/\.(woff2?|WOFF2?)$/.test(entry.source) ? `font ${JSON.stringify(name)} needs a local .woff2 or .woff source`
+          : entry.weight !== undefined && (typeof entry.weight !== "string" || !FONT_WEIGHT.test(entry.weight)) ? `font ${JSON.stringify(name)} weight must be like "400" or "100 900"`
+          : entry.style !== undefined && entry.style !== "normal" && entry.style !== "italic" ? `font ${JSON.stringify(name)} style must be "normal" or "italic"`
+          : entry.fallback !== undefined && entry.fallback !== "sans serif" && entry.fallback !== "serif" && entry.fallback !== "monospace" ? `font ${JSON.stringify(name)} fallback must be "sans serif", "serif", or "monospace"`
+          : null;
+        if (problem !== null) diagnostics.error("KDM4001", problem, rootSpan, hint);
+      }
+    }
+  }
+
+  // Validate theme (kadam 0.3)
+  if ("theme" in raw) {
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'theme' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove theme');
+    } else if (typeof raw.theme !== "string" || !raw.theme.endsWith(".kdm")) {
+      diagnostics.error("KDM4001", "'theme' in kadam.json must be the path of a .kdm file", rootSpan, 'use "theme": "theme.kdm"');
     }
   }
 
@@ -700,6 +753,8 @@ export function loadManifest(
     outDir: typeof raw.outDir === "string" ? raw.outDir : "dist",
     basePath: typeof raw.basePath === "string" ? raw.basePath : undefined,
     siteUrl: typeof raw.siteUrl === "string" ? raw.siteUrl.replace(/\/$/, "") : undefined,
+    fonts: readFonts(raw.fonts),
+    theme: typeof raw.theme === "string" ? raw.theme : undefined,
     breakpoints:
       typeof raw.breakpoints === "object" && raw.breakpoints !== null && !Array.isArray(raw.breakpoints)
         ? (raw.breakpoints as Record<string, number>)
@@ -715,6 +770,23 @@ export function loadManifest(
 }
 
 const BREAKPOINT_NAME = /^[a-z]{2,20}$/;
+const FONT_NAME = /^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$/;
+const FONT_WEIGHT = /^[1-9]00(?: [1-9]00)?$/;
+const FONT_KEYS: ReadonlySet<string> = new Set(["source", "weight", "style", "fallback"]);
+
+function readFonts(value: unknown): Readonly<Record<string, ManifestFont>> | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  const fonts: Record<string, ManifestFont> = {};
+  for (const [name, font] of Object.entries(value as Record<string, Record<string, unknown>>)) {
+    fonts[name] = {
+      source: String(font.source),
+      weight: typeof font.weight === "string" ? font.weight : "400",
+      style: font.style === "italic" ? "italic" : "normal",
+      fallback: font.fallback === "serif" || font.fallback === "monospace" ? font.fallback : "sans serif",
+    };
+  }
+  return fonts;
+}
 const RESERVED_BREAKPOINTS: ReadonlySet<string> = new Set(["phones", "tablets", "desktops"]);
 
 /** An absolute http(s) origin with no path, query, or fragment. */

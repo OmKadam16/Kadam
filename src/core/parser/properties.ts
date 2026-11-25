@@ -45,7 +45,7 @@ import { isFluidText } from "./matchers-f2.js";
  * statement (KDM2001). Rows are never inferred.
  */
 
-export type PropertyValueType = "length" | "number" | "color" | "choice";
+export type PropertyValueType = "length" | "number" | "percentage" | "color" | "choice";
 
 /** The parsed value handed to a row's builder. */
 export type PropertyValue =
@@ -191,6 +191,16 @@ export const PROPERTIES: readonly PropertyDefinition[] = [
     css: "z-index",
     description: "Stacking order; higher layers are drawn on top",
     example: "the layer is 10",
+  },
+  {
+    name: "opacity",
+    value: "percentage",
+    min: 0,
+    max: 100,
+    applies: "all",
+    css: "opacity",
+    description: "Opacity, from 0% (invisible) to 100% (solid)",
+    example: "the opacity is 50%",
   },
   // Box
   {
@@ -350,6 +360,17 @@ function readValue(
   switch (definition.value) {
     case "number":
       return readNumber(definition, token, diagnostics);
+    case "percentage": {
+      if (token.kind !== "percentage" || typeof token.value !== "number") {
+        diagnostics.push(invalid(definition, `the ${definition.name} is a percentage such as 50%, found ${JSON.stringify(token.text)}`, token.span));
+        return null;
+      }
+      if (token.value < (definition.min ?? 0) || token.value > (definition.max ?? 100)) {
+        diagnostics.push(invalid(definition, `the ${definition.name} must be between ${definition.min}% and ${definition.max}%, found ${token.text}`, token.span));
+        return null;
+      }
+      return { type: "number", value: token.value / 100, raw: token.text };
+    }
     case "length": {
       const value = readLengthArgument(token);
       if (value !== null) return value;

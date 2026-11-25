@@ -1,5 +1,6 @@
 import { F1_FIELD_TYPES, isF1State } from "./matchers-f1.js";
 import { isF2State, isFluidText } from "./matchers-f2.js";
+import { isF3Border, isF3Corners, isF3Gradient, isF3Shadow, isF3State, isF3Text } from "./matchers-f3.js";
 import type {
   ColorValue,
   FieldType,
@@ -186,6 +187,8 @@ export function matchTypography(tokens: readonly Token[]): StatementMatchBody | 
   }
   // kadam 0.3: `the text is between 1rem and 2rem` is fluid text.
   if (isFluidText(tokens)) return null;
+  // kadam 0.3: decoration, case, and line length have their own template.
+  if (isF3Text(tokens)) return null;
 
   const rest = tokens.slice(3);
   const span = spanFromTokens(tokens);
@@ -299,6 +302,8 @@ export function matchFont(tokens: readonly Token[]): StatementMatchBody | null {
   ) {
     return null;
   }
+  // kadam 0.3: `the font is "Inter"` is a custom font.
+  if (isString(tokens[3])) return null;
   const rest = tokens.slice(3);
   const span = spanFromTokens(tokens);
   const family = normalizeWords(rest);
@@ -331,6 +336,7 @@ export function matchSizeState(tokens: readonly Token[]): StatementMatchBody | n
   if (isF1State(tokens)) return null;
   // kadam 0.3 sizes, limits, and positions have their own templates.
   if (isF2State(tokens)) return null;
+  if (isF3State(tokens)) return null;
   const rest = tokens.slice(2);
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];
@@ -685,6 +691,8 @@ export function matchLayoutAlign(tokens: readonly Token[]): StatementMatchBody |
 
 export function matchImageSource(tokens: readonly Token[]): StatementMatchBody | null {
   if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "shows")) return null;
+  // kadam 0.3: `it shows at most 2 lines` is truncation.
+  if (tokens[2]?.text.toLowerCase() === "at") return null;
   const span = spanFromTokens(tokens);
   const value = tokens[2];
   if (tokens.length !== 3 || !isString(value)) {
@@ -801,6 +809,7 @@ export function matchFieldAccepts(tokens: readonly Token[]): StatementMatchBody 
 
 export function matchBackground(tokens: readonly Token[]): StatementMatchBody | null {
   if (!isKeyword(tokens[0], "has")) return null;
+  if (isF3Gradient(tokens)) return null;
   const last = tokens[tokens.length - 1];
   const span = spanFromTokens(tokens);
 
@@ -872,6 +881,7 @@ export function matchBorder(tokens: readonly Token[]): StatementMatchBody | null
   if (!isKeyword(tokens[0], "has") || !isKeyword(tokens[tokens.length - 1], "border")) {
     return null;
   }
+  if (isF3Border(tokens)) return null;
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];
 
@@ -925,6 +935,7 @@ export function matchCorners(tokens: readonly Token[]): StatementMatchBody | nul
   if (!isKeyword(tokens[0], "has") || !isKeyword(tokens[tokens.length - 1], "corners")) {
     return null;
   }
+  if (isF3Corners(tokens)) return null;
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];
 
@@ -960,6 +971,7 @@ export function matchShadow(tokens: readonly Token[]): StatementMatchBody | null
   if (!isKeyword(tokens[0], "has") || !isKeyword(tokens[tokens.length - 1], "shadow")) {
     return null;
   }
+  if (isF3Shadow(tokens)) return null;
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];
 

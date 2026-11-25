@@ -62,6 +62,29 @@ import {
   matchSizeLimit,
   matchSticky,
 } from "./matchers-f2.js";
+import {
+  matchBackdropBlur,
+  matchBackgroundImage,
+  matchBackgroundImageRule,
+  matchCustomFont,
+  matchF3Border,
+  matchF3Corners,
+  matchF3Gradient,
+  matchF3ItIs,
+  matchF3Shadow,
+  matchF3Text,
+  matchGradientAngle,
+  matchLineClamp,
+  matchLoop,
+  matchOutline,
+  matchScrollEntrance,
+  matchStagger,
+  matchState,
+  isColorTokenDeclaration,
+  isDarkModeLine,
+  matchAutoDark,
+  matchColorToken,
+} from "./matchers-f3.js";
 import { PROPERTIES, matchPropertySentence, propertyNamed } from "./properties.js";
 import { closestMatches } from "./suggest.js";
 import type {
@@ -166,6 +189,71 @@ const F2_TEMPLATES: readonly StatementTemplate[] = [
   { id: "loading", description: "Image loading", since: "0.3",
     examples: ["it loads lazily", "it loads right away"],
     match: (tokens) => matchLoading(tokens) },
+];
+
+/** kadam 0.3 (F3) styling, state, and motion templates. */
+const F3_TEMPLATES: readonly StatementTemplate[] = [
+  { id: "styled-border", description: "Dashed, dotted, or per-side border", since: "0.3",
+    examples: ["has a 2px dashed red border", "has a 1px #E5E5E5 border on the bottom", "has a dotted blue border on the left and right"],
+    match: (tokens) => matchF3Border(tokens) },
+  { id: "corner-radius", description: "Per-corner rounding", since: "0.3",
+    examples: ["has 12px rounded corners on the top", "has fully rounded corners on the left"],
+    match: (tokens) => matchF3Corners(tokens) },
+  { id: "outline", description: "Outline", since: "0.3",
+    examples: ["has a 2px blue outline"],
+    match: (tokens) => matchOutline(tokens) },
+  { id: "gradient-stops", description: "Multi-color or radial gradient", since: "0.3",
+    examples: ["has a blue and white and red gradient", "has a radial white and blue gradient"],
+    match: (tokens) => matchF3Gradient(tokens) },
+  { id: "gradient-angle", description: "Gradient angle", since: "0.3",
+    examples: ["the gradient goes at 135deg"],
+    match: (tokens) => matchGradientAngle(tokens) },
+  { id: "background-image", description: "Background image", since: "0.3",
+    examples: ['has a "assets/hero.jpg" background image'],
+    match: (tokens) => matchBackgroundImage(tokens) },
+  { id: "background-image-rule", description: "Background image fit and focus", since: "0.3",
+    examples: ["the background image covers its box", "the background image fits inside its box",
+      "the background image repeats", "the background image keeps the top in view"],
+    match: (tokens) => matchBackgroundImageRule(tokens) },
+  { id: "text-style", description: "Text decoration, case, and line length", since: "0.3",
+    examples: ["the text is underlined", "the text is struck through", "the text is uppercase",
+      "the text is at most 65 characters wide"],
+    match: (tokens) => matchF3Text(tokens) },
+  { id: "line-clamp", description: "Truncation", since: "0.3",
+    examples: ["it shows at most 2 lines"],
+    match: (tokens) => matchLineClamp(tokens) },
+  { id: "custom-font", description: "Custom font", since: "0.3",
+    examples: ['the font is "Inter"'],
+    match: (tokens) => matchCustomFont(tokens) },
+  { id: "custom-shadow", description: "Inner, colored, or custom shadow", since: "0.3",
+    examples: ["has a soft blue shadow", "has an inner shadow", "has a #00000033 shadow that is 24px blurred and 8px down"],
+    match: (tokens) => matchF3Shadow(tokens) },
+  { id: "effect", description: "Blur, rotation, move, or scale", since: "0.3",
+    examples: ["it is blurred by 4px", "it is rotated by 10deg", "it is moved 8px down", "it is scaled to 110%"],
+    match: (tokens) => matchF3ItIs(tokens) },
+  { id: "backdrop-blur", description: "Background blur behind an element", since: "0.3",
+    examples: ["it blurs the background behind it by 12px"],
+    match: (tokens) => matchBackdropBlur(tokens) },
+  { id: "state", description: "Interaction state effect", since: "0.3",
+    examples: ["when focused, the border turns blue", "when pressed, it scales to 102%",
+      "when disabled, the background turns gray", "when checked, the text turns green",
+      "when invalid, the border turns red", "when hovered, it rotates by 10deg"],
+    match: (tokens) => matchState(tokens) },
+  { id: "scroll-entrance", description: "Entrance when scrolled into view", since: "0.3",
+    examples: ["it fades in when it scrolls into view", "it slides in from the left when it scrolls into view"],
+    match: (tokens) => matchScrollEntrance(tokens) },
+  { id: "loop", description: "Looping animation", since: "0.3",
+    examples: ["it spins forever", "it pulses every 2s", "it floats forever"],
+    match: (tokens) => matchLoop(tokens) },
+  { id: "color-token", description: "Theme color", since: "0.3",
+    examples: ["the brand color is #FF0066"],
+    match: (tokens) => matchColorToken(tokens) },
+  { id: "auto-dark", description: "Built-in dark palette", since: "0.3",
+    examples: ["the page is dark when the system is dark"],
+    match: (tokens) => matchAutoDark(tokens) },
+  { id: "stagger", description: "Staggered child entrance", since: "0.3",
+    examples: ["its children fade in one after another", "its children slide in from the bottom one after another"],
+    match: (tokens) => matchStagger(tokens) },
 ];
 
 export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
@@ -396,6 +484,7 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
   },
   ...F1_TEMPLATES,
   ...F2_TEMPLATES,
+  ...F3_TEMPLATES,
   {
     id: "property",
     description: "Regular property sentence",
@@ -444,6 +533,24 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "overflow",
   "image-fit",
   "image-focus",
+  // kadam 0.3 (F3)
+  "side-border",
+  "corner-radius",
+  "outline",
+  "gradient",
+  "gradient-angle",
+  "background-fit",
+  "background-focus",
+  "text-decoration",
+  "text-case",
+  "text-measure",
+  "line-clamp",
+  "custom-font",
+  "custom-shadow",
+  "filter",
+  "rotate",
+  "move",
+  "scale",
 ]);
 
 const BREAKPOINTS: ReadonlySet<string> = new Set([
@@ -475,7 +582,8 @@ export function matchLine(
   context: TemplateContext = DEFAULT_CONTEXT,
   templates: readonly StatementTemplate[] = STATEMENT_TEMPLATES,
 ): MatchLineResult {
-  const result = matchLineStatements(tokens, context, templates);
+  const resolved = resolveColorTokens(tokens, context);
+  const result = matchLineStatements(resolved, context, templates);
   const unitErrors = newUnitDiagnostics(tokens, context);
   return unitErrors.length === 0
     ? result
@@ -491,6 +599,9 @@ function matchLineStatements(
     return { matches: [], diagnostics: [], selected: null };
   }
 
+  if (context.allowResponsive && isDarkModeLine(tokens)) {
+    return matchDarkLine(tokens, context, templates);
+  }
   if (context.allowResponsive && (isCustomBreakpointLine(tokens) || isContainerLine(tokens))) {
     return matchScopedLine(tokens, context, templates);
   }
@@ -544,7 +655,7 @@ function matchScopedInner(
     return null;
   }
 
-  if (isKeyword(innerTokens[0], "on") || isContainerLine(innerTokens)) {
+  if (isKeyword(innerTokens[0], "on") || isContainerLine(innerTokens) || isDarkModeLine(innerTokens)) {
     diagnostics.push({
       code: "KDM3013",
       message: "a responsive statement cannot be nested inside another responsive scope",
@@ -724,15 +835,102 @@ function matchScopedLine(
   return { matches: [selected], diagnostics, selected };
 }
 
+/**
+ * Replace declared theme color names (D-38) with color tokens, so every
+ * sentence that takes a color accepts them. A declaration line keeps its own
+ * name as written. Only declared names are touched, so 0.1 files and
+ * undeclared words are unchanged.
+ */
+function resolveColorTokens(tokens: readonly Token[], context: TemplateContext): readonly Token[] {
+  const names = context.colorTokens;
+  if (names === undefined || names.size === 0) return tokens;
+  const declaration = isDarkModeLine(tokens) ? isColorTokenDeclaration(tokens.slice(4)) : isColorTokenDeclaration(tokens);
+  const skip = declaration ? (isDarkModeLine(tokens) ? 5 : 1) : -1;
+  let changed = false;
+  const out = tokens.map((token, index) => {
+    if (index === skip || (token.kind !== "identifier" && token.kind !== "word") || !names.has(token.text)) return token;
+    changed = true;
+    return { ...token, kind: "color" as const, value: `token:${token.text}` };
+  });
+  return changed ? out : tokens;
+}
+
+/**
+ * `in dark mode, <statement>` (D-38): an element statement in a dark scope,
+ * or a page background/text setting or theme color for dark mode.
+ */
+function matchDarkLine(
+  tokens: readonly Token[],
+  context: TemplateContext,
+  templates: readonly StatementTemplate[],
+): MatchLineResult {
+  const diagnostics: DiagnosticSpec[] = [];
+  const failed = (): MatchLineResult => ({
+    matches: [{ template: SCOPED_TEMPLATE, body: { statement: null, diagnostics } }],
+    diagnostics,
+    selected: null,
+  });
+  const comma = tokens[3];
+  if (comma?.kind !== "comma") {
+    diagnostics.push({
+      code: "KDM2010",
+      message: "a comma is required after in dark mode",
+      span: comma?.span ?? tokens[2]!.span,
+      hint: "write: in dark mode, has a #1F2937 background",
+    });
+    return failed();
+  }
+  const inner = tokens.slice(4);
+  const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
+  const versionError = uiVersionAtLeast(version, "0.3") ? [] : [requiresVersion(tokens, "dark mode", "0.3", version)];
+  const span = spanFromTokens(tokens);
+
+  // Page-level: the page background/text, or a theme color.
+  const pageMatches = collectMatches(inner, { ...context, allowResponsive: false }, templates).filter(
+    (match) => match.body.statement?.type === "page-setting",
+  );
+  if (pageMatches.length === 1) {
+    const setting = pageMatches[0]!.body.statement as PageSettingNode;
+    diagnostics.push(...pageMatches[0]!.body.diagnostics, ...versionError);
+    if (setting.property !== "background" && setting.property !== "text" && setting.property !== "color token") {
+      diagnostics.push({
+        code: "KDM3013",
+        message: "only the page background, the page text, and theme colors can change in dark mode",
+        span,
+        hint: "write: in dark mode, the page background is #111418",
+      });
+      return failed();
+    }
+    const statement = { ...setting, dark: true as const, span };
+    const selected = { template: SCOPED_TEMPLATE, body: { statement, diagnostics } };
+    return { matches: [selected], diagnostics, selected };
+  }
+
+  const statement = matchScopedInner(inner, "in dark mode", comma.span, context, templates, diagnostics);
+  if (statement === null) return failed();
+  diagnostics.push(...versionError);
+  const scoped: ScopedStatement = { type: "scoped", scope: { kind: "dark" }, statement, span };
+  const selected = { template: SCOPED_TEMPLATE, body: { statement: scoped, diagnostics } };
+  return { matches: [selected], diagnostics, selected };
+}
+
 const NEW_UNITS: ReadonlySet<string> = new Set(["em", "vw", "vh", "dvh"]);
 
 /** A 0.1 file may not use the kadam 0.3 units; one error per token. */
 function newUnitDiagnostics(tokens: readonly Token[], context: TemplateContext): DiagnosticSpec[] {
   const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
   if (uiVersionAtLeast(version, "0.3")) return [];
-  return tokens
-    .filter((token) => token.kind === "length" && token.unit !== undefined && NEW_UNITS.has(token.unit))
-    .map((token) => requiresVersion([token], `the unit ${token.unit}`, "0.3", version));
+  const result: DiagnosticSpec[] = [];
+  for (const token of tokens) {
+    if (token.kind === "length" && token.unit !== undefined && NEW_UNITS.has(token.unit)) {
+      result.push(requiresVersion([token], `the unit ${token.unit}`, "0.3", version));
+    } else if (token.kind === "angle") {
+      result.push(requiresVersion([token], "the unit deg", "0.3", version));
+    } else if (token.kind === "hex-color" && !token.text.startsWith("#")) {
+      result.push(requiresVersion([token], `${token.text.slice(0, token.text.indexOf("("))}() colors`, "0.3", version));
+    }
+  }
+  return result;
 }
 
 function collectMatches(

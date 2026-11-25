@@ -1,3 +1,5 @@
+import type { ManifestFont } from "./manifest.js";
+import { checkContrast } from "./contrast.js";
 import {
   DiagnosticBag,
   type Diagnostic,
@@ -33,6 +35,8 @@ export interface CompileOptions {
   readonly basePath?: string | undefined;
   /** kadam 0.3 custom breakpoints (normally from kadam.json): name to px. */
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
+  /** kadam 0.3 custom fonts (normally from kadam.json). */
+  readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
 }
 
 export interface CompileResult {
@@ -78,7 +82,7 @@ function compileWithSource(
   diagnostics.addAll(sourceDiagnostics);
   diagnostics.addAll(parsed.diagnostics);
   if (document.page !== null) {
-    diagnostics.addAll(analyzeDocument(document, { pages }));
+    diagnostics.addAll(analyzeDocument(document, { pages, fonts: new Set(Object.keys(options.fonts ?? {})) }));
   }
   const checked = diagnostics.sorted();
   if (checked.some((diagnostic) => diagnostic.severity === "error")) {
@@ -91,6 +95,7 @@ function compileWithSource(
       route,
       pageRoutes,
       basePath: options.basePath,
+      fonts: options.fonts,
     });
     const files: readonly OutputFile[] = [
       {
@@ -109,6 +114,16 @@ function compileWithSource(
         kind: "css",
       },
     ];
+    // D-39: contrast warnings for kadam 0.3 pages; they never block output.
+    if (document.languageVersion !== "0.1") {
+      const warnings = checkContrast(page);
+      if (warnings.length > 0) {
+        const bag = new DiagnosticBag();
+        bag.addAll(checked);
+        for (const warning of warnings) bag.warning(warning.code, warning.message, warning.span, warning.hint);
+        return { ok: true, diagnostics: bag.sorted(), page, files };
+      }
+    }
     return { ok: true, diagnostics: checked, page, files };
   } catch (error) {
     const span =

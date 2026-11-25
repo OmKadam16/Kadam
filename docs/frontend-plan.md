@@ -1,6 +1,6 @@
 # Kadam Frontend Plan — from static pages to a full UI language
 
-**Status:** Approved (2026-11-24). F0, F1 and F2 are implemented; F3 is next. F8 (rich visuals and immersive UI) is recorded for later.
+**Status:** Approved (2026-11-24). F0–F3 are implemented (D-38 and D-39 approved 2026-11-25); F4 is next. F8 (rich visuals and immersive UI) is recorded for later.
 **Replaces as current priority:** the backend half of M8. The v0.2 core and its
 TypeScript/Python adapters stay as they are (maintained, not extended) until
 this plan reaches F6.
@@ -149,41 +149,31 @@ description is spec §6.16.
 the repository yet, so the baselines are approved locally; Linux baselines
 will be generated when CI is added.
 
-### F3 — Styling, theming and states (medium)
+### F3 — Styling, theming and states (medium) — implemented 2026-11-25
 
-- **Color:** `rgb()`/`hsl()` forms, `the opacity is 50%`, and named tokens.
-- **Borders and corners:** dashed/dotted, per-side (`on the bottom`),
-  per-corner radius, and outline.
-- **Backgrounds:** multi-stop and radial gradients, angles, background images
-  from assets with cover/contain/position, and a page-level gradient.
-- **Typography:** underline/strike, case transform, line height, letter
-  spacing, max line length (`the text is at most 65 characters wide`),
-  truncation (`it shows at most 2 lines`), and **custom fonts** from local
-  font files declared in the manifest. No remote fonts, which keeps builds
-  network-free.
-- **Shadows and effects:** colored and custom shadows, inset, blur, and
-  rotate/translate transforms.
-- **Design tokens** (open question 5): a `theme.kdm` file declaring colors,
-  spacing scale, radii, fonts and shadows (`the brand color is #FF0066`),
-  referenced by name (`has a brand background`). Emitted as CSS custom
-  properties. Tokens are typed and unknown tokens are errors.
-- **Dark mode:** `in dark mode, the brand color is #FF4D8D` in the theme, plus
-  per-element `in dark mode,` overrides. The default follows
-  `prefers-color-scheme`. A user toggle arrives in F4.
-- **Interaction states:** `when focused,`, `when pressed,`, `when disabled,`,
-  `when checked,` and `when invalid,`, using the same effect grammar as
-  `when hovered,`. An author-defined focus style is allowed only if it passes
-  a contrast and visibility check.
-- **Motion:** `when it scrolls into view` entrances (CSS scroll-driven
-  animation where the support matrix allows, otherwise deferred to the F4
-  runtime), looping animations (`it pulses`, `it spins`) that are always
-  disabled under reduced motion, and staggered children.
-- **Contrast check:** text/background pairs whose colors are known statically
-  are checked against WCAG AA. Failing is a warning in 0.3 and becomes an
-  error in 1.0 (open question 14).
+All F3 syntax is `kadam 0.3`; `kadam 0.1` output stays byte-identical (all 43
+example output files compared against the F2 compiler). The normative
+description is spec §6.17. Two decisions were drafted for it: **D-38** (theme
+colors and dark mode) and **D-39** (contrast check severity). Both were
+approved on 2026-11-25 and are implemented as written.
 
-**Exit:** the marketing site is complete, including dark mode, with probe
-coverage of at least 80% of §11 items F1–F3.
+| Item | Result |
+| --- | --- |
+| Color | `rgb()`, `rgba()`, `hsl()`, `hsla()` (converted to hex at compile time), `the opacity is 50%`. |
+| Borders and corners | Dashed and dotted, per side (`on the bottom`), per corner (`on the top right`), outline. |
+| Backgrounds | 2 to 8 color and radial gradients, angles (`the gradient goes at 135deg`), background images with cover/contain/repeat and focus. **Changed:** the plan's page-level gradient is covered by theme colors instead (`the page background is paper` plus a gradient on the first section), because a body gradient would not follow dark mode. |
+| Typography | Underline, strike-through, case, `at most 65 characters wide`, `it shows at most 2 lines`, and custom fonts from local files in `kadam.json` (`@font-face`, `font-display: swap`; no remote fonts). |
+| Shadows and effects | Colored, inner, and custom shadows; blur and backdrop blur; rotate, move, scale (`10deg` is a new angle unit). |
+| Design tokens (D-38) | **Color tokens only**: `the brand color is #4F46E5` in a page or a `theme.kdm` file, used anywhere a color is, emitted as CSS custom properties. **Deferred to F7:** spacing, radius, font, and shadow tokens, which need a typed scale and editor completion to be pleasant. |
+| Dark mode (D-38) | `in dark mode, ...` for element statements, page colors, and theme colors; `the page is dark when the system is dark` for a built-in dark palette of Kadam's defaults. It follows `prefers-color-scheme`; the toggle arrives with F4. |
+| Interaction states | `when focused`, `pressed`, `disabled`, `checked`, `invalid`, and `when hovered, it rotates by`, with the hover effect grammar and merged transitions. The built-in focus ring always stays, so an author focus style can only add to it; that makes the plan's separate visibility check unnecessary. |
+| Motion | Scroll entrances (CSS scroll-driven, progressive: browsers without it show the element at once), loops (`spins`, `pulses`, `bounces`, `floats`), and staggered children. All of it is off under reduced motion. |
+| Contrast check (D-39) | Static WCAG AA check through ancestors, the page, theme colors, and dark mode. Warning `KDM3039`. It immediately found a real dark-mode problem in the marketing site (white text on the lighter dark-mode brand color, 2.98:1). |
+| Badge | `a badge`, moved here from F1. |
+| Reference projects | The marketing site has a theme file, dark mode, a gradient hero with a badge and fluid heading, staggered entrance, brand button with shadow and states, and themed lines. Browser tests add dark-mode screenshots and a dark-mode axe run. |
+| Probes | 56/66 compile; F1–F3 are 52/52 (exit asked for 80%). |
+
+**Exit:** met.
 
 ### F4 — Interactivity: state, events and the client runtime (large)
 
@@ -393,12 +383,12 @@ anchor:
 | --- | --- | --- |
 | D-32 | Regular property sentence + property table (approved) | F1 |
 | D-35 | Browser support matrix (approved) | F2 |
-| — | Design tokens and theme file (open question 5) | F3 |
+| D-38 | Theme colors and dark mode (open question 5; approved, implemented) | F3 |
 | D-36 | Client runtime for `kadam 0.3` (replaces D-18 for 0.3), state, events and security model | F4 step 2 |
 | — | Data and network model (open question 3) | F5 |
 | — | Escape-hatch policy (open question 12) | F6 |
 | — | Web Components as primary interop target | F6 |
-| — | Accessibility errors vs warnings, WCAG 2.2 AA (open question 14) | F3 |
+| D-39 | Contrast check is a warning in 0.3 (open question 14; approved, implemented) | F3 |
 | — | 3D model viewer and shader backgrounds: self-hosted module, size budget | F8 |
 | — | Build-time image processing (srcset, AVIF) vs zero dependencies (D-15) | F8 |
 
@@ -445,30 +435,30 @@ F1–F3 are mostly table-driven additions and can move quickly once D-32 lands.
 F4 is the hard one, and its decision record should be drafted during F2 so it
 is approved by the time F3 ships.
 
-## 11. Probe checklist (2026-11-24 baseline)
+## 11. Probe checklist (updated 2026-11-25)
 
-`✓` compiles today, `·` missing. The phase column says where it lands.
+`✓` compiles today (56/66 probes), `·` missing. The phase column says where it lands.
 
 | Probe | Today | Phase |
 | --- | --- | --- |
 | 8-digit hex, `#555`, CSS named colors, `rem` text | ✓ | — |
 | Escaped HTML in text | ✓ | — |
-| Kinds: section, header, footer, list, table, video, icon, checkbox, dropdown, text area, form, badge | · | F1 |
+| Kinds: section, header, footer, list, table, video, icon, checkbox, dropdown, text area, form, badge | ✓ | F1 |
 | Kind: modal / dialog | · | F4 step 1 |
-| Line breaks and inline bold/links in text | · | F1 |
-| Field types: phone, date; min length; error message | · | F1 / F4 step 1 |
-| `it is disabled` | · | F1 |
-| Page description, language, icon | · | F1 |
-| Grid, wrap, space-evenly | ✓ (F2) | F2 |
-| `%`, `vh`, `em`, `clamp()`, min/max width | ✓ (F2) | F2 |
-| Sticky / positioned / scroll overflow | ✓ (F2) | F2 |
-| Custom breakpoints | ✓ (F2) | F2 |
-| `rgb()`, opacity, dashed and per-side borders | · | F3 |
-| Multi-stop gradient, background image | · | F3 |
-| Underline, uppercase, line height, letter spacing, custom font | · | F3 |
-| Dark mode, accent/brand tokens | · | F3 |
-| `when focused`, `when pressed` | · | F3 |
-| Rotate on hover, looping animation, scroll-triggered entrance | · | F3 |
+| Line breaks and inline bold/links in text | ✓ | F1 |
+| Field types: phone, date; min length; error message | ✓ except the error message (F4 step 1) | F1 / F4 step 1 |
+| `it is disabled` | ✓ | F1 |
+| Page description, language, icon | ✓ | F1 |
+| Grid, wrap, space-evenly | ✓ | F2 |
+| `%`, `vh`, `em`, `clamp()`, min/max width | ✓ | F2 |
+| Sticky / positioned / scroll overflow | ✓ | F2 |
+| Custom breakpoints | ✓ | F2 |
+| `rgb()`, opacity, dashed and per-side borders | ✓ | F3 |
+| Multi-stop gradient, background image | ✓ | F3 |
+| Underline, uppercase, line height, letter spacing, custom font | ✓ | F3 |
+| Dark mode, accent/brand tokens | ✓ | F3 |
+| `when focused`, `when pressed` | ✓ | F3 |
+| Rotate on hover, looping animation, scroll-triggered entrance | ✓ | F3 |
 | Clickable card, in-page anchor, `mailto:` | · | F4 step 1 |
 | Show / hide / toggle another element | · | F4 step 2 |
 | Raw CSS / script escape hatch | · | F6 (explicit, opt-in) |

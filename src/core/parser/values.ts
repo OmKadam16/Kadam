@@ -68,6 +68,10 @@ export function isPercentage(token: Token | undefined): token is Token & {
 }
 
 export function readColor(token: Token): ColorValue | null {
+  // A theme color name, resolved by the registry (kadam 0.3, D-38).
+  if (token.kind === "color" && typeof token.value === "string" && token.value.startsWith("token:")) {
+    return { type: "color", kind: "token", value: token.value.slice(6), raw: token.text };
+  }
   if (token.kind === "color" && typeof token.value === "string") {
     return {
       type: "color",
@@ -76,11 +80,13 @@ export function readColor(token: Token): ColorValue | null {
       raw: token.text,
     };
   }
-  if (token.kind === "hex-color" && isValidHex(token.text)) {
+  // A color function (kadam 0.3) carries its normalized hex as the value.
+  const hex = token.kind === "hex-color" && typeof token.value === "string" ? token.value : token.text;
+  if (token.kind === "hex-color" && isValidHex(hex)) {
     return {
       type: "color",
       kind: "hex",
-      value: token.text.toLowerCase(),
+      value: hex.toLowerCase(),
       raw: token.text,
     };
   }

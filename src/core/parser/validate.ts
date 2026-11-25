@@ -27,6 +27,7 @@ const TEXT_CONTENT: ReadonlySet<BuiltinKindName> = new Set([
   "list item",
   "cell",
   "code block",
+  "badge",
 ]);
 
 /** Kinds whose text may carry inline spans (`the words "x" are bold`). */
@@ -177,12 +178,15 @@ function checkPageSettingDuplicate(
   seen: Map<string, Span>,
   diagnostics: DiagnosticBag,
 ): void {
-  const key = `page-${setting.property}`;
+  // kadam 0.3: theme colors are keyed by name; dark-mode settings are separate.
+  const dark = "dark" in setting && setting.dark === true ? " in dark mode" : "";
+  const what = setting.property === "color token" ? `${setting.name} color` : `page ${setting.property}`;
+  const key = `${what}${dark}`;
   const previous = seen.get(key);
   if (previous !== undefined) {
     diagnostics.error(
       "KDM3004",
-      `duplicate page ${setting.property} setting`,
+      setting.property === "color token" ? `duplicate ${what}${dark}` : `duplicate page ${setting.property} setting${dark}`,
       setting.span,
       "each page setting may appear at most once",
       [{ span: previous, message: "first declared here" }],
@@ -309,6 +313,7 @@ function validateElement(
 function scopeKey(statement: ResponsiveStatement | ScopedStatement): string {
   if (statement.type === "responsive") return statement.breakpoint;
   const scope = statement.scope;
+  if (scope.kind === "dark") return "dark mode";
   return scope.kind === "breakpoint"
     ? `${scope.name} screens`
     : `parent ${scope.comparison} than ${scope.width.raw}`;
@@ -604,6 +609,73 @@ function checkCapability(
         reject("a divider supports margin, color, and spacing only");
       }
       return;
+    case "side-border":
+    case "corner-radius":
+    case "outline":
+      if (kindName === "divider") reject("a divider does not support borders, outlines, or rounded corners");
+      return;
+    case "gradient":
+    case "gradient-angle":
+    case "background-image":
+    case "background-fit":
+    case "background-focus":
+      if (kindName === "divider") reject("a divider supports margin, color, and spacing only");
+      return;
+    case "custom-font":
+      // A font on a container is inherited by the text inside it.
+      if (!TEXT_BEARING.has(kindName) && !CONTAINERS.has(kindName)) {
+        reject("a font applies to text-bearing kinds and to containers, whose text inherits it");
+      }
+      return;
+    case "text-decoration":
+    case "text-case":
+      if (!TEXT_BEARING.has(kindName)) {
+        reject("typography applies to text-bearing kinds: button, link, headings, paragraph, and text field");
+      }
+      return;
+    case "text-measure":
+    case "line-clamp":
+      if (!TEXT_CONTENT.has(kindName)) {
+        reject("line length and truncation apply to text kinds: headings, paragraphs, list items, cells, buttons, and links");
+      }
+      return;
+    case "custom-shadow":
+    case "filter":
+    case "rotate":
+    case "move":
+    case "scale":
+    case "loop":
+    case "scroll-entrance":
+      return;
+    case "stagger":
+      if (!CONTAINERS.has(kindName)) reject("its children ... one after another applies to containers");
+      return;
+    case "state": {
+      const allowed: Readonly<Record<string, (kind: BuiltinKindName) => boolean>> = {
+        hovered: (kind) => kind !== "divider",
+        focused: (kind) => kind === "button" || kind === "link" || FORM_CONTROLS.has(kind),
+        pressed: (kind) => kind === "button" || kind === "link",
+        disabled: (kind) => kind === "button" || FORM_CONTROLS.has(kind),
+        checked: (kind) => kind === "checkbox",
+        invalid: (kind) => kind === "text field" || kind === "text area" || kind === "dropdown",
+      };
+      const hints: Readonly<Record<string, string>> = {
+        hovered: "hover effects are not supported on a divider",
+        focused: "when focused applies to buttons, links, and form controls",
+        pressed: "when pressed applies to buttons and links",
+        disabled: "when disabled applies to buttons and form controls",
+        checked: "when checked applies to a checkbox",
+        invalid: "when invalid applies to a text field, text area, or dropdown",
+      };
+      if (!allowed[statement.state]!(kindName)) {
+        reject(hints[statement.state]!);
+        return;
+      }
+      if (statement.effect.type === "text" && !TEXT_BEARING.has(kindName)) {
+        reject("a text color effect applies to text-bearing kinds");
+      }
+      return;
+    }
     case "responsive":
     case "scoped":
       return;
@@ -845,6 +917,49 @@ function describeStatement(statement: StatementNode): string {
       return "an image focus statement";
     case "loading":
       return "an image loading statement";
+    case "side-border":
+      return "a side border statement";
+    case "corner-radius":
+      return "a per-corner rounding statement";
+    case "outline":
+      return "an outline statement";
+    case "gradient":
+      return "a gradient statement";
+    case "gradient-angle":
+      return "a gradient angle statement";
+    case "background-image":
+      return "a background image statement";
+    case "background-fit":
+    case "background-focus":
+      return "a background image rule";
+    case "text-decoration":
+      return "a text decoration statement";
+    case "text-case":
+      return "a text case statement";
+    case "text-measure":
+      return "a line length statement";
+    case "line-clamp":
+      return "a truncation statement";
+    case "custom-font":
+      return "a custom font statement";
+    case "custom-shadow":
+      return "a shadow statement";
+    case "filter":
+      return statement.mode === "blur" ? "a blur statement" : "a backdrop blur statement";
+    case "rotate":
+      return "a rotation statement";
+    case "move":
+      return "a move statement";
+    case "scale":
+      return "a scale statement";
+    case "state":
+      return `a when ${statement.state} statement`;
+    case "scroll-entrance":
+      return "a scroll entrance statement";
+    case "loop":
+      return "a looping animation statement";
+    case "stagger":
+      return "a staggered entrance statement";
     case "responsive":
       return "a responsive statement";
     case "scoped":
@@ -988,6 +1103,41 @@ function propertyKeys(statement: StatementNode): string[] {
     case "image-focus":
     case "loading":
       return [statement.type];
+    case "side-border":
+      return statement.sides.map((side) => `border-${side}`);
+    case "corner-radius":
+      return statement.corners.map((corner) => `corner-${corner}`);
+    case "gradient":
+      // One background per scope, like has a blue background.
+      return ["background"];
+    case "gradient-angle":
+      return ["gradient-direction"];
+    case "custom-font":
+      return ["font-family"];
+    case "custom-shadow":
+      return ["shadow"];
+    case "filter":
+      return [statement.mode];
+    case "move":
+      return ["translate"];
+    case "state":
+      return [`${statement.state}-${statement.effect.type}`];
+    case "scroll-entrance":
+    case "loop":
+      // Both are the element's animation.
+      return ["motion"];
+    case "outline":
+    case "background-image":
+    case "background-fit":
+    case "background-focus":
+    case "text-decoration":
+    case "text-case":
+    case "text-measure":
+    case "line-clamp":
+    case "rotate":
+    case "scale":
+    case "stagger":
+      return [statement.type];
     case "responsive":
     case "scoped":
       return [];
@@ -1008,6 +1158,8 @@ function collectFacts(element: ElementNode): ScopeFacts {
   for (const statement of element.statements) {
     if (statement.type === "background") {
       background = statement.mode;
+    } else if (statement.type === "gradient") {
+      background = "gradient";
     } else if (statement.type === "border") {
       borderDeclared = true;
       hasBorder = statement.mode === "solid" && statement.width.value > 0;
@@ -1039,6 +1191,8 @@ function collectResponsiveFacts(
     const statement = responsive.statement;
     if (statement.type === "background") {
       background = statement.mode;
+    } else if (statement.type === "gradient") {
+      background = "gradient";
     } else if (statement.type === "border") {
       hasBorder = statement.mode === "solid" && statement.width.value > 0;
     }
@@ -1057,9 +1211,9 @@ function hasGradientInAnyScope(
   if (base.hasGradient) return true;
   return element.statements.some(
     (statement) =>
-      statement.type === "responsive" &&
-      statement.statement.type === "background" &&
-      statement.statement.mode === "gradient",
+      (statement.type === "responsive" || statement.type === "scoped") &&
+      ((statement.statement.type === "background" && statement.statement.mode === "gradient") ||
+        statement.statement.type === "gradient"),
   );
 }
 
@@ -1072,7 +1226,7 @@ function checkValueCombinations(
   let decorative: StatementNode | null = null;
 
   for (const statement of element.statements) {
-    if (statement.type === "responsive") continue;
+    if (statement.type === "responsive" || statement.type === "scoped") continue;
     if (statement.type === "image-description") description = statement;
     if (statement.type === "decorative") decorative = statement;
 
@@ -1083,6 +1237,31 @@ function checkValueCombinations(
         statement.span,
         "add has a <color> and <color> gradient before the direction statement",
       );
+    }
+
+    // kadam 0.3 (F3) combinations.
+    if (statement.type === "gradient-angle" && !facts.hasGradient) {
+      diagnostics.error("KDM3005", "a gradient angle requires a gradient background", statement.span,
+        "add has a <color> and <color> gradient");
+    }
+    if ((statement.type === "gradient-direction" || statement.type === "gradient-angle") &&
+        element.statements.some((other) => other.type === "gradient" && other.shape === "radial")) {
+      diagnostics.error("KDM3005", "a radial gradient has no direction", statement.span,
+        "remove the direction, or use a linear gradient");
+    }
+    if (statement.type === "background-image" &&
+        element.statements.some((other) => other.type === "gradient" || (other.type === "background" && other.mode === "gradient"))) {
+      diagnostics.error("KDM3005", "an element cannot have both a background image and a gradient", statement.span,
+        "keep one; a solid background color can sit under an image");
+    }
+    if ((statement.type === "background-fit" || statement.type === "background-focus") &&
+        !element.statements.some((other) => other.type === "background-image")) {
+      diagnostics.error("KDM3005", "a background image rule requires a background image", statement.span,
+        'add has a "assets/..." background image');
+    }
+    if (statement.type === "state" && statement.effect.type === "border" && !facts.hasBorder) {
+      diagnostics.error("KDM3014", `a when ${statement.state} border color requires a base border with a non-zero width`,
+        statement.span, "add a base border such as has a white border");
     }
 
     if (statement.type === "hover") {

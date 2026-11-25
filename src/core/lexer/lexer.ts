@@ -1,4 +1,5 @@
 import type { LengthUnit } from "./token.js";
+import { COLOR_FUNCTIONS, parseColorFunction } from "./color-functions.js";
 import type { Diagnostic } from "../diagnostics/diagnostic.js";
 import { DiagnosticBag } from "../diagnostics/diagnostic.js";
 import type { SourceFile } from "../source/source-file.js";
@@ -127,6 +128,27 @@ export function lex(source: SourceFile): LexResult {
       }
       const raw = text.slice(start, index);
       const normalized = raw.toLowerCase();
+      // kadam 0.3 color functions: rgb(...), hsl(...). The parser rejects
+      // them in 0.1 files (KDM2013).
+      if (COLOR_FUNCTIONS.has(normalized) && text[index] === "(") {
+        const close = text.indexOf(")", index);
+        const newline = text.indexOf("\n", index);
+        if (close === -1 || (newline !== -1 && newline < close)) {
+          diagnostics.error("KDM1001", `missing ) after ${normalized}(`, source.span(start, index + 1), `close it, e.g. ${normalized}(37, 99, 235)`);
+          push("invalid", start, index + 1, { value: raw });
+          index += 1;
+          continue;
+        }
+        index = close + 1;
+        const parsed = parseColorFunction(normalized, text.slice(start + raw.length + 1, close));
+        if (parsed.ok) {
+          push("hex-color", start, index, { value: parsed.hex });
+        } else {
+          diagnostics.error("KDM3006", `invalid color ${JSON.stringify(text.slice(start, index))}`, source.span(start, index), parsed.message);
+          push("invalid", start, index, { value: raw });
+        }
+        continue;
+      }
       if (KEYWORDS.has(normalized)) {
         push("keyword", start, index, { value: normalized });
       } else if (NAMED_COLORS.has(normalized)) {
@@ -155,10 +177,10 @@ export function lex(source: SourceFile): LexResult {
 }
 
 interface NumberResult {
-  readonly kind: "number" | "length" | "duration" | "percentage";
+  readonly kind: "number" | "length" | "duration" | "percentage" | "angle";
   readonly value: number;
   readonly end: number;
-  readonly unit?: LengthUnit | "ms" | "s";
+  readonly unit?: LengthUnit | "ms" | "s" | "deg";
 }
 
 function scanNumber(
@@ -177,6 +199,11 @@ function scanNumber(
 
   if (text[index] === "%") {
     return { kind: "percentage", value, end: index + 1 };
+  }
+
+  // kadam 0.3 angles: `10deg`, directly after the number.
+  if (text.slice(index, index + 3).toLowerCase() === "deg" && !isAsciiAlphaNumeric(text[index + 3] ?? " ")) {
+    return { kind: "angle", value, end: index + 3, unit: "deg" };
   }
 
   const immediate = matchUnit(text, index) ?? matchNewUnit(text, index);
