@@ -4,6 +4,7 @@ import type {
   PageNode,
   PageSettingNode,
   PropertyBindingNode,
+  RepeatClause,
   StatementNode,
 } from "../ast/nodes.js";
 import { DiagnosticBag, type Diagnostic } from "../diagnostics/diagnostic.js";
@@ -21,10 +22,11 @@ import {
   type UiLanguageVersion,
 } from "../../version.js";
 import { matchLine } from "./registry.js";
+import { matchRepeatModifier } from "./repeat.js";
 import { matchPropertyBinding } from "./property.js";
 import type { TemplateContext } from "./statement-types.js";
 import { validateDocument } from "./validate.js";
-import { isKeyword } from "./values.js";
+import { isAnyWord, isKeyword } from "./values.js";
 import { describeInvalidElementName } from "./names.js";
 
 export interface ParseResult {
@@ -63,6 +65,7 @@ interface PageBuilder {
   readonly headerSpan: Span;
   readonly settings: PageSettingNode[];
   readonly elements: ElementNode[];
+  readonly repeat?: RepeatClause | undefined;
   endSpan: Span;
 }
 
@@ -365,10 +368,28 @@ class Parser {
     );
   }
 
-  #openPage(tokens: readonly Token[], line: LogicalLine): void {
+  #openPage(header: readonly Token[], line: LogicalLine): void {
+    let tokens = header;
     this.#pageSeen = true;
     let title = "";
     let titleSpan = line.span;
+
+    // kadam 0.3 (F5 step 3): `page "{the title of post}" for each post in posts {`.
+    let repeat: RepeatClause | undefined;
+    if (tokens.length === 7 && isAnyWord(tokens[2], "for") && isAnyWord(tokens[3], "each")) {
+      const item = tokens[4]!;
+      const clause = tokens.slice(2);
+      const named = (token: Token | undefined): boolean =>
+        token !== undefined && (token.kind === "identifier" || token.kind === "keyword") && /^[a-z][A-Za-z0-9]{0,63}$/.test(token.text);
+      if (!named(item) || !isAnyWord(clause[3], "in") || !named(clause[4])) {
+        this.#error("KDM2002", "malformed page declaration", line.span, 'use: page "{the title of post}" for each post in posts {');
+      } else if (this.#languageVersion !== "0.3") {
+        this.#error("KDM2013", "a page made for each record requires kadam 0.3", line.span, "add kadam 0.3 as the first line");
+      } else {
+        repeat = { item: item.text, itemSpan: item.span, source: clause[4]!.text, sourceSpan: clause[4]!.span, span: mergeSpans(clause[0]!.span, clause[4]!.span) };
+      }
+      tokens = tokens.slice(0, 2);
+    }
 
     if (
       tokens.length !== 2 ||
@@ -406,6 +427,7 @@ class Parser {
     this.#page = {
       title,
       titleSpan,
+      ...(repeat === undefined ? {} : { repeat }),
       headerSpan: line.span,
       settings: [],
       elements: [],
@@ -511,6 +533,35 @@ class Parser {
   }
 
   #dispatchStatement(tokens: readonly Token[], line: LogicalLine): void {
+    const shaping = matchRepeatModifier(tokens);
+    if (shaping !== null) {
+      for (const diagnostic of shaping.diagnostics) this.#diagnostics.addSpec(diagnostic);
+      if (shaping.modifier === null) return;
+      const builder = this.#elementStack[this.#elementStack.length - 1];
+      const repeat = builder?.kind?.repeat;
+      if (builder === undefined || repeat === undefined) {
+        this.#error("KDM3041", "this line only works in a data list", line.span, "put it after a kind sentence such as: a ProjectCard for each project in projects");
+        return;
+      }
+      const modifier = shaping.modifier;
+      if (modifier.type === "filter") {
+        builder.kind = { ...builder.kind!, repeat: { ...repeat, filters: [...(repeat.filters ?? []), modifier.filter] } };
+      } else if (modifier.type === "sort") {
+        if (repeat.sort !== undefined) {
+          this.#error("KDM3040", "a data list has one sorted by line", modifier.sort.span, "keep one sorted by line");
+          return;
+        }
+        builder.kind = { ...builder.kind!, repeat: { ...repeat, sort: modifier.sort } };
+      } else {
+        if (repeat.limit !== undefined) {
+          this.#error("KDM3040", "a data list has one showing at most line", modifier.span, "keep one showing at most line");
+          return;
+        }
+        builder.kind = { ...builder.kind!, repeat: { ...repeat, limit: { count: modifier.count, span: modifier.span } } };
+      }
+      return;
+    }
+
     const property = matchPropertyBinding(tokens);
     if (property !== null) {
       for (const diagnostic of property.diagnostics) this.#diagnostics.addSpec(diagnostic);
@@ -681,6 +732,7 @@ class Parser {
       titleSpan: builder.titleSpan,
       settings: builder.settings,
       elements: builder.elements,
+      ...(builder.repeat === undefined ? {} : { repeat: builder.repeat }),
       span: mergeSpans(builder.headerSpan, builder.endSpan),
     };
   }

@@ -21,7 +21,7 @@ import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
 import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
-import { expandData, parseDataFile, type DataSet } from "../core/data/data.js";
+import { expandData, generatePages, parseDataFile, readsRecordFields, type DataSet } from "../core/data/data.js";
 import {
   analyzeDocument,
   type SemanticPage,
@@ -242,15 +242,43 @@ export function compileProject(
     reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     if (parsed.document.page === null) continue;
 
-    loadedPages.push({
-      entry: pageEntry,
-      sourcePath,
-      resolvedPath: resolve(projectRoot, sourcePath),
-      route: normalizeRoute(pageEntry.route),
-      source,
-      // Data lists become ordinary instances before any component check.
-      document: { ...parsed.document, page: expandData(parsed.document.page, data, diagnostics) },
-    });
+    const template = parsed.document.page;
+    const dynamicRoute = pageEntry.route.split("/").some((segment) => segment.startsWith(":"));
+    // kadam 0.3 (F5 step 3): a page made for each record becomes one page per record.
+    const generated =
+      template.repeat !== undefined
+        ? generatePages(template, pageEntry.route, data, diagnostics)
+        : [{ page: template, route: pageEntry.route }];
+    if (template.repeat === undefined && dynamicRoute) {
+      diagnostics.error(
+        "KDM3044",
+        `the route "${pageEntry.route}" has a :field segment, but ${sourcePath} is not made for each record`,
+        template.titleSpan,
+        'write the page header as: page "{the title of post}" for each post in posts {',
+      );
+      continue;
+    }
+    if (template.repeat === undefined && parsed.document.languageVersion === "0.3" && readsRecordFields(template)) {
+      diagnostics.error(
+        "KDM3041",
+        "text reads a record field, but this page is not made for each record",
+        template.titleSpan,
+        'write the page header as: page "{the title of post}" for each post in posts {',
+      );
+      continue;
+    }
+    for (const { page, route } of generated) {
+      loadedPages.push({
+        // A generated page's title comes from its record, not the manifest.
+        entry: template.repeat === undefined ? pageEntry : { ...pageEntry, title: undefined },
+        sourcePath,
+        resolvedPath: resolve(projectRoot, sourcePath),
+        route: normalizeRoute(route),
+        source,
+        // Data lists become ordinary instances before any component check.
+        document: { ...parsed.document, page: expandData(page, data, diagnostics) },
+      });
+    }
   }
 
   // Step 3: read and parse every declared component. Parser diagnostics stay

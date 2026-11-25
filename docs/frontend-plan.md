@@ -284,10 +284,19 @@ tests. A page with no state still emits zero JavaScript (golden test).
 | Also fixed | A component's root can be a list item (judged where it is used); `kadam dev` now also watches the theme file. |
 | Dogfood | The portfolio's project cards and "Also built" list come from `data/projects.json` and `data/more.json`. |
 
-**Next steps:** filtering, sorting and limits (`where featured of project is
-true`, `sorted by year`, `the first 3`); generated pages from a template page;
-Markdown documents; then runtime data with required loading, empty and error
-states.
+**Step 2 status: shipped.** `only where the featured of project is true`,
+`sorted by the year of project from highest to lowest`, and `showing at most
+3`, all checked against the data file's field types. The portfolio uses two
+filtered lists over one file to show the Kadam card in the linked variant.
+
+**Step 3 status: shipped.** `page "{the title of post}" for each post in
+posts {` plus a `/posts/:slug` route makes one page per record, with
+`{the <field> of <record>}` in any text. `examples/reference/blog` lists its
+posts sorted by date and generates a page for each. Writing it also added
+`it is centered` (a box centered in its parent), which the language lacked.
+
+**Next steps:** Markdown documents; child content on repeated instances; then
+runtime data with required loading, empty and error states.
 
 
 - **Build-time data:** `kadam.json` declares typed data files (JSON/CSV in the

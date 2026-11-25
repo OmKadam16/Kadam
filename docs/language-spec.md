@@ -770,6 +770,7 @@ percentage (`50%`).
 | `it is 50% wide` / `it is 50% tall` / `it is 50% by 300px` | `width` / `height` |
 | `it is at most 1200px wide` / `it is at least 50vh tall` | `max-width` / `min-height` (and `min-width`, `max-height`) |
 | `it is as wide as its content` | `width: fit-content`, for kinds that are full width by default, such as a navigation bar; it is a width, so it conflicts with `it is full width` |
+| `it is centered` | `margin-inline: auto`: the box itself sits in the middle of its parent, e.g. a column `at most 720px wide` (*kadam 0.3*). For text, use `the text is centered` |
 | `it keeps a 16 by 9 shape` / `it keeps a square shape` | `aspect-ratio: 16 / 9` (whole numbers 1 to 100) |
 | `the text is between 1rem and 2.5rem` | `font-size: clamp(...)` |
 
@@ -1165,12 +1166,81 @@ project {
   `null` leaves the parameter to its default.
 - The output is static HTML. Data lists never add a runtime.
 
+**Filtering, sorting, and limits.** Lines after the kind sentence shape the
+list. They apply in this order: filters, then the sort, then the limit.
+
+```kdm
+project {
+    a ProjectCard for each project in projects
+    only where the featured of project is true
+    only where the status of project is not "archived"
+    sorted by the year of project from highest to lowest
+    showing at most 3
+    with a title of the title of project
+}
+```
+
+- `only where the <field> of <record> is [not] <value>`: the value is quoted
+  text, a number, or `true`/`false`, and must match the field's type. Several
+  lines must all hold. A record without the field never `is` a value, and
+  always `is not` one.
+- `sorted by the <field> of <record>` sorts lowest first (A to Z for text);
+  add `from highest to lowest` to reverse it. The sort is stable, and records
+  without the field go last. Text is compared by character code, so the order
+  never depends on the machine's locale.
+- `showing at most <n>` keeps the first n records (1 to 1000).
+- A list has at most one sorted by line and one showing at most line
+  (`KDM3040`). These lines outside a data list are `KDM3041`.
+
+Two lists over the same file can give some records a different variant:
+`only where the linked of project is true` in one, and `... is not true` in
+the other.
+
 **Errors.** An unknown data name (`KDM3042`); an unknown field, the wrong
 record name, or a true/false field used as a value (`KDM3043`); a generated
 name that is already used (`KDM3044`); a field read outside a data list or
 inside a component (`KDM3041`); a built-in kind or child elements on a repeated
 instance (`KDM3040`); a data file that is not valid JSON, not an array, over
 1000 records, or that mixes types in one field (`KDM4010`).
+
+---
+
+### 6.21 Pages made from data (*kadam 0.3*, F5 step 3, D-40)
+
+A page can be made once per record. The header names the data, and any quoted
+text reads a field with `{the <field> of <record>}`:
+
+```kdm
+page "{the title of post}" for each post in posts {
+    headline {
+        a main heading
+        the text says "{the title of post}"
+    }
+    body1 {
+        a paragraph
+        the text says "{the body of post}"
+    }
+}
+```
+
+The route in `kadam.json` takes its value from a field with a `:field`
+segment:
+
+```json
+{ "source": "pages/post.kdm", "route": "/posts/:slug" }
+```
+
+- Each record becomes an ordinary page, checked like a hand-written one. Its
+  title comes from the record, so other pages link to it by that title:
+  `when clicked, go to page "Hello world"`, or `with a target of the title of
+  post` in a data list.
+- Every field the page reads must exist (`KDM3043`, with suggestions), and every
+  record must have it (`KDM3043` names the record). A route value may contain
+  only letters, digits, `.`, `_`, `~`, and `-`.
+- The route needs at least one `:field` segment (`KDM3044`). Two records that
+  make the same route are `KDM4005`; two with the same title are `KDM3011`.
+- `{the ... of ...}` on a page that is not made for each record is `KDM3041`,
+  and so is a `:field` route on such a page (`KDM3044`).
 
 ---
 
@@ -1771,7 +1841,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3040 | Only a component can repeat for each record, and it cannot have child elements yet (*kadam 0.3*) |
 | KDM3041 | A record field is read outside a data list, or a data list is inside a component (*kadam 0.3*) |
 | KDM3042 | Unknown data name, or a data list in a single-file build (*kadam 0.3*) |
-| KDM3043 | Unknown field, wrong record name, or a true/false field used as a value (*kadam 0.3*) |
+| KDM3043 | Unknown field, wrong record name, a true/false field used as a value, or a filter value of the wrong type (*kadam 0.3*) |
 | KDM3044 | A data list makes an element name that is already used (*kadam 0.3*) |
 
 **Project (`KDM4xxx`)**

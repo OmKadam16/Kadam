@@ -1,0 +1,11 @@
+{
+  "kadam": "0.3",
+  "name": "reference-blog",
+  "components": ["components/PostCard.kdm"],
+  "data": { "posts": "data/posts.json" },
+  "pages": [
+    { "source": "pages/index.kdm", "route": "/" },
+    { "source": "pages/post.kdm", "route": "/posts/:slug" }
+  ],
+  "outDir": "dist"
+}

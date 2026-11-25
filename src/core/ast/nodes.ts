@@ -157,6 +157,30 @@ export interface RepeatClause extends NodeBase {
   readonly itemSpan: Span;
   readonly source: string;
   readonly sourceSpan: Span;
+  /** F5 step 2: `only where the featured of project is true` lines, all of which must hold. */
+  readonly filters?: readonly RepeatFilter[] | undefined;
+  /** `sorted by the year of project from highest to lowest`. */
+  readonly sort?: RepeatSort | undefined;
+  /** `showing at most 3`. */
+  readonly limit?: { readonly count: number; readonly span: Span } | undefined;
+}
+
+export interface RecordFieldReference {
+  readonly name: string;
+  readonly item: string;
+  readonly span: Span;
+}
+
+export interface RepeatFilter extends NodeBase {
+  readonly field: RecordFieldReference;
+  readonly negated: boolean;
+  readonly value: string | number | boolean;
+  readonly valueSpan: Span;
+}
+
+export interface RepeatSort extends NodeBase {
+  readonly field: RecordFieldReference;
+  readonly descending: boolean;
 }
 
 export interface KindNode extends NodeBase {
@@ -190,6 +214,8 @@ export interface PageNode extends NodeBase {
   readonly titleSpan: Span;
   readonly settings: PageSettingNode[];
   readonly elements: ElementNode[];
+  /** kadam 0.3 (F5 step 3): `page "{the title of post}" for each post in posts {`. */
+  readonly repeat?: RepeatClause | undefined;
 }
 
 export type ComponentParameterType =
@@ -384,6 +410,8 @@ export type F2Statement =
     })
   | (NodeBase & { readonly type: "aspect-ratio"; readonly width: number; readonly height: number })
   | (NodeBase & { readonly type: "content-width" })
+  // kadam 0.3: `it is centered` centers the box itself in its parent.
+  | (NodeBase & { readonly type: "self-center" })
   | (NodeBase & { readonly type: "fluid-text"; readonly min: LengthValue; readonly max: LengthValue })
   | (NodeBase & { readonly type: "flex-rule"; readonly rule: "wrap" | "spread" | "even" })
   | (NodeBase & { readonly type: "child-rule"; readonly rule: "grow" | "no-shrink" | "end" })

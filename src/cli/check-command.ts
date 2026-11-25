@@ -50,7 +50,7 @@ export function runCheckCommand(rawArgs: readonly string[]): void {
     report(
       result.diagnostics,
       result.sources,
-      result.manifest?.pages.length ?? result.pages.length,
+      result.pages.length,
       sourcePath,
     );
     return;

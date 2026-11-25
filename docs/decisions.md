@@ -1256,8 +1256,20 @@ building F5; open to revision. Covers build-time data only. Runtime loading
    print with JavaScript's shortest round-trip form, and `kadam dev` watches
    data files.
 
-**Not yet:** filtering, sorting and limits; child content on a repeated
-instance; generated pages (one page per record); Markdown documents; runtime
+6. **Filtering, sorting and limits (step 2).** `only where the <field> of
+   <record> is [not] <value>` (typed against the field), `sorted by the
+   <field> of <record> [from highest to lowest]` (stable, records without the
+   field last, character-code order so builds never depend on the machine's
+   locale), and `showing at most <n>`, applied in that order.
+
+7. **Pages made from data (step 3).** `page "{the title of post}" for each
+   post in posts {` with a `/posts/:slug` route in `kadam.json` builds one
+   page per record. `{the <field> of <record>}` works in any quoted text of
+   that page. Each page is checked like a hand-written one, and titles and
+   routes must be unique.
+
+**Not yet:** child content on a repeated
+instance; Markdown documents; runtime
 data. These are the next F5 steps.
 
 ---

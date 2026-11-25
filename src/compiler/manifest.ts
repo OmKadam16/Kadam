@@ -602,14 +602,17 @@ export function loadManifest(
       (segment) =>
         segment === "." ||
         segment === ".." ||
-        !/^[A-Za-z0-9._~-]+$/.test(segment),
+        // kadam 0.3 (F5 step 3): `:slug` takes its value from each record.
+        !(/^[A-Za-z0-9._~-]+$/.test(segment) || (raw.kadam === "0.3" && /^:[a-z][A-Za-z0-9]{0,63}$/.test(segment))),
     );
     if (invalidSegment !== undefined) {
       diagnostics.error(
         "KDM4001",
         `route ${JSON.stringify(routeVal)} contains an invalid segment ${JSON.stringify(invalidSegment)}`,
         rootSpan,
-        "route segments may contain letters, digits, '.', '_', '~', and '-'",
+        raw.kadam === "0.3"
+          ? "route segments may contain letters, digits, '.', '_', '~', and '-', or be :field for a page made for each record"
+          : "route segments may contain letters, digits, '.', '_', '~', and '-'",
       );
       continue;
     }

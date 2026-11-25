@@ -156,6 +156,8 @@ function statementDeclarations(statement: StatementNode, parent: F2ParentInfo): 
       return [d("aspect-ratio", `${statement.width} / ${statement.height}`)];
     case "content-width":
       return [d("width", "fit-content")];
+    case "self-center":
+      return [d("margin-inline", "auto")];
     case "fluid-text":
       return [d("font-size", fluidFontSize(statement.min, statement.max))];
     case "flex-rule":
@@ -286,6 +288,7 @@ const F2_TYPES: ReadonlySet<string> = new Set([
   "size-limit",
   "aspect-ratio",
   "content-width",
+  "self-center",
   "fluid-text",
   "flex-rule",
   "child-rule",

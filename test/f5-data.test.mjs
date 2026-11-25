@@ -145,3 +145,42 @@ test("a component whose root is a list item is checked where it is used", () => 
   const loose = build(["entry {", "    an Item", '    with a text of "x"', "}"]);
   assert.deepEqual(codes(loose), ["KDM3010"]);
 });
+
+const ROWS = JSON.stringify([
+  { title: "A", year: 2023, featured: true },
+  { title: "B", year: 2026, featured: false },
+  { title: "C", year: 2025, featured: true },
+  { title: "D", featured: true },
+  { title: "E", year: 2024, featured: true },
+]);
+const shaped = (...lines) => [
+  "work {",
+  "    a container",
+  "    tile {",
+  "        a ProjectCard for each project in projects",
+  ...lines.map((line) => `        ${line}`),
+  "        with a title of the title of project",
+  "    }",
+  "}",
+];
+const titles = (result) => [...html(result).matchAll(/<h2[^>]*>([A-E])<\/h2>/g)].map((m) => m[1]);
+
+test("only where, sorted by, and showing at most shape a data list", () => {
+  const result = project(
+    shaped("only where the featured of project is true", "sorted by the year of project from highest to lowest", "showing at most 3"),
+    { data: ROWS },
+  );
+  assert.deepEqual(codes(result), []);
+  assert.deepEqual(titles(result), ["C", "E", "A"]);
+  // Records without the sort field go last; the sort is stable.
+  assert.deepEqual(titles(project(shaped("sorted by the year of project"), { data: ROWS })), ["A", "E", "C", "B", "D"]);
+  assert.deepEqual(titles(project(shaped('only where the title of project is not "B"', "showing at most 2"), { data: ROWS })), ["A", "C"]);
+});
+
+test("shaping lines are checked", () => {
+  assert.deepEqual(codes(project(shaped('only where the year of project is "2026"'), { data: ROWS })), ["KDM3043"]);
+  assert.deepEqual(codes(project(shaped("sorted by the yeer of project"), { data: ROWS })), ["KDM3043"]);
+  assert.deepEqual(codes(project(shaped("showing at most 0"), { data: ROWS })), ["KDM2002"]);
+  assert.deepEqual(codes(project(shaped("sorted by the year of project", "sorted by the title of project"), { data: ROWS })), ["KDM3040"]);
+  assert.deepEqual(codes(project(["x {", "    a paragraph", '    the text says "x"', "    showing at most 3", "}"])), ["KDM3041"]);
+});

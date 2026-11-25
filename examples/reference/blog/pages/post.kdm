@@ -1,0 +1,37 @@
+kadam 0.3
+
+page "{the title of post}" for each post in posts {
+    the page background is #F9FAFB
+
+    article1 {
+        an article
+        it is at most 720px wide
+        it is centered
+        it has 48px padding on the top and bottom
+        it has 20px padding on the left and right
+        it has 16px gap between children
+
+        back {
+            a link
+            the text says "All posts"
+            when clicked, go to page "Blog"
+        }
+
+        headline {
+            a main heading
+            the text says "{the title of post}"
+        }
+
+        date1 {
+            a paragraph
+            the text says "{the date of post}"
+            the text is #4B5563
+        }
+
+        body1 {
+            a paragraph
+            the text says "{the body of post}"
+            the text is 18px
+        }
+    }
+}

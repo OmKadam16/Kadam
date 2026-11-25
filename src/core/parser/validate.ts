@@ -660,6 +660,7 @@ function checkCapability(
     case "size-limit":
     case "aspect-ratio":
     case "content-width":
+    case "self-center":
     case "child-rule":
     case "column-span":
     case "sticky":
@@ -957,6 +958,8 @@ function describeStatement(statement: StatementNode): string {
       return "a shape statement";
     case "content-width":
       return "a width statement";
+    case "self-center":
+      return "an it is centered statement";
     case "fluid-text":
       return "a fluid text statement";
     case "flex-rule":
@@ -1160,6 +1163,9 @@ function propertyKeys(statement: StatementNode): string[] {
       return ["aspect-ratio"];
     case "content-width":
       return ["width"];
+    case "self-center":
+      // It sets both side margins.
+      return ["margin-left", "margin-right"];
     case "fluid-text":
       // Same property as `the text is 18px`.
       return ["text-size"];

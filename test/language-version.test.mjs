@@ -75,7 +75,7 @@ test("every 0.1 template stays 0.1; only frontend-track templates are 0.3", () =
     "fluid-text", "form-action", "gradient-angle", "gradient-stops", "grid", "image-fit",
     "image-focus", "key-event", "line-clamp", "loading", "loop", "media-source", "no-speech", "options",
     "outline", "overflow", "page-metadata", "percent-size", "position", "poster", "property", "remember",
-    "scroll-entrance", "size-limit", "stagger", "starts-hidden", "starts-open", "state", "sticky", "styled-border", "submit",
+    "scroll-entrance", "self-center", "size-limit", "stagger", "starts-hidden", "starts-open", "state", "sticky", "styled-border", "submit",
     "summary", "text-binding", "text-span", "text-style", "visibility-binding",
   ]);
 });

@@ -63,7 +63,7 @@ silently ignored.
 | Property | Type | Required | Meaning |
 | --- | --- | --- | --- |
 | `source` | string | **yes** | Project-relative `.kdm` file. `file` is accepted as an alias. |
-| `route` | string | **yes** | URL route beginning with `/`. |
+| `route` | string | **yes** | URL route beginning with `/`. *kadam 0.3:* a `:field` segment (`/posts/:slug`) on a page made for each record takes that record's value. |
 | `title` | string | no | Human title. When present it must equal the `page "..."` title in the source. |
 
 Exactly one page per `.kdm` file; each source path may be declared once.

@@ -1,4 +1,4 @@
-import type { ElementNode, PageNode, PropertyBindingNode } from "../ast/nodes.js";
+import type { ElementNode, PageNode, PropertyBindingNode, RecordFieldReference } from "../ast/nodes.js";
 import type { DiagnosticBag } from "../diagnostics/diagnostic.js";
 import type { SourceFile, Span } from "../source/source-file.js";
 import { closestMatches } from "../parser/suggest.js";
@@ -131,13 +131,12 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
     }
 
     let ok = true;
-    for (const binding of element.properties) {
-      const field = binding.field;
-      if (field === undefined) continue;
+    /** The field's type, or null after reporting why it cannot be read. Undefined for an empty data set. */
+    const check = (field: RecordFieldReference): DataFieldType | null | undefined => {
       if (field.item !== clause.item) {
         diagnostics.error("KDM3043", `"${field.item}" is not the record name here`, field.span, `this list names each record "${clause.item}": the ${field.name} of ${clause.item}`);
         ok = false;
-        continue;
+        return null;
       }
       const type = set.fields.get(field.name);
       if (type === undefined && set.records.length > 0) {
@@ -149,17 +148,51 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
           close.length > 0 ? `did you mean: ${close.join(", ")}?` : `the fields are: ${[...set.fields.keys()].join(", ")}`,
         );
         ok = false;
-      } else if (type === "yes/no") {
-        diagnostics.error("KDM3043", `the field "${field.name}" is true or false, which cannot be shown as a value`, field.span, "use a text or number field");
+        return null;
+      }
+      return type;
+    };
+    for (const binding of element.properties) {
+      if (binding.field === undefined) continue;
+      if (check(binding.field) === "yes/no") {
+        diagnostics.error("KDM3043", `the field "${binding.field.name}" is true or false, which cannot be shown as a value`, binding.field.span, "use a text or number field");
         ok = false;
       }
     }
+    for (const filter of clause.filters ?? []) {
+      const type = check(filter.field);
+      const valueType: DataFieldType = typeof filter.value === "string" ? "text" : typeof filter.value === "number" ? "number" : "yes/no";
+      if (type !== null && type !== undefined && type !== valueType) {
+        diagnostics.error("KDM3043", `the field "${filter.field.name}" is ${type}, but it is compared with ${valueType}`, filter.valueSpan, type === "text" ? 'compare it with quoted text, e.g. "archived"' : type === "number" ? "compare it with a number" : "compare it with true or false");
+        ok = false;
+      }
+    }
+    if (clause.sort !== undefined) check(clause.sort.field);
     if (!ok) return [];
+
+    // Filter, then sort (stable; records without the field go last), then limit.
+    let records = set.records.filter((record) =>
+      (clause.filters ?? []).every((filter) => (record[filter.field.name] === filter.value) !== filter.negated),
+    );
+    const sort = clause.sort;
+    if (sort !== undefined) {
+      const key = sort.field.name;
+      records = [...records].sort((a, b) => {
+        const x = a[key];
+        const y = b[key];
+        const missingX = x === undefined || x === null;
+        const missingY = y === undefined || y === null;
+        if (missingX || missingY) return missingX === missingY ? 0 : missingX ? 1 : -1;
+        const order = x! < y! ? -1 : x! > y! ? 1 : 0;
+        return sort.descending ? -order : order;
+      });
+    }
+    if (clause.limit !== undefined) records = records.slice(0, clause.limit.count);
 
     const kind = { ...element.kind!, repeat: undefined };
     delete (kind as { repeat?: unknown }).repeat;
     const instances: ElementNode[] = [];
-    set.records.forEach((record, index) => {
+    records.forEach((record, index) => {
       const name = `${element.name}${index + 1}`;
       if (names.has(name)) {
         diagnostics.error("KDM3044", `the data list makes an element named "${name}", which is already used`, element.nameSpan, `rename "${element.name}" or the other "${name}"`);
@@ -188,4 +221,159 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
 
 export function usesData(elements: readonly ElementNode[]): boolean {
   return elements.some((element) => element.kind?.repeat !== undefined || usesData(element.children));
+}
+
+/** `{the title of post}` inside any quoted text of a page made for each record. */
+const RECORD_PLACEHOLDER = /\{the ([a-z][A-Za-z0-9]{0,63}) of ([a-z][A-Za-z0-9]{0,63})\}/g;
+const ROUTE_VALUE = /^[A-Za-z0-9._~-]+$/;
+
+export interface GeneratedPage {
+  readonly page: PageNode;
+  readonly route: string;
+}
+
+/** True when any text in the page reads a record field. */
+export function readsRecordFields(page: PageNode): boolean {
+  let found = false;
+  mapStrings(page, (text) => {
+    if (!found && new RegExp(RECORD_PLACEHOLDER.source).test(text)) found = true;
+    return text;
+  });
+  return found;
+}
+
+/**
+ * kadam 0.3 (F5 step 3, D-40): one page per record. Every `{the <field> of
+ * <record>}` in the page's text is replaced, and each `:field` route segment
+ * takes that record's value. The pages are then checked like hand-written ones.
+ */
+export function generatePages(
+  page: PageNode,
+  route: string,
+  data: ReadonlyMap<string, DataSet | null>,
+  diagnostics: DiagnosticBag,
+): GeneratedPage[] {
+  const clause = page.repeat!;
+  const set = data.get(clause.source);
+  if (set === null) return [];
+  if (set === undefined) {
+    const close = closestMatches(clause.source, [...data.keys()], 3);
+    diagnostics.error(
+      "KDM3042",
+      `unknown data "${clause.source}"`,
+      clause.sourceSpan,
+      close.length > 0 ? `did you mean: ${close.join(", ")}?` : `declare it in kadam.json: "data": { "${clause.source}": "data/${clause.source}.json" }`,
+    );
+    return [];
+  }
+
+  const segments = route.split("/");
+  const routeFields = segments.filter((segment) => segment.startsWith(":")).map((segment) => segment.slice(1));
+  let ok = true;
+  if (routeFields.length === 0) {
+    diagnostics.error("KDM3044", `every page made for each record needs its own route, but "${route}" is the same for all of them`, clause.span, 'add a :field segment to the route in kadam.json, e.g. "/blog/:slug"');
+    return [];
+  }
+  const known = [...set.fields.keys()];
+  const checkField = (name: string, span: Span, inRoute: boolean): boolean => {
+    const type = set.fields.get(name);
+    if (type === undefined && set.records.length > 0) {
+      const close = closestMatches(name, known, 3);
+      diagnostics.error(
+        "KDM3043",
+        `the records in "${set.name}" have no field "${name}"${inRoute ? ` (used in the route "${route}")` : ""}`,
+        span,
+        close.length > 0 ? `did you mean: ${close.join(", ")}?` : `the fields are: ${known.join(", ")}`,
+      );
+      return false;
+    }
+    if (type === "yes/no") {
+      diagnostics.error("KDM3043", `the field "${name}" is true or false, which cannot be shown as a value`, span, "use a text or number field");
+      return false;
+    }
+    return true;
+  };
+  for (const name of routeFields) ok = checkField(name, clause.sourceSpan, true) && ok;
+
+  // Check every placeholder once, against the template.
+  const reported = new Set<string>();
+  mapStrings(page, (text) => {
+    for (const match of text.matchAll(RECORD_PLACEHOLDER)) {
+      const [, field, item] = match;
+      const key = `${field} ${item}`;
+      if (reported.has(key)) continue;
+      reported.add(key);
+      if (item !== clause.item) {
+        diagnostics.error("KDM3043", `"${item}" is not the record name here`, clause.itemSpan, `this page names each record "${clause.item}": {the ${field} of ${clause.item}}`);
+        ok = false;
+      } else if (!checkField(field!, page.titleSpan, false)) {
+        ok = false;
+      }
+    }
+    return text;
+  });
+  if (!ok) return [];
+
+  const pages: GeneratedPage[] = [];
+  const routes = new Map<string, number>();
+  set.records.forEach((record, index) => {
+    const where = `record ${index + 1} in "${set.name}"`;
+    const valueOf = (field: string): string | null => {
+      const value = record[field];
+      return value === undefined || value === null ? null : String(value);
+    };
+    const missing = new Set<string>();
+    const pageRoute = segments
+      .map((segment) => {
+        if (!segment.startsWith(":")) return segment;
+        const value = valueOf(segment.slice(1));
+        if (value === null) {
+          missing.add(segment.slice(1));
+          return segment;
+        }
+        if (!ROUTE_VALUE.test(value)) {
+          diagnostics.error("KDM3043", `${where} has ${segment.slice(1)} ${JSON.stringify(value)}, which cannot be part of a URL`, clause.sourceSpan, "use letters, digits, '.', '_', '~', and '-', e.g. \"hello-world\"");
+          ok = false;
+        }
+        return value;
+      })
+      .join("/");
+    const generated = mapStrings(page, (text) =>
+      text.replace(RECORD_PLACEHOLDER, (placeholder, field: string) => {
+        const value = valueOf(field);
+        if (value === null) {
+          missing.add(field);
+          return placeholder;
+        }
+        return value;
+      }),
+    );
+    if (missing.size > 0) {
+      diagnostics.error("KDM3043", `${where} has no ${[...missing].join(" or ")}, which this page shows`, clause.sourceSpan, "add the field to that record");
+      ok = false;
+      return;
+    }
+    const previous = routes.get(pageRoute);
+    if (previous !== undefined) {
+      diagnostics.error("KDM4005", `records ${previous} and ${index + 1} in "${set.name}" both make the route "${pageRoute}"`, clause.sourceSpan, "give each record a different value for the route field");
+      ok = false;
+      return;
+    }
+    routes.set(pageRoute, index + 1);
+    const { repeat: _repeat, ...plain } = generated;
+    pages.push({ page: plain, route: pageRoute });
+  });
+  return ok ? pages : [];
+}
+
+/** Copy a node tree, mapping every string except source-span file names. */
+function mapStrings<T>(value: T, map: (text: string) => string): T {
+  if (typeof value === "string") return map(value) as T;
+  if (Array.isArray(value)) return value.map((item) => mapStrings(item, map)) as T;
+  if (typeof value !== "object" || value === null) return value;
+  const copy: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    copy[key] = key === "span" || key.endsWith("Span") || key === "type" || key === "name" ? item : mapStrings(item, map);
+  }
+  return copy as T;
 }

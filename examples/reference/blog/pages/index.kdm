@@ -1,0 +1,28 @@
+kadam 0.3
+
+page "Blog" {
+    the page background is #F9FAFB
+
+    main1 {
+        a container
+        it is at most 720px wide
+        it is centered
+        it has 48px padding on the top and bottom
+        it has 20px padding on the left and right
+        it has 24px gap between children
+
+        headline {
+            a main heading
+            the text says "Notes on Kadam"
+        }
+
+        latest {
+            a PostCard for each post in posts
+            sorted by the date of post from highest to lowest
+            with a title of the title of post
+            with a date of the date of post
+            with a summary of the summary of post
+            with a target of the title of post
+        }
+    }
+}

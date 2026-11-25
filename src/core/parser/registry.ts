@@ -61,6 +61,7 @@ import {
   matchPosition,
   matchSizeLimit,
   matchContentWidth,
+  matchSelfCenter,
   matchSticky,
 } from "./matchers-f2.js";
 import {
@@ -168,6 +169,9 @@ const F2_TEMPLATES: readonly StatementTemplate[] = [
   { id: "content-width", description: "Width that hugs the content", since: "0.3",
     examples: ["it is as wide as its content"],
     match: (tokens) => matchContentWidth(tokens) },
+  { id: "self-center", description: "Center the box in its parent", since: "0.3",
+    examples: ["it is centered"],
+    match: (tokens) => matchSelfCenter(tokens) },
   { id: "aspect-ratio", description: "Shape (aspect ratio)", since: "0.3",
     examples: ["it keeps a 16 by 9 shape", "it keeps a square shape"],
     match: (tokens) => matchAspectRatio(tokens) },
@@ -583,6 +587,7 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "size-limit",
   "aspect-ratio",
   "content-width",
+  "self-center",
   "fluid-text",
   "flex-rule",
   "child-rule",

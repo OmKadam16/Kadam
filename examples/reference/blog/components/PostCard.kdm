@@ -1,0 +1,32 @@
+kadam 0.3
+
+component PostCard takes a title as text, a date as text, a summary as text, a target as page {
+    card1 {
+        a card
+        it is full width
+        has a white background
+        has a 1px #E5E7EB border
+        has 12px rounded corners
+        it has 20px padding
+        it has 8px gap between children
+        date1 {
+            a paragraph
+            the text says "{$date}"
+            the text is 14px
+            the text is #4B5563
+        }
+        title1 {
+            a section heading
+            the text says "{$title}"
+        }
+        summary1 {
+            a paragraph
+            the text says "{$summary}"
+        }
+        read1 {
+            a link
+            the text says "Read the post"
+            when clicked, go to page "{$target}"
+        }
+    }
+}

@@ -62,6 +62,7 @@ export function isF2State(tokens: readonly Token[]): boolean {
   if (isPercentage(third)) return true;
   if (isAnyWord(third, "pinned") || isAnyWord(third, "placed")) return true;
   if (isAnyWord(third, "as")) return true;
+  if (tokens.length === 3 && isAnyWord(third, "centered")) return true;
   if (
     isAnyWord(third, "at") &&
     (isAnyWord(tokens[3], "least") || isAnyWord(tokens[3], "most")) &&
@@ -235,6 +236,12 @@ export function matchContentWidth(tokens: readonly Token[]): Body {
     return fail("write: it is as wide as its content", tokens, "it is as wide as its content makes a box hug what is inside it");
   }
   return ok({ type: "content-width", span: spanFromTokens(tokens) });
+}
+
+// it is centered
+export function matchSelfCenter(tokens: readonly Token[]): Body {
+  if (tokens.length !== 3 || !isKeyword(tokens[0], "it") || !isAnyWord(tokens[1], "is") || !isAnyWord(tokens[2], "centered")) return null;
+  return ok({ type: "self-center", span: spanFromTokens(tokens) });
 }
 
 export function matchAspectRatio(tokens: readonly Token[]): Body {
