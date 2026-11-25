@@ -242,11 +242,11 @@ copied into the output. See
 The M0–M6 compiler is complete: static web output, layouts, responsive rules,
 motion, components, a development server, and CLI build/check/dev commands.
 
-The current release is **not** yet a general-purpose language. It cannot emit
-Python, Rust, or Java; it has no typed core IR, functions, backend standard
-library, or native bindings. The browser editor has been removed entirely. The
-M7 and M8 milestones define the work required to add those capabilities without
-weakening deterministic semantics.
+The v0.2 core and its TypeScript/Python adapters are implemented for single-file
+modules. Kadam still does not have cross-file imports, classes, first-class
+functions, collection mutation, or Rust/Java targets. The declarative web target
+continues to use the separate v0.1 HTML/CSS pipeline; unifying it with the core
+remains M8 work. The browser editor has been removed entirely.
 
 The generated web output remains JavaScript-free in v0.1. No AI, model, network
 service, or telemetry is involved.

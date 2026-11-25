@@ -1,13 +1,19 @@
 {
   "name": "kadam",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "A deterministic, natural-language compiler evolving from declarative UI toward multi-target code generation.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/OmKadam16/Kadam.git"
+  },
+  "homepage": "https://github.com/OmKadam16/Kadam#readme",
+  "bugs": {
+    "url": "https://github.com/OmKadam16/Kadam/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=22.18"

@@ -477,15 +477,16 @@ and a future import-boundary test mitigate that.
 
 ### D-16 — Naming, publication, and licensing
 
-**Status:** Partially resolved — Apache-2.0 selected; package name and
-publication remain open
+**Status:** Partially resolved — Apache-2.0 selected and the package is
+prepared as `kadam`; publication remains pending
 **Blocks:** public release, not M1
-**Recommendation:** Resolve the remaining package-name and publication details
-before the first public release
+**Recommendation:** Publish and verify a clean install before announcing the
+public release
 
 **Decision.** The source is licensed under the [Apache License, Version 2.0](../LICENSE).
-The npm package name and scope (`kadam` currently returns 404 in the registry
-but is not reserved), whether the CLI stays `kadam`, domain ownership, and final
+The npm package is prepared under the unscoped name `kadam`; the registry
+currently returns 404, but availability is not a reservation and must be
+confirmed at publish time. The CLI stays `kadam`. Domain ownership and final
 publication details remain open.
 
 **Trade-offs.** Apache-2.0 is permissive and includes an explicit patent grant,
@@ -1044,7 +1045,7 @@ That constraint is what makes compatibility testable instead of aspirational.
 | D-13 | Accessibility errors | M2 | Approve | Approved |
 | D-14 | One page per file + manifest | M3 | Approve | Approved — implemented |
 | D-15 | Single package, zero deps | M0–M6 | Approve | Approved |
-| D-16 | Naming and license | Release | Resolve | Apache-2.0 selected; publication open |
+| D-16 | Naming and license | Release | Resolve | Apache-2.0 selected; package prepared; publication pending |
 | D-17 | Dev server: memory snapshots, HTTP, SSE | M4 | Approve | Approved — implemented |
 | D-18 | No client-side runtime in v0.1 | M5+ | Approve | Approved — implemented |
 | D-19 | Component files and explicit catalog | M6 | Approve | Approved — M6 architecture |

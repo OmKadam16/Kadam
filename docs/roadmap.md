@@ -399,9 +399,10 @@ Kadam 0.1 is complete when:
 
 1. Unify the v0.1 page/component surface with the v0.2 core IR so the web target
    can consume both forms without changing page output.
-2. Finish the M8 installation path by resolving the package name and public
-   publication decision (D-16); the TypeScript and Python core adapters already
-   pass executable conformance tests.
+2. Publish the prepared `kadam` package and verify a clean global install;
+   D-16's package name is selected provisionally and publication remains
+   pending. The TypeScript and Python core adapters already pass executable
+   conformance tests.
 3. Add target-specific integration fixtures before claiming support for another
    host language.
 

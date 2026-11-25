@@ -35,7 +35,8 @@ if [[ -z "$PACKAGE_SPEC" ]]; then
   if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/package.json" ]]; then
     PACKAGE_SPEC="$SCRIPT_DIR"
   else
-    fail "No Kadam package source found. Set KADAM_PACKAGE to a published npm package or run this script from a checkout."
+    PACKAGE_SPEC="kadam@latest"
+    log "no checkout found; installing the published kadam package"
   fi
 fi
 

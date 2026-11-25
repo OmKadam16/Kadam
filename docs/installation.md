@@ -42,12 +42,19 @@ kadam --version
 
 ## Installing a published package
 
-The package is currently marked private while the release name and registry
-are decided. The installer accepts a published npm package or tarball through
+The package is prepared as `kadam`, but no public npm release has been published
+yet. Once the first release is live, the installer accepts it through
 `KADAM_PACKAGE`:
 
 ```bash
-KADAM_PACKAGE="@your-scope/kadam@latest" bash install.sh
+KADAM_PACKAGE="kadam@latest" bash install.sh
+```
+
+When the package is published, the direct npm command will be:
+
+```bash
+npm install --global kadam
+kadam --version
 ```
 
 A public one-line `curl` command is intentionally not documented yet. It needs
