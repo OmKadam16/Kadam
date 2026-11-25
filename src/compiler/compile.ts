@@ -12,12 +12,13 @@ import {
 } from "../core/source/source-file.js";
 import { baseCssUsage, emitBaseCss, emitPageCss } from "./emit-css.js";
 import { emitHtml } from "./emit-html.js";
+import { emitNoscriptCss, emitRuntimeJs, noscriptStylesheetPath } from "./emit-js.js";
 import { InternalCompilerError } from "./internal-error.js";
 import type { PageIR } from "./ir.js";
 import { lowerDocument } from "./lower.js";
 import { normalizeRoute, pageCssFileName } from "./routes.js";
 
-export type OutputFileKind = "html" | "css" | "asset" | "xml";
+export type OutputFileKind = "html" | "css" | "asset" | "xml" | "js";
 
 export interface OutputFile {
   /** Path relative to the output directory, using `/` separators. */
@@ -113,6 +114,7 @@ function compileWithSource(
         contents: emitPageCss(page),
         kind: "css",
       },
+      ...runtimeFiles(page),
     ];
     // D-39: contrast warnings for kadam 0.3 pages; they never block output.
     if (document.languageVersion !== "0.1") {
@@ -144,4 +146,13 @@ function compileWithSource(
       files: [],
     };
   }
+}
+
+/** kadam 0.3 (D-36): the page runtime and its JavaScript-off stylesheet, only when needed. */
+export function runtimeFiles(page: PageIR): OutputFile[] {
+  if (page.runtime === undefined) return [];
+  return [
+    { path: page.runtime.script, contents: emitRuntimeJs(page.runtime), kind: "js" },
+    { path: noscriptStylesheetPath(page)!, contents: emitNoscriptCss(page), kind: "css" },
+  ];
 }

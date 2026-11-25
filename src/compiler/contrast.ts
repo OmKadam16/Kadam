@@ -19,6 +19,7 @@ const DARK_QUERY = "@media (prefers-color-scheme: dark)";
 /** Kind defaults the built-in dark palette changes (see dark-palette.ts). */
 const DARK_KIND_BACKGROUND: Readonly<Partial<Record<string, string>>> = {
   card: "#1B2028",
+  dialog: "#1B2028",
   "navigation bar": "#1B2028",
   "code block": "#1B2028",
   badge: "#1E293B",

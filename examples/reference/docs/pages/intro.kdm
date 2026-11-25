@@ -6,11 +6,19 @@ page "Introduction" {
     siteHeader {
         a header
         it has 16px padding on the left and right
+        when the Escape key is pressed, set guidesOpen to false
         topNav {
             a navigation bar
             brand {
                 a minor heading
                 the text says "Kadam docs"
+            }
+            guidesButton {
+                a button
+                the text says "Guides"
+                when clicked, flip guidesOpen
+                on tablets, it is hidden
+                on desktops, it is hidden
             }
         }
     }
@@ -22,10 +30,14 @@ page "Introduction" {
         it has 32px padding
         on phones, it arranges its children in a column
 
+        it remembers guidesOpen, a boolean that starts as false
+        when the Escape key is pressed, set guidesOpen to false
+
         sideNav {
             a sidebar
             it is 220px wide
             on phones, it is full width
+            on phones, it is hidden unless guidesOpen is true
             sideTitle {
                 a small heading
                 the text says "Guides"
@@ -42,6 +54,11 @@ page "Introduction" {
                     the text says "Install"
                     the words "Install" go to page "Install"
                 }
+            }
+            faqLink {
+                a link
+                the text says "Questions"
+                when clicked, go to "faq"
             }
         }
 
@@ -111,6 +128,31 @@ page "Introduction" {
                     kindTag2 {
                         a cell
                         the text says "ol"
+                    }
+                }
+            }
+            faq {
+                a section
+                it has 8px gap between children
+                faqTitle {
+                    a section heading
+                    the text says "Questions"
+                }
+                faqFree {
+                    an expandable section
+                    the title says "Is Kadam free?"
+                    it starts open
+                    faqFreeAnswer {
+                        a paragraph
+                        the text says "Yes. Kadam is open source under Apache-2.0."
+                    }
+                }
+                faqRuntime {
+                    an expandable section
+                    the title says "Does a Kadam page need JavaScript?"
+                    faqRuntimeAnswer {
+                        a paragraph
+                        the text says "No. Static pages, including these questions, ship plain HTML and CSS."
                     }
                 }
             }

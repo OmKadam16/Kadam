@@ -1175,6 +1175,53 @@ images, semi-transparent colors) are not guessed at; the browser test suite
 measures them. The plan is that the warning becomes an error in Kadam 1.0,
 with an explicit per-element opt-out for decorative text.
 
+### D-36 — Client runtime for `kadam 0.3`
+
+**Status:** Approved 2026-11-25 (F4 step 2)
+**Replaces:** D-18 for `kadam 0.3` files only. `kadam 0.1` output stays
+JavaScript-free.
+
+**Decision.**
+
+1. **Only pages that need it get JavaScript.** A page whose elements use no
+   state, events beyond plain links, or dialogs emits exactly what it does
+   today: no script tag and no `.js` file (golden test). F4 step 1 features
+   (expandable sections, in-page, email, phone, and download links, field
+   errors) never need it.
+2. **Generated, not shipped.** The compiler writes the runtime for each page
+   from the features that page uses (tree-shaken by construction), as one
+   external file `assets/kadam.<page>.js`, loaded with `<script type="module">`.
+   No third-party code, no `eval`, no `new Function`, no inline handlers, and
+   no `innerHTML`, so a strict Content Security Policy
+   (`script-src 'self'`) works.
+3. **HTML first.** The page is complete server-rendered HTML; the runtime
+   attaches to elements by `data-kdm-id`. With JavaScript off, content stays
+   readable and plain links still work; controls that need the runtime say so
+   to assistive technology only once it has loaded.
+4. **State is typed and local.** `it remembers isOpen, a boolean that starts as
+   false` declares state on the element that owns it, checked with the v0.2
+   type system. Effects (`show`, `hide`, `flip`, `set`, `open dialog`,
+   `close the dialog`, `focus`) and bindings (`it is hidden unless isOpen is
+   true`, `the text shows count`) name elements and state that the compiler
+   resolves; an unknown name is a compile error, never a runtime one.
+5. **Accessibility is generated.** Toggles get `aria-expanded` and
+   `aria-controls`; dialogs use the native `dialog` element with `showModal()`
+   (focus trap, Escape, focus return); text bound to state that changes is a
+   polite live region.
+6. **Size budget.** About 3 KB minified for a page that uses every step 2
+   feature, checked in CI; output stays byte-identical across builds.
+
+**Alternatives considered.**
+
+1. A shared prebuilt runtime file: simpler, but every page pays for every
+   feature and it versions separately from the compiler.
+2. Inline `<script>` blocks: break strict CSP.
+3. A framework (React, Alpine, htmx): a third-party runtime contradicts D-15
+   and the size budget, and its semantics would leak into the language.
+4. `popover` and invoker commands instead of a runtime for dialogs: not
+   available in Safari 16.4 (D-35 matrix). They can replace parts of the
+   runtime when the matrix moves.
+
 ---
 
 ## Approval checklist
@@ -1217,6 +1264,7 @@ with an explicit per-element opt-out for decorative text.
 | D-34 | Reserved element names; single-diagnostic recovery | F0 | Implemented | Implemented |
 | D-35 | Browser support matrix | F2 | Approve | Approved |
 | D-37 | Frontend vocabulary is contextual, not reserved | F1 | Implemented | Implemented |
+| D-36 | Client runtime for kadam 0.3 (replaces D-18 for 0.3) | F4 step 2 | Approve | Approved |
 | D-38 | Theme colors and dark mode | F3 | Approve | Approved — implemented behind kadam 0.3 |
 | D-39 | Contrast check is a warning in 0.3 | F3 | Approve | Approved — implemented |
 

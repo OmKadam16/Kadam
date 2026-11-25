@@ -226,6 +226,20 @@ export function createDefaultStyle(
     // uses them, so 0.1 projects keep a byte-identical kadam.css.
     case "small heading":
       return { ...base, typography: typography(page.font, 16, 600, "left", page.text, 1.4) };
+    case "expandable section":
+      return { ...base };
+    // kadam 0.3 (F4 step 2): a modal dialog looks like a raised card.
+    case "dialog":
+      return {
+        ...base,
+        display: "flex",
+        background: { kind: "solid", color: hexColor("#FFFFFF") },
+        corners: { kind: "length", value: length(12) },
+        shadow: "soft",
+        padding: allSides(length(24)),
+        gap: length(16),
+        layout: { direction: "column", horizontal: "start", vertical: "start" },
+      };
     case "header":
     case "footer":
     case "section":

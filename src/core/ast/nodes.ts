@@ -57,6 +57,9 @@ export type BuiltinKindName =
   | "code block"
   // kadam 0.3 (F3)
   | "badge"
+  // kadam 0.3 (F4)
+  | "expandable section"
+  | "dialog"
   | "form"
   | "text area"
   | "checkbox"
@@ -321,6 +324,7 @@ export type StatementNode =
   | F1Statement
   | F2Statement
   | F3Statement
+  | F4Statement
   | ResponsiveStatement
   | ScopedStatement;
 
@@ -393,6 +397,63 @@ export type F2Statement =
       readonly horizontal: "left" | "center" | "right";
     })
   | (NodeBase & { readonly type: "loading"; readonly mode: "lazy" | "eager" });
+
+/** kadam 0.3 (F4) statements; matched in `src/core/parser/matchers-f4.ts`. */
+export type F4Statement =
+  | (NodeBase & { readonly type: "summary"; readonly value: string; readonly valueSpan: Span })
+  | (NodeBase & { readonly type: "starts-open" })
+  | (NodeBase & { readonly type: "field-error"; readonly value: string; readonly valueSpan: Span })
+  // Step 2: state, events, and bindings (D-36 runtime).
+  | (NodeBase & {
+      readonly type: "remember";
+      readonly name: string;
+      readonly nameSpan: Span;
+      readonly valueType: StateType;
+      readonly initial: StateLiteral;
+    })
+  | (NodeBase & { readonly type: "starts-hidden" })
+  | (NodeBase & {
+      readonly type: "event";
+      readonly trigger: "click" | "key";
+      /** For a key event: `Escape` or `Enter`. */
+      readonly key?: "Escape" | "Enter";
+      readonly effects: readonly Effect[];
+    })
+  | (NodeBase & { readonly type: "text-binding"; readonly state: StateReference })
+  | (NodeBase & {
+      readonly type: "visibility-binding";
+      readonly state: StateReference;
+      readonly value: StateLiteral;
+    });
+
+export type StateType = "boolean" | "number" | "text";
+
+export type StateLiteral =
+  | { readonly kind: "boolean"; readonly value: boolean; readonly span: Span }
+  | { readonly kind: "number"; readonly value: number; readonly span: Span }
+  | { readonly kind: "text"; readonly value: string; readonly span: Span };
+
+/** `count of cart1`, or `count` alone when one element on the page declares it. */
+export interface StateReference {
+  readonly name: string;
+  readonly owner: string | null;
+  readonly span: Span;
+}
+
+/** A target element named in quotes, or null for the element itself (`it`). */
+export interface ElementReference {
+  readonly name: string | null;
+  readonly span: Span;
+}
+
+export type Effect =
+  | { readonly type: "visibility"; readonly mode: "show" | "hide" | "flip"; readonly target: ElementReference }
+  | { readonly type: "open-dialog"; readonly target: ElementReference }
+  | { readonly type: "close-dialog"; readonly span: Span }
+  | { readonly type: "focus"; readonly target: ElementReference }
+  | { readonly type: "set-state"; readonly state: StateReference; readonly value: StateLiteral }
+  | { readonly type: "flip-state"; readonly state: StateReference }
+  | { readonly type: "add-state"; readonly state: StateReference; readonly amount: number; readonly amountSpan: Span };
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -710,7 +771,12 @@ export type ClickAction =
       readonly type: "external";
       readonly url: string;
       readonly urlSpan: Span;
-    };
+    }
+  // kadam 0.3 (F4 step 1): native links, no JavaScript.
+  | { readonly type: "anchor"; readonly elementName: string; readonly elementSpan: Span }
+  | { readonly type: "email"; readonly address: string; readonly valueSpan: Span }
+  | { readonly type: "phone"; readonly number: string; readonly valueSpan: Span }
+  | { readonly type: "download"; readonly path: string; readonly valueSpan: Span };
 
 export interface ClickStatement extends NodeBase {
   readonly type: "click";

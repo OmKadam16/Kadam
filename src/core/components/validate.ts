@@ -85,14 +85,18 @@ function validateDefinition(
 
   // Structural validation is shared with pages, but component instances are
   // deliberately unresolved at this layer.
+  // Version-dependent capabilities are judged again on each expanded page,
+  // against that page's language version, so the definition is not narrowed here.
   validateElementTree(component.elements, diagnostics, {
     allowComponentKinds: true,
     allowSlotKinds: true,
+    languageVersion: "0.3",
   });
   for (const variant of component.variants) {
     validateElementTree(variant.elements, diagnostics, {
       allowComponentKinds: true,
       allowSlotKinds: true,
+      languageVersion: "0.3",
     });
   }
 
@@ -633,7 +637,7 @@ function validateStatements(
             pageTitles,
             diagnostics,
           );
-        } else {
+        } else if (statement.action.type === "external") {
           validateUrlValue(
             statement.action.url,
             statement.action.urlSpan,

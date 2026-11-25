@@ -47,7 +47,9 @@ import {
   normalizeRoute,
   pageCssFileName,
 } from "./routes.js";
-import type { OutputFile } from "./compile.js";
+import { runtimeFiles, type OutputFile } from "./compile.js";
+
+const DOWNLOAD_EXTENSIONS: ReadonlySet<string> = new Set(["pdf", "zip", "csv", "txt"]);
 
 export const SUPPORTED_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([
   "png",
@@ -390,8 +392,9 @@ export function compileProject(
 
   // Step 8: validate every referenced asset before any output exists.
   const references = new Map<string, Span>();
+  const downloads = new Set<string>();
   for (const loaded of expandedPages) {
-    collectAssetReferences(loaded.document.page!.elements, references, manifest.fonts ?? {});
+    collectAssetReferences(loaded.document.page!.elements, references, manifest.fonts ?? {}, downloads);
     for (const setting of loaded.document.page!.settings) {
       if ((setting.property === "icon" || setting.property === "share image") && !references.has(setting.value)) {
         references.set(setting.value, setting.valueSpan);
@@ -409,6 +412,7 @@ export function compileProject(
       span,
       overrides: options.sourceOverrides,
       diagnostics,
+      download: downloads.has(rawPath),
     });
     if (asset === null) continue;
     if (!assets.has(asset.sourcePath)) assets.set(asset.sourcePath, asset);
@@ -472,6 +476,7 @@ export function compileProject(
         contents: emitPageCss(page),
         kind: "css",
       });
+      files.push(...runtimeFiles(page));
     }
 
     if (manifest.siteUrl !== undefined) {
@@ -626,6 +631,8 @@ function findComponentKindSpan(elements: readonly ElementNode[]): Span | null {
 }
 
 interface ResolveAssetArguments {
+  /** kadam 0.3 (F4): a download link may also copy pdf, zip, csv, and txt files. */
+  readonly download?: boolean;
   readonly projectRoot: string;
   readonly realProjectRoot: string;
   readonly outDir: string;
@@ -661,7 +668,7 @@ function resolveAsset(args: ResolveAssetArguments): ResolvedAsset | null {
 
   const dot = normalized.lastIndexOf(".");
   const extension = dot === -1 ? "" : normalized.slice(dot + 1).toLowerCase();
-  if (!SUPPORTED_ASSET_EXTENSIONS.has(extension)) {
+  if (!SUPPORTED_ASSET_EXTENSIONS.has(extension) && !(args.download === true && DOWNLOAD_EXTENSIONS.has(extension))) {
     diagnostics.error(
       "KDM4003",
       `unsupported asset extension '.${extension}' in '${args.rawPath}'`,
@@ -729,6 +736,7 @@ function collectAssetReferences(
   elements: readonly ElementNode[],
   out: Map<string, Span>,
   fonts: Readonly<Record<string, { readonly source: string }>>,
+  downloads: Set<string>,
 ): void {
   for (const element of elements) {
     for (const scoped of element.statements) {
@@ -736,6 +744,11 @@ function collectAssetReferences(
       const statement = scoped.type === "responsive" || scoped.type === "scoped" ? scoped.statement : scoped;
       if (statement.type === "background-image" && !out.has(statement.value)) {
         out.set(statement.value, statement.valueSpan);
+      }
+      // F4: download links copy their file.
+      if (statement.type === "click" && statement.action.type === "download") {
+        downloads.add(statement.action.path);
+        if (!out.has(statement.action.path)) out.set(statement.action.path, statement.action.valueSpan);
       }
       if (statement.type === "custom-font") {
         const source = fonts[statement.name]?.source;
@@ -755,7 +768,7 @@ function collectAssetReferences(
         }
       }
     }
-    collectAssetReferences(element.children, out, fonts);
+    collectAssetReferences(element.children, out, fonts, downloads);
   }
 }
 

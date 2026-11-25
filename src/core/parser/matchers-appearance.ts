@@ -1,5 +1,6 @@
 import { F1_FIELD_TYPES, isF1State } from "./matchers-f1.js";
 import { isF2State, isFluidText } from "./matchers-f2.js";
+import { isVisibilityBinding } from "./matchers-f4.js";
 import { isF3Border, isF3Corners, isF3Gradient, isF3Shadow, isF3State, isF3Text } from "./matchers-f3.js";
 import type {
   ColorValue,
@@ -337,6 +338,8 @@ export function matchSizeState(tokens: readonly Token[]): StatementMatchBody | n
   // kadam 0.3 sizes, limits, and positions have their own templates.
   if (isF2State(tokens)) return null;
   if (isF3State(tokens)) return null;
+  // kadam 0.3 (F4): `it is hidden unless ...` is a binding.
+  if (isVisibilityBinding(tokens)) return null;
   const rest = tokens.slice(2);
   const span = spanFromTokens(tokens);
   const diagnostics: DiagnosticSpec[] = [];

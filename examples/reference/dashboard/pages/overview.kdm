@@ -27,6 +27,41 @@ page "Overview" {
         }
     }
 
+    inviteDialog {
+        a dialog
+        it is 420px wide
+        inviteTitle {
+            a section heading
+            the text says "Invite a teammate"
+        }
+        inviteText {
+            a paragraph
+            the text says "They get an email with a link to join this workspace."
+        }
+        inviteEmail {
+            a text field
+            the label says "Email address"
+            it accepts email addresses
+        }
+        inviteActions {
+            a container
+            it arranges its children in a row
+            it has 12px gap between children
+            sendInvite {
+                a button
+                the text says "Send invite"
+                when clicked, close the dialog
+            }
+            cancelInvite {
+                a button
+                the text says "Cancel"
+                has a #E2E8F0 background
+                the text is #0F172A
+                when clicked, close the dialog
+            }
+        }
+    }
+
     workspace {
         a container
         it is full width
@@ -179,6 +214,7 @@ page "Overview" {
                             a button
                             the text says "Invite"
                             it does not shrink
+                            when clicked, open dialog "inviteDialog"
                         }
                     }
                 }

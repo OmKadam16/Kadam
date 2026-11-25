@@ -42,6 +42,9 @@ export const DARK_RULES: readonly DarkRule[] = [
     selector: ".kdm-field-input",
     declarations: [["background-color", DARK_SURFACE], ["border-color", "#3F4652"], ["color", DARK_PAGE_TEXT]],
   },
+  { kinds: ["text field", "text area", "dropdown"], selector: ".kdm-field-error", declarations: [["color", "#F87171"]] },
+  { kinds: ["dialog"], selector: "dialog.kdm-kind-dialog", declarations: [["background-color", DARK_SURFACE]] },
+  { kinds: ["expandable section"], selector: ".kdm-kind-expandable-section", declarations: [["border-bottom-color", DARK_LINE]] },
   {
     kinds: ["text field", "text area", "dropdown"],
     selector: ".kdm-field-input::placeholder",

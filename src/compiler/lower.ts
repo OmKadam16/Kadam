@@ -50,6 +50,7 @@ import {
   hexColor,
   length,
 } from "./defaults.js";
+import { lowerRuntime, type RuntimeLowering } from "./lower-f4.js";
 import { InternalCompilerError } from "./internal-error.js";
 import { tokenVar } from "./lower-f3.js";
 import type { ManifestFont } from "./manifest.js";
@@ -161,7 +162,12 @@ export function lowerDocument(
     document.languageVersion === "0.1"
       ? undefined
       : lowerPageMeta(pageNode.settings, route, basePath, options.siteUrl);
+  const runtime =
+    document.languageVersion === "0.1"
+      ? null
+      : lowerRuntime(pageNode.elements, slug, (element) => identityFor(element, slug).nodeId);
   const context: LowerContext = {
+    runtime,
     pageStyle,
     routes,
     slug,
@@ -169,6 +175,7 @@ export function lowerDocument(
     f1,
     pageLanguage: meta?.language ?? "en",
     firstImage: document.languageVersion === "0.1" ? null : firstImage(pageNode.elements),
+    anchors: anchorTargets(pageNode.elements, slug),
     fontStacks: new Map(
       Object.entries(options.fonts ?? {}).map(([name, font]) => [name, FONT_STACKS[font.fallback]]),
     ),
@@ -193,6 +200,7 @@ export function lowerDocument(
     ...(meta === undefined ? {} : { meta }),
     ...fontFaces(pageNode.elements, options.fonts ?? {}, basePath),
     ...colorTokens(options.themeColors ?? [], pageNode.settings),
+    ...(runtime === null ? {} : { runtime: runtime.runtime }),
   };
 }
 
@@ -207,6 +215,10 @@ interface LowerContext {
   readonly firstImage: ElementNode | null;
   /** kadam 0.3: custom font fallback stacks by family name. */
   readonly fontStacks: ReadonlyMap<string, string>;
+  /** kadam 0.3 (F4): element names that in-page links target, to their id. */
+  readonly anchors: ReadonlyMap<string, string>;
+  /** kadam 0.3 (F4 step 2): state, events, and bindings; null without them. */
+  readonly runtime: RuntimeLowering | null;
 }
 
 /** Top-level elements sit in the page, which is a plain block. */
@@ -324,6 +336,8 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
   );
 
   const text = findStatement(element, "text") as TextStatement | null;
+  const boundText = context.runtime?.texts.get(element);
+  const runtimeAttributes = context.runtime?.attributes.get(element);
   const loweredImage = lowerImage(element, kind, context.basePath);
   const image =
     loweredImage !== null && kind === "image" && isLazy(element, context)
@@ -333,13 +347,25 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     lowerField(element, kind, identity.nodeId) ??
     lowerControlField(element, kind, identity.nodeId);
   // kadam 0.3 pages can submit forms, so every control carries a name.
+  const fieldError = findStatement(element, "field-error") as { value: string } | null;
   const field =
     loweredField !== null && context.f1.languageVersion !== "0.1"
-      ? { ...loweredField, name: element.name }
+      ? { ...loweredField, name: element.name, ...(fieldError === null ? {} : { error: fieldError.value }) }
       : loweredField;
   const segments = text === null ? undefined : lowerTextSegments(element, text, context.f1);
-  const content = lowerKindContent(element, kind, context.f1, context.pageLanguage);
-  const htmlId = context.f1.labelIds.get(element);
+  const content =
+    kind === "expandable section"
+      ? {
+          type: "expandable" as const,
+          title: (findStatement(element, "summary") as { value: string } | null)?.value ?? "",
+          open: findStatement(element, "starts-open") !== null,
+        }
+      : lowerKindContent(element, kind, context.f1, context.pageLanguage);
+  const htmlId =
+    context.f1.labelIds.get(element) ??
+    (context.anchors.get(element.name) === identity.nodeId || context.runtime?.ids.has(element) === true
+      ? identity.nodeId
+      : undefined);
   const control = lowerButtonControl(element, kind);
   const action = lowerAction(element, context);
   const hover = lowerHover(element);
@@ -363,7 +389,7 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     hover,
     motion,
     action,
-    text: text === null ? null : segments === undefined ? { text: text.value } : { text: text.value, segments },
+    text: boundText !== undefined ? { text: boundText } : text === null ? null : segments === undefined ? { text: text.value } : { text: text.value, segments },
     image,
     field,
     accessibility: accessibilityFor(kind, text, image, field, action),
@@ -376,7 +402,30 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     ...(states.length === 0 ? {} : { states, stateTransitions: transitions }),
     ...(rules.length === 0 ? {} : { rules }),
     ...(loops.length === 0 ? {} : { loops }),
+    ...(runtimeAttributes === undefined ? {} : { attributes: runtimeAttributes }),
   };
+}
+
+/** In-page link targets (F4): each named element gets its node id as `id`. */
+function anchorTargets(elements: readonly ElementNode[], slug: string): Map<string, string> {
+  const names = new Set<string>();
+  const byName = new Map<string, string>();
+  const visit = (list: readonly ElementNode[]): void => {
+    for (const element of list) {
+      for (const statement of element.statements) {
+        if (statement.type === "click" && statement.action.type === "anchor") names.add(statement.action.elementName);
+      }
+      if (!byName.has(element.name)) byName.set(element.name, identityFor(element, slug).nodeId);
+      visit(element.children);
+    }
+  };
+  visit(elements);
+  const anchors = new Map<string, string>();
+  for (const name of names) {
+    const id = byName.get(name);
+    if (id !== undefined) anchors.set(name, id);
+  }
+  return anchors;
 }
 
 /** Theme colors (D-38): the project theme, then the page's own, which win. */
@@ -1001,6 +1050,24 @@ function lowerAction(
   if (click.action.type === "external") {
     return { kind: "external", url: click.action.url };
   }
+  // kadam 0.3 (F4 step 1): plain links, no JavaScript.
+  switch (click.action.type) {
+    case "anchor": {
+      const id = context.anchors.get(click.action.elementName);
+      if (id === undefined) {
+        throw new InternalCompilerError(`in-page target ${JSON.stringify(click.action.elementName)} was not resolved`, click.action.elementSpan);
+      }
+      return { kind: "href", href: `#${id}`, download: false };
+    }
+    case "email":
+      return { kind: "href", href: `mailto:${click.action.address}`, download: false };
+    case "phone":
+      return { kind: "href", href: `tel:${click.action.number.replace(/[ ().-]/g, "")}`, download: false };
+    case "download":
+      return { kind: "href", href: assetUrl(click.action.path, context.basePath), download: true };
+    default:
+      break;
+  }
 
   const route = context.routes.get(click.action.pageTitle);
   if (route === undefined) {
@@ -1141,6 +1208,7 @@ function roleFor(kind: BuiltinKindName): IrAccessibility["role"] {
       return "image";
     case "card":
     case "container":
+    case "dialog":
       return "container";
     case "navigation bar":
       return "navigation";
@@ -1170,6 +1238,8 @@ function roleFor(kind: BuiltinKindName): IrAccessibility["role"] {
     case "code block":
     case "badge":
       return "paragraph";
+    case "expandable section":
+      return "structure";
     case "form":
     case "text area":
     case "checkbox":

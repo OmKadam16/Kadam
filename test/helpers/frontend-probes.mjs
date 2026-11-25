@@ -28,7 +28,8 @@ export function probeSource(probe) {
   const ownText = probe.statement.startsWith("the text says");
   if (TEXT_KINDS.has(probe.kind) && !ownText) lines.push('the text says "Hi"');
   if (probe.kind === "link") {
-    lines.push('the text says "Hi"', 'when clicked, open "https://example.com" in a new tab');
+    lines.push('the text says "Hi"');
+    if (!probe.statement.startsWith("when clicked")) lines.push('when clicked, open "https://example.com" in a new tab');
   }
   if (probe.kind === "text field") lines.push('the label says "Name"');
   if (probe.statement !== "") lines.push(probe.statement);
@@ -41,7 +42,9 @@ export function probeSource(probe) {
     return `kadam 0.3\npage "P" {\n    p0 {\n        a container\n        x1 {\n${body}\n        }\n    }\n}\n`;
   }
   const body = lines.map((line) => `        ${line}`).join("\n");
-  return `kadam 0.3\npage "P" {\n    x1 {\n${body}\n    }\n}\n`;
+  // Optional extra page-level lines, e.g. the target of an in-page link.
+  const extra = (probe.page ?? []).map((line) => `    ${line}\n`).join("");
+  return `kadam 0.3\npage "P" {\n    x1 {\n${body}\n    }\n${extra}}\n`;
 }
 
 /** Probes compile against one custom breakpoint, as if kadam.json declared it. */

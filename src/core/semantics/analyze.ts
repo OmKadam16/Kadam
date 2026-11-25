@@ -8,6 +8,7 @@ import type {
   StatementNode,
   TextStatement,
 } from "../ast/nodes.js";
+import { checkRuntime } from "./runtime-check.js";
 import {
   DiagnosticBag,
   type Diagnostic,
@@ -64,6 +65,8 @@ export function analyzeDocument(
   if (document.languageVersion !== "0.1") {
     analyzeF1Page(page, routes, diagnostics);
     checkCustomFonts(page.elements, options.fonts ?? new Set(), diagnostics);
+    // F4 step 2 (D-36): events and bindings name real elements and typed state.
+    checkRuntime(page.elements, diagnostics);
     for (const setting of page.settings) {
       if (setting.property === "share image" && options.hasSiteUrl !== true) {
         diagnostics.error(
@@ -166,8 +169,9 @@ function findStatement<T extends StatementNode["type"]>(
   return null;
 }
 
-function findText(element: ElementNode): TextStatement | null {
-  return findStatement(element, "text");
+function findText(element: ElementNode): TextStatement | { type: "text-binding" } | null {
+  // kadam 0.3 (F4): text bound to state is the element's text.
+  return findStatement(element, "text") ?? (findStatement(element, "text-binding") as { type: "text-binding" } | null);
 }
 
 function requireText(
@@ -185,7 +189,7 @@ function requireText(
     );
     return;
   }
-  if (text.value.length === 0) {
+  if (text.type === "text" && text.value.length === 0) {
     diagnostics.error(
       "KDM3009",
       `${articleFor(kind)} ${kind} cannot have empty text`,
@@ -365,6 +369,7 @@ export const ASSET_EXTENSIONS = {
   captions: ["vtt"],
   pageIcon: ["png", "svg", "ico"],
   shareImage: ["png", "jpg", "jpeg", "webp"],
+  download: ["pdf", "zip", "csv", "txt", "png", "jpg", "jpeg", "svg", "webp"],
 } as const;
 
 /** Shared path rules for every asset reference (spec §6.11). */
@@ -423,6 +428,21 @@ function analyzeF1Element(
     case "badge":
       requireText(element, kind, diagnostics);
       analyzeTextSpans(element, diagnostics);
+      return;
+    case "expandable section":
+      if (!has("summary")) {
+        diagnostics.error("KDM3009", "an expandable section requires a title", element.nameSpan,
+          `add the title says "..." as a statement in ${element.name}`);
+      }
+      return;
+    case "dialog":
+      require(
+        element,
+        containsHeading(element),
+        "a heading inside it, which names the dialog",
+        "add a section heading (or any heading) as a child",
+        diagnostics,
+      );
       return;
     case "section":
       require(
@@ -507,7 +527,7 @@ function analyzeTextSpans(element: ElementNode, diagnostics: DiagnosticBag): voi
   const ranges: { start: number; end: number; span: Span }[] = [];
   for (const statement of element.statements) {
     if (statement.type !== "text-span") continue;
-    if (text === null) continue;
+    if (text === null || text.type !== "text") continue;
     const first = text.value.indexOf(statement.target);
     const count = first === -1 ? 0 : text.value.split(statement.target).length - 1;
     if (count !== 1) {
@@ -550,6 +570,32 @@ function analyzeF1Page(
       checkAssetPath(setting.value, setting.valueSpan, ASSET_EXTENSIONS.shareImage, "share image", diagnostics);
     }
   }
+
+  // F4: in-page links name an element on this page; downloads are assets.
+  const names = new Set<string>();
+  const collect = (elements: readonly ElementNode[]): void => {
+    for (const element of elements) {
+      names.add(element.name);
+      collect(element.children);
+    }
+  };
+  collect(page.elements);
+  const checkLinks = (elements: readonly ElementNode[]): void => {
+    for (const element of elements) {
+      for (const statement of element.statements) {
+        if (statement.type !== "click") continue;
+        const action = statement.action;
+        if (action.type === "anchor" && !names.has(action.elementName)) {
+          diagnostics.error("KDM3012", `no element named ${JSON.stringify(action.elementName)} on this page`, action.elementSpan,
+            "an in-page link names an element on the same page; use go to page \"Title\" for another page");
+        } else if (action.type === "download") {
+          checkAssetPath(action.path, action.valueSpan, ASSET_EXTENSIONS.download, "download", diagnostics);
+        }
+      }
+      checkLinks(element.children);
+    }
+  };
+  checkLinks(page.elements);
 
   // Heading outline, submit buttons, and inline-span links, in document order.
   const mainHeadings: ElementNode[] = [];

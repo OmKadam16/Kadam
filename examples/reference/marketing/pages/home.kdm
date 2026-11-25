@@ -123,6 +123,7 @@ page "Home" {
                 the placeholder says "you@example.com"
                 it accepts email addresses
                 it is required
+                the error says "Enter an email address such as you@example.com"
             }
             topicChoice {
                 a dropdown

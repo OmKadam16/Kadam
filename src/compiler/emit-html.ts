@@ -25,6 +25,7 @@ export function emitHtml(page: PageIR): string {
     ...(page.pageStyle.autoDark === true ? ['  <meta name="color-scheme" content="light dark">'] : []),
     `  <link rel="stylesheet" href="${escapeAttribute(baseCssHref(page.basePath))}">`,
     `  <link rel="stylesheet" href="${escapeAttribute(pageCssHref(page.routeSlug, page.basePath))}">`,
+    ...runtimeHeadLines(page),
     "</head>",
     "<body>",
     ...before.map((element) => renderElement(asPageLandmark(element), 1)),
@@ -71,10 +72,25 @@ function metaLines(title: string, meta: IrPageMeta): string[] {
 }
 
 function renderElement(element: IrElement, depth: number): string {
-  const html = renderElementTag(element, depth);
+  let html = renderElementTag(element, depth);
+  const marker = `data-kdm-id="${element.nodeId}"`;
+  // kadam 0.3 (F4 step 2): runtime attributes (hidden state, aria-live).
+  if (element.attributes !== undefined && element.attributes.length > 0) {
+    const extra = element.attributes
+      .map(([name, value]) => (value === "" ? ` ${name}` : ` ${name}="${escapeAttribute(value)}"`))
+      .join("");
+    html = html.replace(marker, `${marker}${extra}`);
+  }
+  // kadam 0.3 (F4): an in-page link target carries its id, whatever its kind.
+  // Text kinds already write it; the first tag is checked so it is never doubled.
+  if (element.htmlId !== undefined) {
+    const firstTag = html.slice(0, html.indexOf(">") + 1);
+    if (!firstTag.includes(` id="${element.htmlId}"`)) {
+      html = html.replace(marker, `${marker} id="${escapeAttribute(element.htmlId)}"`);
+    }
+  }
   if (element.scrollable !== true) return html;
   // kadam 0.3: a scroll container is focusable so keyboard users can scroll it.
-  const marker = `data-kdm-id="${element.nodeId}"`;
   return html.replace(marker, `${marker} tabindex="0"`);
 }
 
@@ -140,6 +156,11 @@ function renderElementTag(element: IrElement, depth: number): string {
       const labelled = content?.type === "section" ? ` aria-labelledby="${escapeAttribute(content.labelledBy)}"` : "";
       return renderContainer(element, "section", indent, classAttribute, labelled);
     }
+    case "dialog": {
+      const content = element.content;
+      const labelled = content?.type === "dialog" ? ` aria-labelledby="${escapeAttribute(content.labelledBy)}"` : "";
+      return renderContainer(element, "dialog", indent, classAttribute, labelled);
+    }
     case "form": {
       const content = element.content;
       const action = content?.type === "form" ? ` action="${escapeAttribute(content.action)}" method="post"` : "";
@@ -173,7 +194,28 @@ function renderElementTag(element: IrElement, depth: number): string {
       return renderContainer(element, "nav", indent, classAttribute);
     case "card":
     case "container":
+      // kadam 0.3 (F4): a clickable card or container is one link.
+      if (element.action !== null) {
+        return [
+          `${indent}<a${linkAttributes(element)}>`,
+          ...element.children.map((child) => renderElement(child, indent.length / 2 + 1)),
+          `${indent}</a>`,
+        ].join("\n");
+      }
       return renderContainer(element, "div", indent, classAttribute);
+    case "expandable section": {
+      const content = element.content;
+      const title = content?.type === "expandable" ? content.title : "";
+      const open = content?.type === "expandable" && content.open ? " open" : "";
+      return [
+        `${indent}<details class="${classAttribute}" data-kdm-id="${element.nodeId}"${open}>`,
+        `${indent}  <summary class="kdm-expandable-title">${escapeText(title)}</summary>`,
+        `${indent}  <div class="kdm-expandable-body">`,
+        ...element.children.map((child) => renderElement(child, indent.length / 2 + 2)),
+        `${indent}  </div>`,
+        `${indent}</details>`,
+      ].join("\n");
+    }
   }
 }
 
@@ -249,6 +291,7 @@ function renderField(
     `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
     `${indent}  <label class="kdm-field-label" for="${field.labelFor}">${escapeText(field.label)}</label>`,
     `${indent}  <input ${inputAttributes.join(" ")}>`,
+    ...errorLines(indent, field),
     `${indent}</div>`,
   ].join("\n");
 }
@@ -288,7 +331,14 @@ function fieldExtraAttributes(field: IrFieldContent): string[] {
   if (field.minLength !== undefined) attributes.push(`minlength="${field.minLength}"`);
   if (field.maxLength !== undefined) attributes.push(`maxlength="${field.maxLength}"`);
   if (field.disabled === true) attributes.push("disabled");
+  if (field.error !== undefined) attributes.push(`aria-describedby="${field.inputId}-error"`);
   return attributes;
+}
+
+/** kadam 0.3 (F4): the error text, shown by CSS once the field is invalid. */
+function errorLines(indent: string, field: IrFieldContent): string[] {
+  if (field.error === undefined) return [];
+  return [`${indent}  <p class="kdm-field-error" id="${field.inputId}-error">${escapeText(field.error)}</p>`];
 }
 
 function requireField(element: IrElement): IrFieldContent {
@@ -365,6 +415,7 @@ function renderTextArea(element: IrElement, indent: string, classAttribute: stri
     `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
     labelLine(indent, field),
     `${indent}  <textarea ${attributes.join(" ")}></textarea>`,
+    ...errorLines(indent, field),
     `${indent}</div>`,
   ].join("\n");
 }
@@ -398,6 +449,7 @@ function renderDropdown(element: IrElement, indent: string, classAttribute: stri
     `${indent}  <select ${attributes.join(" ")}>`,
     ...options,
     `${indent}  </select>`,
+    ...errorLines(indent, field),
     `${indent}</div>`,
   ].join("\n");
 }
@@ -437,11 +489,16 @@ function linkAttributes(element: IrElement): string {
     ` href="${escapeAttribute(
       element.action.kind === "navigate"
         ? element.action.route
-        : element.action.url,
+        : element.action.kind === "href"
+          ? element.action.href
+          : element.action.url,
     )}"`,
   ];
   if (element.action.kind === "external") {
     attributes.push(' target="_blank"', ' rel="noopener noreferrer"');
+  }
+  if (element.action.kind === "href" && element.action.download) {
+    attributes.push(" download");
   }
   return attributes.join("");
 }
@@ -480,4 +537,15 @@ export function escapeAttribute(value: string): string {
   return escapeText(value)
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/** kadam 0.3 (D-36): the page runtime module and its JavaScript-off stylesheet. */
+function runtimeHeadLines(page: PageIR): string[] {
+  if (page.runtime === undefined) return [];
+  const href = (path: string): string => `${page.basePath ?? ""}/${path}`;
+  const noscript = page.runtime.script.replace(/\.js$/, ".noscript.css");
+  return [
+    `  <script type="module" src="${escapeAttribute(href(page.runtime.script))}"></script>`,
+    `  <noscript><link rel="stylesheet" href="${escapeAttribute(href(noscript))}"></noscript>`,
+  ];
 }

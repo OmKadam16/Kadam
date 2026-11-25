@@ -1,3 +1,4 @@
+import { runtimeCssBlocks } from "./emit-js.js";
 import type { BuiltinKindName } from "../core/ast/nodes.js";
 import type {
   IrAuthoredStyle,
@@ -238,6 +239,10 @@ export interface BaseCssUsage {
   readonly kinds: ReadonlySet<BuiltinKindName>;
   /** Any text uses an inline link span. */
   readonly inlineLinks: boolean;
+  /** kadam 0.3 (F4): a field has an error message. */
+  readonly fieldErrors?: boolean;
+  /** kadam 0.3 (F4): a card or container is a link. */
+  readonly clickableBoxes?: boolean;
 }
 
 const EMPTY_USAGE: BaseCssUsage = { kinds: new Set(), inlineLinks: false };
@@ -246,13 +251,22 @@ const EMPTY_USAGE: BaseCssUsage = { kinds: new Set(), inlineLinks: false };
 export function baseCssUsage(pages: readonly PageIR[]): BaseCssUsage {
   const kinds = new Set<BuiltinKindName>();
   let inlineLinks = false;
+  let fieldErrors = false;
+  let clickableBoxes = false;
   const visit = (element: IrElement): void => {
     kinds.add(element.kind);
     if (element.text?.segments?.some((segment) => segment.type === "link") === true) inlineLinks = true;
+    if (element.field?.error !== undefined) fieldErrors = true;
+    if ((element.kind === "card" || element.kind === "container") && element.action !== null) clickableBoxes = true;
     element.children.forEach(visit);
   };
   for (const page of pages) page.elements.forEach(visit);
-  return { kinds, inlineLinks };
+  return {
+    kinds,
+    inlineLinks,
+    ...(fieldErrors ? { fieldErrors } : {}),
+    ...(clickableBoxes ? { clickableBoxes } : {}),
+  };
 }
 
 function f1BaseRules(usage: BaseCssUsage): string[] {
@@ -315,6 +329,47 @@ function f1BaseRules(usage: BaseCssUsage): string[] {
   const out: string[] = [];
   for (const [kinds, rule] of rules) {
     if (kinds.some((kind) => used.has(kind))) out.push(rule);
+  }
+  if (used.has("expandable section")) {
+    out.push(
+      // Full width in a column, so every question's divider lines up.
+      cssRule(".kdm-kind-expandable-section", [
+        ["align-self", "stretch"], ["border-bottom", `1px solid ${GLOBAL_TOKENS.divider}`], ["padding", "12px 0"],
+      ]),
+      cssRule(".kdm-expandable-title", [["cursor", "pointer"], ["font-weight", "600"]]),
+      cssRule(".kdm-expandable-title:focus-visible", [["outline", `2px solid ${GLOBAL_TOKENS.accent}`], ["outline-offset", "2px"]]),
+      cssRule(".kdm-expandable-body", [
+        ["display", "flex"], ["flex-direction", "column"], ["align-items", "flex-start"], ["gap", "12px"], ["padding-top", "12px"],
+      ]),
+    );
+  }
+  if (used.has("dialog")) {
+    out.push(
+      cssRule("dialog.kdm-kind-dialog", [
+        ["display", "flex"], ["flex-direction", "column"], ["align-items", "flex-start"], ["gap", "16px"],
+        ["padding", "24px"], ["border", "none"], ["border-radius", "12px"], ["background-color", "#FFFFFF"],
+        ["color", "inherit"], ["box-shadow", "0 20px 48px rgb(15 23 42 / 0.25)"],
+        ["max-width", "min(560px, calc(100vw - 32px))"], ["max-height", "calc(100dvh - 32px)"], ["overflow", "auto"],
+      ]),
+      // Element rules set display, so a closed dialog is hidden explicitly.
+      cssRule("dialog.kdm-kind-dialog:not([open])", [["display", "none !important"]]),
+      cssRule("dialog.kdm-kind-dialog::backdrop", [["background-color", "rgb(15 23 42 / 0.5)"]]),
+    );
+  }
+  if (usage.fieldErrors === true) {
+    out.push(
+      cssRule(".kdm-field-error", [["display", "none"], ["margin", "0"], ["color", "#B91C1C"], ["font-size", "14px"]]),
+      // Shown once the user has edited the field and it is invalid.
+      cssRule(".kdm-field-input:user-invalid ~ .kdm-field-error", [["display", "block"]]),
+    );
+  }
+  if (usage.clickableBoxes === true) {
+    out.push(
+      cssRule("a.kdm-kind-card,\na.kdm-kind-container", [["color", "inherit"], ["text-decoration", "none"]]),
+      cssRule("a.kdm-kind-card:focus-visible,\na.kdm-kind-container:focus-visible", [
+        ["outline", `2px solid ${GLOBAL_TOKENS.accent}`], ["outline-offset", "2px"],
+      ]),
+    );
   }
   if (usage.inlineLinks) {
     out.push(cssRule(".kdm-inline-link", [["color", GLOBAL_TOKENS.accent], ["text-decoration", "underline"]]));
@@ -454,6 +509,9 @@ export function emitPageCss(page: PageIR): string {
       mediaBlock("(prefers-reduced-motion: reduce)", reducedMotionRules),
     );
   }
+
+  // kadam 0.3 (F4 step 2): what the runtime hides, last so nothing overrides it.
+  blocks.push(...runtimeCssBlocks(page, breakpointQuery));
 
   return `${blocks.join("\n\n")}\n`;
 }

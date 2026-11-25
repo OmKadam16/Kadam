@@ -1,6 +1,6 @@
 # Kadam Frontend Plan — from static pages to a full UI language
 
-**Status:** Approved (2026-11-24). F0–F3 are implemented (D-38 and D-39 approved 2026-11-25); F4 is next. F8 (rich visuals and immersive UI) is recorded for later.
+**Status:** Approved (2026-11-24). F0–F4 are implemented (F4 step 2, the runtime, on 2026-11-25). F8 (rich visuals and immersive UI) is recorded for later.
 **Replaces as current priority:** the backend half of M8. The v0.2 core and its
 TypeScript/Python adapters stay as they are (maintained, not extended) until
 this plan reaches F6.
@@ -180,8 +180,43 @@ approved on 2026-11-25 and are implemented as written.
 This is the biggest change, and it needs a decision (**D-36**) that replaces
 D-18 for `kadam 0.3`.
 
-**Step 1: native-first interactions, no JavaScript.** Ship everything that
-HTML can do natively before any runtime exists:
+**Step 1 — implemented 2026-11-25.** In-page, email, phone, and download
+links; clickable cards and containers; `an expandable section` (`details`);
+and `the error says` field messages shown with `:user-invalid`. All of it is
+script-free (tested), the docs site has an FAQ and an in-page link, and the
+marketing form has an error message. Browser tests cover keyboard opening,
+the in-page jump, the error appearing only after invalid input, and that no
+script loads. They found one bug before release: an in-page target got an
+`id` only when it was a heading. Probes: F4 4/8; the other four (dialog,
+show, flip, Escape key) need the runtime. **Changed from the plan:** `a dialog`
+moves to step 2, because `popover` and invoker commands are not in the D-35
+matrix (Safari 16.4), so a dialog cannot open without JavaScript. Form
+submission was already done in F1 (`it sends to`).
+
+**D-36 was approved on 2026-11-25**; step 2 builds on it.
+
+**Step 2 — implemented 2026-11-25.**
+
+| Area | What shipped |
+| --- | --- |
+| State | `it remembers isOpen, a boolean that starts as false` (boolean, number, text), referred to as `isOpen` or `isOpen of menu1`. |
+| Events | `when clicked,` on buttons and `when the Escape/Enter key is pressed,` on any element, with one or more effects joined by `and`. |
+| Effects | show, hide, flip an element; set, flip, add, subtract state; open and close a dialog; focus. |
+| Bindings | `it is hidden unless isOpen is true` (also per breakpoint), `the text shows count`, `it starts hidden`. |
+| Dialog | `a dialog` → native `dialog` with `showModal()`, labelled by its heading, focus returned to the opener. |
+| Checks | Every element and state name is resolved and type-checked at compile time (`KDM3012`, `KDM3005`). |
+| Runtime | `assets/kadam.<page>.js`, one module per page that needs it, holding only that page's data and the effects it uses (about 2.5 KB for every feature, unminified). No `eval`, no `innerHTML`; tested under `script-src 'self'`. Server HTML shows the starting state; a `noscript` stylesheet shows hidden content with JavaScript off. |
+| Reference projects | The docs site has a phones-only Guides menu (Escape closes it); the dashboard's Invite button opens a modal dialog. |
+| Browser tests | Menu open and close by mouse and keyboard, `aria-expanded`/`aria-controls`, the dialog being modal, Escape and Cancel returning focus, no console errors under a strict CSP, and content readable with JavaScript off. |
+| Probes | 64/66 compile; F1–F4 are 60/60. The two left are F6 escape hatches. |
+
+**Exit:** met. **Changed from the plan:** dialogs need a heading (it names the
+dialog for screen readers); key events fire while focus is inside the element
+that declares them, not anywhere on the page; field values bound to state,
+lists, and `it is disabled while ...` move to F5 with data.
+
+**Step 1 (original plan): native-first interactions, no JavaScript.** Ship
+everything that HTML can do natively before any runtime exists:
 
 - `an expandable section` → `details`/`summary` (accordions, FAQs).
 - `a dialog`, opened with `when clicked, open dialog "signupDialog"` → `dialog`
@@ -367,6 +402,40 @@ is unavailable.
 product viewer and a scroll scene) passes axe, works keyboard-only, meets its
 performance budget, and shows the poster fallbacks with reduced motion on.
 
+### F9 — No ceiling: the Kadam library and escape hatches (later; registry after F6)
+
+**Goal (2026-11-25):** like HTML and CSS, Kadam must have no ceiling. Anything
+unusual must be possible. Three layers get there:
+
+1. **The grammar keeps growing** (F1–F8), so most designs need nothing else.
+2. **The Kadam library**, a hosted catalogue of ready-made pieces: buttons,
+   cards, navigation, heroes, pricing tables, text styles, animations, icons,
+   illustrations, open-licensed fonts, and whole themes. It starts with a
+   curated official set and grows through community publishing.
+   - `kadam add pricing-card` (or `kadam add @studio/hero-video`) copies the
+     piece's Kadam source and assets into the project and records it in a
+     lockfile with a version and content hash. **Builds never touch the
+     network**, so output stays deterministic and offline. Updating is an
+     explicit `kadam update`.
+   - Library pieces are Kadam components and assets, using the existing
+     component namespaces (`from pricing`), so the compiler checks them like
+     your own code: accessibility, contrast, and types included.
+   - A website for browsing, live previews, copy-paste snippets, and
+     publishing. Every piece carries its license, author, and version.
+   - Pieces that need code beyond Kadam (for example a WebGL scene from F8)
+     are marked and only use runtime modules the compiler generates or that a
+     decision has approved.
+3. **Explicit escape hatches** (pulled from F6), so the last few percent is
+   never blocked: a raw CSS declaration on one element
+   (`the css "mask-image" is "url(assets/m.svg)"`), an existing stylesheet
+   class, a sanitised raw HTML block, and typed external functions. They are
+   visible in the source, reported by `kadam check`, and can be banned with
+   `--strict`.
+
+**Decisions needed:** registry hosting and accounts, the package format and
+lockfile, publishing review and moderation, licensing rules, and whether the
+first escape hatch (raw CSS) moves forward to right after F4.
+
 ## 6. After F6: back to the backend
 
 Once F6 exits, resume the original M8/M9 sequence with the frontend as the
@@ -384,13 +453,15 @@ anchor:
 | D-32 | Regular property sentence + property table (approved) | F1 |
 | D-35 | Browser support matrix (approved) | F2 |
 | D-38 | Theme colors and dark mode (open question 5; approved, implemented) | F3 |
-| D-36 | Client runtime for `kadam 0.3` (replaces D-18 for 0.3), state, events and security model | F4 step 2 |
+| D-36 | Client runtime for `kadam 0.3` (replaces D-18 for 0.3), state, events and security model (approved 2026-11-25) | F4 step 2 |
 | — | Data and network model (open question 3) | F5 |
 | — | Escape-hatch policy (open question 12) | F6 |
 | — | Web Components as primary interop target | F6 |
 | D-39 | Contrast check is a warning in 0.3 (open question 14; approved, implemented) | F3 |
 | — | 3D model viewer and shader backgrounds: self-hosted module, size budget | F8 |
 | — | Build-time image processing (srcset, AVIF) vs zero dependencies (D-15) | F8 |
+| — | Library registry: hosting, package format, lockfile, publishing and licenses | F9 |
+| — | Move the raw CSS escape hatch forward to right after F4 (no ceiling sooner) | F5 |
 
 ## 8. Where the work lands in the code
 
@@ -424,6 +495,7 @@ Playwright and axe-core are dev/CI dependencies only.
 F0 ──► F1 ──► F2 ──► F3 ──► F4 ──► F5 ──► F6 ──► backend
               └──────── F7 tooling runs alongside ────────┘
                             F3 + F4 ──► F8 rich visuals and immersive UI
+                                 F6 ──► F9 the Kadam library and registry
 ```
 
 F8 can start as soon as F3 (effects) and F4 (runtime) exit; its CSS-only
@@ -437,7 +509,7 @@ is approved by the time F3 ships.
 
 ## 11. Probe checklist (updated 2026-11-25)
 
-`✓` compiles today (56/66 probes), `·` missing. The phase column says where it lands.
+`✓` compiles today (64/66 probes), `·` missing. The phase column says where it lands.
 
 | Probe | Today | Phase |
 | --- | --- | --- |
@@ -446,7 +518,7 @@ is approved by the time F3 ships.
 | Kinds: section, header, footer, list, table, video, icon, checkbox, dropdown, text area, form, badge | ✓ | F1 |
 | Kind: modal / dialog | · | F4 step 1 |
 | Line breaks and inline bold/links in text | ✓ | F1 |
-| Field types: phone, date; min length; error message | ✓ except the error message (F4 step 1) | F1 / F4 step 1 |
+| Field types: phone, date; min length; error message | ✓ | F1 / F4 step 1 |
 | `it is disabled` | ✓ | F1 |
 | Page description, language, icon | ✓ | F1 |
 | Grid, wrap, space-evenly | ✓ | F2 |
@@ -459,6 +531,6 @@ is approved by the time F3 ships.
 | Dark mode, accent/brand tokens | ✓ | F3 |
 | `when focused`, `when pressed` | ✓ | F3 |
 | Rotate on hover, looping animation, scroll-triggered entrance | ✓ | F3 |
-| Clickable card, in-page anchor, `mailto:` | · | F4 step 1 |
-| Show / hide / toggle another element | · | F4 step 2 |
+| Clickable card, in-page anchor, `mailto:` | ✓ | F4 step 1 |
+| Show / hide / toggle another element | ✓ | F4 step 2 |
 | Raw CSS / script escape hatch | · | F6 (explicit, opt-in) |

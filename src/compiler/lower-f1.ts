@@ -73,7 +73,8 @@ export function collectSectionLabels(
   };
   const visit = (list: readonly ElementNode[]): void => {
     for (const element of list) {
-      if (element.kind?.reference.type === "builtin-kind" && element.kind.reference.name === "section") {
+      const kindName = element.kind?.reference.type === "builtin-kind" ? element.kind.reference.name : null;
+      if (kindName === "section" || kindName === "dialog") {
         const heading = firstHeading(element);
         if (heading !== null) {
           const id = idFor(heading);
@@ -114,6 +115,10 @@ export function lowerKindContent(
     case "section": {
       const labelledBy = context.sectionLabels.get(element) ?? missing(element, "heading");
       return { type: "section", labelledBy };
+    }
+    case "dialog": {
+      const labelledBy = context.sectionLabels.get(element) ?? missing(element, "heading");
+      return { type: "dialog", labelledBy };
     }
     case "form":
       return { type: "form", action: (find(element, "form-action") ?? missing(element, "destination")).url };

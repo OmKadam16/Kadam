@@ -127,7 +127,13 @@
       "phase": "F4",
       "kind": "dialog",
       "statement": "",
-      "compiles": false
+      "compiles": true,
+      "body": [
+        "h1 {",
+        "    a section heading",
+        "    the text says \"Sign up\"",
+        "}"
+      ]
     },
     {
       "id": "p14",
@@ -449,49 +455,66 @@
       "phase": "F4",
       "kind": "text field",
       "statement": "the error says \"Required\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p59",
       "phase": "F4",
       "kind": "card",
       "statement": "when clicked, go to page \"P\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p60",
       "phase": "F4",
       "kind": "button",
       "statement": "when clicked, go to \"features\"",
-      "compiles": false
+      "compiles": true,
+      "page": [
+        "features {",
+        "    a container",
+        "}"
+      ]
     },
     {
       "id": "p61",
       "phase": "F4",
       "kind": "link",
       "statement": "when clicked, send an email to \"a@b.com\"",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p62",
       "phase": "F4",
       "kind": "button",
       "statement": "when clicked, show \"x2\"",
-      "compiles": false
+      "compiles": true,
+      "page": [
+        "x2 {",
+        "    a container",
+        "    it starts hidden",
+        "}"
+      ]
     },
     {
       "id": "p63",
       "phase": "F4",
       "kind": "button",
       "statement": "when clicked, flip \"menu1\"",
-      "compiles": false
+      "compiles": true,
+      "page": [
+        "menu1 {",
+        "    a container",
+        "    it starts hidden",
+        "}"
+      ]
     },
     {
       "id": "p64",
       "phase": "F4",
       "kind": "button",
       "statement": "when the Escape key is pressed, it is hidden",
-      "compiles": false
+      "compiles": true
     },
     {
       "id": "p65",

@@ -207,7 +207,11 @@ pinned elements, scroll regions, custom breakpoints, and container conditions;
 and styling: `rgb()`/`hsl()` colors, dashed and per-side borders, multi-color
 gradients, background images, custom fonts, shadows and blur, interaction
 states (`when focused,`, `when pressed,`), scroll and looping animation, theme
-colors, dark mode, and a compile-time contrast check.
+colors, dark mode, and a compile-time contrast check; and interactions:
+in-page, email, phone, and download links, expandable sections, field errors,
+typed state (`it remembers isOpen, a boolean that starts as false`), click and
+key events, show/hide and text bindings, and modal dialogs. Only pages that use
+state, events, or dialogs get JavaScript: a small module written for that page.
 `examples/reference/` holds a marketing site, a docs site, and a dashboard
 written with it. `npm run test:browser` renders them in Chrome at four widths.
 A

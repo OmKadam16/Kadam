@@ -9,6 +9,7 @@ import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Span } from "../source/source-file.js";
 import type { Token } from "../lexer/token.js";
 import type { StatementMatchBody } from "./statement-types.js";
+import { isEffectList, isF4ClickAction } from "./matchers-f4.js";
 import {
   colorDiagnostic,
   describeTokens,
@@ -189,6 +190,8 @@ export function matchClick(tokens: readonly Token[]): StatementMatchBody | null 
 
   const rest = tokens.slice(3);
   const diagnostics: DiagnosticSpec[] = [];
+  // kadam 0.3 (F4): in-page, email, phone, and download links.
+  if (isF4ClickAction(rest) || isEffectList(rest)) return null;
 
   if (isKeyword(rest[0], "go") && isKeyword(rest[1], "to") && isKeyword(rest[2], "page")) {
     const target = rest[3];

@@ -68,6 +68,7 @@ const CONTAINERS: ReadonlySet<BuiltinKindName> = new Set([
   "form",
   "list",
   "numbered list",
+  "dialog",
 ]);
 
 export interface ValidateOptions {
@@ -75,6 +76,8 @@ export interface ValidateOptions {
   readonly allowComponentKinds?: boolean | undefined;
   /** Component definitions may declare content slots; pages may not. */
   readonly allowSlotKinds?: boolean | undefined;
+  /** The file's language version; kadam 0.3 widens some capabilities. */
+  readonly languageVersion?: string | undefined;
 }
 
 /**
@@ -96,7 +99,7 @@ export function validateDocument(
     checkPageSettingDuplicate(setting, settings, diagnostics);
   }
 
-  validateElementTree(page.elements, diagnostics, options);
+  validateElementTree(page.elements, diagnostics, { ...options, languageVersion: document.languageVersion });
 }
 
 /**
@@ -158,6 +161,17 @@ function checkStructure(
       }
     }
     checkLayoutContext(element, parent, diagnostics);
+    if ((kind === "card" || kind === "container") && element.statements.some((statement) => statement.type === "click")) {
+      const inner = firstInteractive(element.children);
+      if (inner !== null) {
+        diagnostics.error(
+          "KDM3010",
+          `a clickable ${kind} cannot contain ${inner.name}, which is interactive`,
+          inner.nameSpan,
+          `make the ${kind} the only link: remove the click action from ${inner.name}, or the one from ${element.name}`,
+        );
+      }
+    }
     checkStructure(element.children, element, insideForm || kind === "form", diagnostics);
   });
 }
@@ -264,7 +278,7 @@ function validateElement(
       responsiveByBreakpoint.set(key, list);
       continue;
     }
-    checkCapability(kindName, element.kind, statement, diagnostics);
+    checkCapability(kindName, element.kind, statement, diagnostics, options.languageVersion);
     checkClickUrl(statement, options, diagnostics);
     checkLengthReferences(statement, options, diagnostics);
     checkColorReferences(statement, options, diagnostics);
@@ -288,7 +302,7 @@ function validateElement(
         );
         continue;
       }
-      checkCapability(kindName, element.kind, inner, diagnostics);
+      checkCapability(kindName, element.kind, inner, diagnostics, options.languageVersion);
       checkClickUrl(inner, options, diagnostics);
       checkLengthReferences(inner, options, diagnostics);
       checkColorReferences(inner, options, diagnostics);
@@ -307,6 +321,23 @@ function validateElement(
   for (const child of element.children) {
     validateElement(child, diagnostics, options);
   }
+}
+
+const INTERACTIVE: ReadonlySet<BuiltinKindName> = new Set([
+  "button", "link", "text field", "text area", "checkbox", "dropdown", "radio group", "video", "audio clip",
+  "expandable section", "form",
+]);
+
+/** The first interactive descendant: a link inside a link is invalid HTML. */
+function firstInteractive(elements: readonly ElementNode[]): ElementNode | null {
+  for (const element of elements) {
+    const kind = builtinKindName(element.kind);
+    if (kind !== null && INTERACTIVE.has(kind)) return element;
+    if (element.statements.some((statement) => statement.type === "click")) return element;
+    const nested = firstInteractive(element.children);
+    if (nested !== null) return nested;
+  }
+  return null;
 }
 
 /** Statements in the same responsive scope share duplicate detection. */
@@ -413,6 +444,7 @@ function checkCapability(
   kind: KindNode | null,
   statement: StatementNode,
   diagnostics: DiagnosticBag,
+  languageVersion: string = "0.1",
 ): void {
   if (kindName === null) return;
   const reject = (hint: string): void => {
@@ -570,9 +602,34 @@ function checkCapability(
       }
       return;
     case "click":
+      // kadam 0.3 (F4): a card or container may be one big link.
+      if (kindName === "card" || kindName === "container") {
+        if (languageVersion !== "0.1") return;
+      }
       if (kindName !== "button" && kindName !== "link") {
         reject("click actions apply only to a button or link");
       }
+      return;
+    case "summary":
+    case "starts-open":
+      if (kindName !== "expandable section") reject("a title and it starts open apply to an expandable section");
+      return;
+    case "field-error":
+      if (kindName !== "text field" && kindName !== "text area" && kindName !== "dropdown") {
+        reject("an error message applies to a text field, text area, or dropdown");
+      }
+      return;
+    case "event":
+      if (statement.trigger === "click" && kindName !== "button") {
+        reject("click effects apply to a button; a link or card navigates instead");
+      }
+      return;
+    case "text-binding":
+      if (!TEXT_CONTENT.has(kindName)) reject("the text shows applies to text kinds: headings, paragraphs, buttons, badges, cells");
+      return;
+    case "remember":
+    case "starts-hidden":
+    case "visibility-binding":
       return;
     case "fluid-text":
       if (kindName === "text field") {
@@ -960,6 +1017,22 @@ function describeStatement(statement: StatementNode): string {
       return "a looping animation statement";
     case "stagger":
       return "a staggered entrance statement";
+    case "summary":
+      return "a title statement";
+    case "starts-open":
+      return "an it starts open statement";
+    case "field-error":
+      return "an error message statement";
+    case "remember":
+      return "a state statement";
+    case "starts-hidden":
+      return "an it starts hidden statement";
+    case "event":
+      return statement.trigger === "click" ? "a click effect statement" : `a when the ${statement.key} key is pressed statement`;
+    case "text-binding":
+      return "a text binding";
+    case "visibility-binding":
+      return "an it is hidden unless statement";
     case "responsive":
       return "a responsive statement";
     case "scoped":
@@ -1137,7 +1210,20 @@ function propertyKeys(statement: StatementNode): string[] {
     case "rotate":
     case "scale":
     case "stagger":
+    case "summary":
+    case "starts-open":
+    case "field-error":
       return [statement.type];
+    case "remember":
+      return [`state-${statement.name}`];
+    case "event":
+      // A button either navigates or runs effects; a key has one handler.
+      return statement.trigger === "click" ? ["click"] : [`key-${statement.key}`];
+    case "text-binding":
+      return ["text"];
+    case "starts-hidden":
+    case "visibility-binding":
+      return ["visibility"];
     case "responsive":
     case "scoped":
       return [];

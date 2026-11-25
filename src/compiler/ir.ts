@@ -1,3 +1,4 @@
+import type { IrRuntime } from "./lower-f4.js";
 import type {
   Breakpoint,
   BuiltinKindName,
@@ -246,7 +247,9 @@ export type IrAction =
       readonly pageTitle: string;
       readonly route: string;
     }
-  | { readonly kind: "external"; readonly url: string };
+  | { readonly kind: "external"; readonly url: string }
+  /** kadam 0.3 (F4): in-page anchor, mailto:, tel:, or a download. */
+  | { readonly kind: "href"; readonly href: string; readonly download: boolean };
 
 export interface IrTextContent {
   readonly text: string;
@@ -275,7 +278,9 @@ export type IrKindContent =
     }
   | { readonly type: "table"; readonly caption: string }
   | { readonly type: "section"; readonly labelledBy: string }
-  | { readonly type: "form"; readonly action: string };
+  | { readonly type: "dialog"; readonly labelledBy: string }
+  | { readonly type: "form"; readonly action: string }
+  | { readonly type: "expandable"; readonly title: string; readonly open: boolean };
 
 export interface IrImageContent {
   readonly sourcePath: string;
@@ -301,6 +306,8 @@ export interface IrFieldContent {
   readonly maxLength?: number;
   readonly options?: readonly string[];
   readonly checked?: boolean;
+  /** kadam 0.3 (F4): shown when the field is invalid after the user edits it. */
+  readonly error?: string;
 }
 
 export interface IrAccessibility {
@@ -373,6 +380,8 @@ export interface IrElement {
   readonly scopes?: readonly IrScopedStyle[];
   /** A scroll container: keyboard users can focus and scroll it. */
   readonly scrollable?: true;
+  /** kadam 0.3 (F4 step 2): runtime attributes, emitted after data-kdm-id. */
+  readonly attributes?: readonly (readonly [string, string])[];
   /** kadam 0.3 (F3) interaction states. */
   readonly states?: readonly IrStateStyle[];
   readonly stateTransitions?: readonly IrTransition[];
@@ -437,6 +446,8 @@ export interface PageIR {
   readonly fonts?: readonly IrFontFace[];
   /** kadam 0.3 theme colors available on this page (theme plus page). */
   readonly colorTokens?: readonly IrColorToken[];
+  /** kadam 0.3 (F4 step 2, D-36): present only when the page needs JavaScript. */
+  readonly runtime?: IrRuntime;
 }
 
 export interface IrPageMeta {

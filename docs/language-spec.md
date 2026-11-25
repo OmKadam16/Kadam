@@ -990,6 +990,131 @@ colors, and in dark mode when the page uses it), the compiler checks WCAG
 failure is warning `KDM3039`; it never blocks a build. Gradients, background
 images, semi-transparent colors, and opacity are not guessed at.
 
+### 6.18 Native interactions (*kadam 0.3*, F4 step 1)
+
+These need no JavaScript; the page stays script-free.
+
+| Sentence | Applies to | HTML |
+| --- | --- | --- |
+| `when clicked, go to "features"` | button, link, card, container | `href="#<page>-features"`; the named element on this page gets that `id` |
+| `when clicked, send an email to "hello@acme.com"` | same | `mailto:` |
+| `when clicked, call "+1 555 0100"` | same | `tel:` (spaces and punctuation removed) |
+| `when clicked, download "assets/guide.pdf"` | same | `href` plus `download`; the file is copied (images, `pdf`, `zip`, `csv`, `txt`) |
+| `when clicked, go to page "Pricing"` | card, container (new in 0.3) | the whole card is one link |
+
+- A clickable card or container cannot contain buttons, links, form controls,
+  media, or other clickable elements (`KDM3010`), because a link inside a link
+  is invalid HTML.
+- An in-page link names an element on the same page (`KDM3012` otherwise).
+
+**Expandable sections**
+
+```kdm
+faqFree {
+    an expandable section
+    the title says "Is Kadam free?"
+    it starts open
+    faqFreeAnswer {
+        a paragraph
+        the text says "Yes."
+    }
+}
+```
+
+`an expandable section` is `details` and `summary`: it opens and closes with
+the mouse, Enter, or Space. It requires a title (`KDM3009`) and starts closed
+unless `it starts open`. Its children are stacked with a 12px gap; layout
+statements do not apply to it.
+
+**Field errors.** `the error says "Enter a valid email address"` on a text
+field, text area, or dropdown adds the message after the control, linked with
+`aria-describedby`. It is shown once the user has edited the field and it is
+invalid (`:user-invalid`; Safari 16.5 and later), and hidden otherwise.
+
+### 6.19 State, events, and dialogs (*kadam 0.3*, F4 step 2, D-36)
+
+A page that uses anything in this section gets a small script written for it,
+`assets/kadam.<page>.js`, loaded with `<script type="module">`. Pages that use
+none of it ship no JavaScript.
+
+**State** belongs to the element that declares it:
+
+```kdm
+it remembers isOpen, a boolean that starts as false
+it remembers count, a number that starts as 0
+it remembers plan, a text that starts as "monthly"
+```
+
+A name starts with a lowercase letter. Another element refers to it as `isOpen`
+when only one element on the page remembers `isOpen`, or as `isOpen of menu1`
+otherwise. Its own element and that element's children can always say just
+`isOpen`.
+
+**Events and effects.** One event line holds one or more effects joined by
+`and`:
+
+```kdm
+when clicked, flip isOpen
+when clicked, show "promo1" and focus "emailField"
+when the Escape key is pressed, set isOpen to false
+```
+
+| Effect | Meaning |
+| --- | --- |
+| `show "name"`, `hide "name"`, `flip "name"` | show, hide, or flip an element (`it starts hidden` hides it at first) |
+| `it is hidden`, `it is shown` | the same for the element itself |
+| `set count to 0`, `set plan of form1 to "yearly"` | set a state |
+| `flip isOpen` | flip a true-or-false state |
+| `add 1 to count`, `subtract 1 from count` | change a number state |
+| `open dialog "name"` | open a dialog as a modal |
+| `close the dialog` | close the dialog the button is in |
+| `focus "name"` | move keyboard focus to an element |
+
+- `when clicked,` with effects applies to a button (`KDM3003` otherwise); links
+  and cards go somewhere instead (§6.18).
+- `when the Escape key is pressed,` and `when the Enter key is pressed,` apply
+  to any element and fire while keyboard focus is in it or one of its
+  children.
+
+**Bindings** follow state:
+
+```kdm
+it is hidden unless isOpen is true
+on phones, it is hidden unless isOpen is true
+the text shows count
+```
+
+`on phones, it is hidden unless ...` controls the element on phones only; on
+other screens it is shown. Bound text is a polite live region, so a screen
+reader announces the change.
+
+**Dialogs.** `a dialog` is the native `dialog` element, opened with
+`showModal()`: the rest of the page cannot be reached while it is open, Escape
+closes it, and focus returns to the button that opened it. It needs a heading
+inside it, which names it (`KDM3009`). It is a raised panel with 24px padding
+and 16px between children, at most 560px wide.
+
+**Checks.** Every name is resolved at compile time:
+
+- an unknown element or state, or a state name two elements share without
+  `of`: `KDM3012`;
+- a value of the wrong type (`flip count` on a number, `set isOpen to "yes"`):
+  `KDM3005`;
+- `open dialog` naming something that is not a dialog, or `close the dialog`
+  outside a dialog: `KDM3012`;
+- an element both bound to a state (`it is hidden unless`) and shown or hidden
+  by effects, or always hidden (`it is hidden`) but shown by an effect:
+  `KDM3005`.
+
+**Output.** The page HTML is complete and shows the starting state: hidden
+elements carry `data-kdm-hidden` (or `data-kdm-hidden-phones` and so on), and
+bound text holds the starting value. The script finds elements by
+`data-kdm-id`, adds `aria-expanded` and `aria-controls` to buttons that show
+and hide something, and uses no `eval`, `new Function`, inline handlers, or
+`innerHTML`, so `Content-Security-Policy: script-src 'self'` works. With
+JavaScript off, a `noscript` stylesheet shows everything the script would
+hide and puts dialogs in the page.
+
 ---
 
 ## 7. Events and interactions
@@ -1579,7 +1704,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3009 | Missing required content |
 | KDM3010 | Leaf element cannot contain children |
 | KDM3011 | Duplicate page title |
-| KDM3012 | Invalid event target |
+| KDM3012 | Invalid event target (or an in-page link to a missing element) |
 | KDM3013 | Statement is not allowed in a responsive scope |
 | KDM3014 | Hover border color requires a base border |
 | KDM3015 | Hover background color is invalid on a gradient |

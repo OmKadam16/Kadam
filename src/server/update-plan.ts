@@ -97,7 +97,7 @@ export function planUpdate(
   for (const path of changed) {
     const kind = next.files.get(path)?.kind ?? previous.files.get(path)?.kind;
     if (kind === "html") htmlChanged = true;
-    else if (kind === "asset") assetChanged = true;
+    else if (kind === "asset" || kind === "js") assetChanged = true;
     else if (kind === "css") cssPaths.push(path);
   }
 

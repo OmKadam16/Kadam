@@ -1,0 +1,186 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+
+import { compileText } from "../dist/compiler/compile.js";
+import { compileProject } from "../dist/compiler/project.js";
+
+// kadam 0.3 frontend phase F4 step 2 (D-36): state, events, bindings, and
+// dialogs, with a runtime generated per page.
+
+const codes = (result) => result.diagnostics.map((d) => d.code);
+const messages = (result) => result.diagnostics.map((d) => d.message);
+const file = (result, path) => {
+  const found = result.files?.find((f) => f.path === path);
+  return found === undefined ? undefined : String(found.contents);
+};
+const html = (result) => file(result, "index.html") ?? "";
+const js = (result) => file(result, "assets/kadam.home.js");
+
+function page(body, { version = "0.3" } = {}) {
+  const lines = [`kadam ${version}`, 'page "Home" {', ...body.map((l) => `    ${l}`), "}", ""];
+  return compileText("home.kdm", lines.join("\n"));
+}
+const el = (name, kind, ...lines) => [`${name} {`, `    a ${kind}`, ...lines.map((l) => (l.startsWith("  ") ? `  ${l}` : `    ${l}`)), "}"];
+const text = (value) => `the text says ${JSON.stringify(value)}`;
+const nest = (lines) => lines.map((line) => `  ${line}`);
+const button = (name, label, effect) => el(name, "button", text(label), `when clicked, ${effect}`);
+
+const MENU = [
+  ...el("nav1", "navigation bar",
+    "it remembers isOpen, a boolean that starts as false",
+    "when the Escape key is pressed, set isOpen to false",
+    ...nest(button("menuButton", "Menu", "flip isOpen")),
+    ...nest(el("menu1", "container", "on phones, it is hidden unless isOpen is true",
+      ...nest(el("l1", "link", text("Docs"), 'when clicked, go to page "Home"'))))),
+];
+const COUNTER = el("counter", "card",
+  "it remembers count, a number that starts as 0",
+  ...nest(el("countText", "paragraph", "the text shows count")),
+  ...nest(button("plus", "Add one", "add 1 to count")),
+  ...nest(button("minus", "Remove one", "subtract 1 from count")));
+const DIALOG = [
+  ...button("openIt", "Details", 'open dialog "details"'),
+  ...el("details", "dialog",
+    ...nest(el("dh", "section heading", text("Details"))),
+    ...nest(button("closeIt", "Close", "close the dialog"))),
+];
+
+test("F4 step 2 sentences are kadam 0.3 syntax", () => {
+  for (const lines of [
+    el("b1", "button", text("x"), 'when clicked, show "b1"'),
+    el("c1", "container", "it remembers isOpen, a boolean that starts as false"),
+    el("c1", "container", "it starts hidden"),
+    el("c1", "container", "when the Escape key is pressed, it is hidden"),
+    el("p1", "paragraph", "the text shows count"),
+    el("d1", "dialog"),
+  ]) {
+    const result = page(lines, { version: "0.1" });
+    assert.ok(codes(result).some((code) => code === "KDM2013" || code === "KDM3003" || code === "KDM2001"), `${lines.join(" / ")}: ${codes(result)}`);
+  }
+});
+
+test("state is rendered on the server and attached to by data-kdm-id", () => {
+  const result = page([...MENU, ...COUNTER]);
+  assert.deepEqual(codes(result), []);
+  // Bound text starts as the state's initial value and is a polite live region.
+  assert.match(html(result), /<p class="kdm-home-countText kdm-kind-paragraph" data-kdm-id="home-countText" aria-live="polite">0<\/p>/);
+  // A phones-only binding hides with a phones-only attribute while the state is false.
+  assert.match(html(result), /data-kdm-id="home-menu1" id="home-menu1" data-kdm-hidden-phones>/);
+  assert.match(file(result, "assets/kadam.home.css"), /@media \(max-width: 599px\) \{\n {2}\[data-kdm-hidden-phones\] \{\n {4}display: none !important;/);
+  // aria-expanded and aria-controls are added by the runtime, never in the HTML.
+  assert.doesNotMatch(html(result), /aria-expanded|aria-controls/);
+  assert.match(js(result), /setAttribute\("aria-expanded"/);
+  assert.match(js(result), /\["home-menuButton",\["home-menu1"\],"home-nav1\.isOpen"\]/);
+  assert.match(js(result), /\["home-nav1","Escape",\[\["set","home-nav1\.isOpen",false\]\]\]/);
+  assert.match(js(result), /\["home-minus","click",\[\["add","home-counter\.count",-1\]\]\]/);
+});
+
+test("the page loads its runtime as an external module, with a JavaScript-off stylesheet", () => {
+  const result = page([...el("help", "paragraph", text("Help"), "it starts hidden"), ...button("helpButton", "Help", 'flip "help"')]);
+  assert.deepEqual(codes(result), []);
+  assert.match(html(result), /<link rel="stylesheet" href="\/assets\/kadam\.home\.css">\n {2}<script type="module" src="\/assets\/kadam\.home\.js"><\/script>\n {2}<noscript><link rel="stylesheet" href="\/assets\/kadam\.home\.noscript\.css"><\/noscript>\n<\/head>/);
+  assert.match(html(result), /data-kdm-id="home-help" data-kdm-hidden id="home-help">Help<\/p>/);
+  assert.equal(file(result, "assets/kadam.home.noscript.css"),
+    '/* Generated by Kadam. Do not edit. Loaded only when JavaScript is off. */\n\n[data-kdm-id="home-help"] {\n  display: block !important;\n}\n');
+  // No inline scripts, no eval, no innerHTML (strict CSP works).
+  assert.doesNotMatch(html(result), /<script>|onclick=/);
+  assert.doesNotMatch(js(result), /eval|new Function|innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
+});
+
+test("the runtime holds only what the page uses", () => {
+  const flipOnly = js(page([...el("help", "paragraph", text("Help"), "it starts hidden"), ...button("b", "Help", 'flip "help"')]));
+  assert.doesNotMatch(flipOnly, /const state|openDialog|focusNode|textContent|"add"|"set"/);
+  const full = js(page([...MENU, ...COUNTER, ...DIALOG]));
+  assert.match(full, /function openDialog/);
+  assert.match(full, /showModal\(\)/);
+  assert.match(full, /closest\("dialog"\)\.close\(\)/);
+  assert.ok(Buffer.byteLength(full) < 4096, `runtime is ${Buffer.byteLength(full)} bytes`);
+});
+
+test("static kadam 0.3 pages ship no JavaScript", () => {
+  const result = page([...el("t", "paragraph", text("Hello")), ...el("l", "link", text("Top"), 'when clicked, go to "t"')]);
+  assert.ok(result.files.every((f) => !f.path.endsWith(".js") && !f.path.includes("noscript")));
+  assert.doesNotMatch(html(result), /<script|<noscript/);
+  assert.doesNotMatch(file(result, "assets/kadam.home.css"), /data-kdm-hidden/);
+});
+
+test("a dialog is a native modal dialog labelled by its heading", () => {
+  const result = page(DIALOG);
+  assert.deepEqual(codes(result), []);
+  assert.match(html(result), /<dialog class="kdm-home-details kdm-kind-dialog" data-kdm-id="home-details" aria-labelledby="home-dh">\n {6}<h2 [^>]*id="home-dh">Details<\/h2>/);
+  const base = file(result, "assets/kadam.css");
+  assert.match(base, /dialog\.kdm-kind-dialog:not\(\[open\]\) \{\n {2}display: none !important;/);
+  assert.match(base, /dialog\.kdm-kind-dialog::backdrop/);
+  assert.match(file(result, "assets/kadam.home.noscript.css"), /dialog\.kdm-kind-dialog:not\(\[open\]\) \{\n {2}display: flex !important;/);
+  assert.ok(codes(page(el("d1", "dialog", ...nest(button("c", "Close", "close the dialog"))))).length > 0, "a dialog needs a heading");
+});
+
+test("every name is checked at compile time", () => {
+  const unknownElement = page(button("b", "x", 'show "nowhere"'));
+  assert.deepEqual(codes(unknownElement), ["KDM3012"]);
+  assert.match(messages(unknownElement)[0], /no element named "nowhere"/);
+  const unknownState = page(button("b", "x", "flip isOpen"));
+  assert.deepEqual(codes(unknownState), ["KDM3012"]);
+  assert.match(messages(unknownState)[0], /no element on this page remembers isOpen/);
+  const ambiguous = page([
+    ...el("a1", "container", "it remembers isOpen, a boolean that starts as false"),
+    ...el("a2", "container", "it remembers isOpen, a boolean that starts as true"),
+    ...button("b", "x", "flip isOpen"),
+  ]);
+  assert.match(messages(ambiguous)[0], /isOpen is remembered by a1 and a2; write isOpen of <element>/);
+  assert.deepEqual(codes(page([
+    ...el("a1", "container", "it remembers isOpen, a boolean that starts as false"),
+    ...el("a2", "container", "it remembers isOpen, a boolean that starts as true"),
+    ...button("b", "x", "flip isOpen of a2"),
+  ])), []);
+  // A child uses its nearest ancestor's state by bare name.
+  assert.deepEqual(codes(page([
+    ...el("a1", "container", "it remembers isOpen, a boolean that starts as false"),
+    ...el("a2", "container", "it remembers isOpen, a boolean that starts as true", ...nest(button("b", "x", "flip isOpen"))),
+  ])), []);
+});
+
+test("state types are checked", () => {
+  const counter = "it remembers count, a number that starts as 0";
+  assert.deepEqual(codes(page(el("c", "container", counter, ...nest(button("b", "x", "flip count"))))), ["KDM3005"]);
+  assert.deepEqual(codes(page(el("c", "container", counter, ...nest(button("b", "x", 'set count to "many"'))))), ["KDM3005"]);
+  assert.deepEqual(codes(page(el("c", "container", counter, "it is hidden unless count is true"))), ["KDM3005"]);
+  const flag = "it remembers isOpen, a boolean that starts as false";
+  assert.deepEqual(codes(page(el("c", "container", flag, ...nest(button("b", "x", "add 1 to isOpen"))))), ["KDM3005"]);
+  assert.ok(codes(page(el("c", "container", "it remembers isOpen, a boolean that starts as 0"))).length > 0);
+});
+
+test("dialog effects and visibility control are checked", () => {
+  assert.match(messages(page(button("b", "x", "close the dialog")))[0], /only used inside a dialog/);
+  assert.match(messages(page([...button("b", "x", 'open dialog "p1"'), ...el("p1", "paragraph", text("x"))]))[0], /p1 is not a dialog/);
+  const both = page(el("c", "container",
+    "it remembers isOpen, a boolean that starts as false",
+    "it is hidden unless isOpen is true",
+    ...nest(button("b", "x", 'flip "c"'))));
+  assert.ok(messages(both).some((m) => /shown by a state condition and also by show\/hide\/flip/.test(m)));
+  // Click effects are for buttons; links and cards navigate.
+  assert.ok(codes(page([...el("l", "link", text("x"), 'when clicked, show "c"'), ...el("c", "container")])).includes("KDM3003"));
+});
+
+test("projects write the runtime next to the page, under the base path", () => {
+  const dir = mkdtempSync(join(tmpdir(), "kadam-f4-runtime-"));
+  const write = (path, contents) => {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), contents);
+  };
+  write("kadam.json", JSON.stringify({ kadam: "0.3", name: "t", basePath: "/site", pages: [{ source: "home.kdm", route: "/" }, { source: "about.kdm", route: "/about" }] }));
+  write("home.kdm", ['page "Home" {', ...COUNTER.map((l) => `    ${l}`), "}", ""].join("\n"));
+  write("about.kdm", 'page "About" {\n    t {\n        a paragraph\n        the text says "About"\n    }\n}\n');
+  const result = compileProject({ projectRoot: dir });
+  assert.deepEqual(result.diagnostics.map((d) => d.message), []);
+  const paths = result.files.map((f) => f.path);
+  assert.ok(paths.includes("assets/kadam.home.js") && paths.includes("assets/kadam.home.noscript.css"));
+  assert.ok(!paths.some((path) => path.includes("about") && (path.endsWith(".js") || path.includes("noscript"))));
+  assert.match(String(result.files.find((f) => f.path === "index.html").contents), /<script type="module" src="\/site\/assets\/kadam\.home\.js"><\/script>/);
+  // Output is the same on every build.
+  const again = compileProject({ projectRoot: dir });
+  assert.deepEqual(again.files.map((f) => [f.path, String(f.contents)]), result.files.map((f) => [f.path, String(f.contents)]));
+});

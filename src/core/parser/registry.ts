@@ -85,6 +85,18 @@ import {
   matchAutoDark,
   matchColorToken,
 } from "./matchers-f3.js";
+import {
+  matchClickEffects,
+  matchF4Click,
+  matchFieldError,
+  matchKeyEvent,
+  matchRemember,
+  matchStartsHidden,
+  matchStartsOpen,
+  matchSummary,
+  matchTextBinding,
+  matchVisibilityBinding,
+} from "./matchers-f4.js";
 import { PROPERTIES, matchPropertySentence, propertyNamed } from "./properties.js";
 import { closestMatches } from "./suggest.js";
 import type {
@@ -254,6 +266,44 @@ const F3_TEMPLATES: readonly StatementTemplate[] = [
   { id: "stagger", description: "Staggered child entrance", since: "0.3",
     examples: ["its children fade in one after another", "its children slide in from the bottom one after another"],
     match: (tokens) => matchStagger(tokens) },
+];
+
+/** kadam 0.3 (F4 step 1) native interactions. */
+const F4_TEMPLATES: readonly StatementTemplate[] = [
+  { id: "f4-click", description: "In-page, email, phone, or download link", since: "0.3",
+    examples: ['when clicked, go to "features"', 'when clicked, send an email to "hello@acme.com"',
+      'when clicked, call "+1 555 0100"', 'when clicked, download "assets/guide.pdf"'],
+    match: (tokens) => matchF4Click(tokens) },
+  { id: "summary", description: "Expandable section title", since: "0.3",
+    examples: ['the title says "What is Kadam?"'],
+    match: (tokens) => matchSummary(tokens) },
+  { id: "starts-open", description: "Expandable section starts open", since: "0.3",
+    examples: ["it starts open"],
+    match: (tokens) => matchStartsOpen(tokens) },
+  { id: "field-error", description: "Field error message", since: "0.3",
+    examples: ['the error says "Enter a valid email address"'],
+    match: (tokens) => matchFieldError(tokens) },
+  // Step 2 (D-36 runtime)
+  { id: "click-effects", description: "Click effects", since: "0.3",
+    examples: ['when clicked, flip "menu1"', 'when clicked, show "panel2" and hide "panel1"',
+      'when clicked, open dialog "signupDialog"', "when clicked, close the dialog",
+      "when clicked, add 1 to count of cart1", "when clicked, flip isOpen of menu1"],
+    match: (tokens) => matchClickEffects(tokens) },
+  { id: "key-event", description: "Key press effects", since: "0.3",
+    examples: ['when the Escape key is pressed, hide "menu1"', "when the Escape key is pressed, it is hidden"],
+    match: (tokens) => matchKeyEvent(tokens) },
+  { id: "remember", description: "Element state", since: "0.3",
+    examples: ["it remembers isOpen, a boolean that starts as false", "it remembers count, a number that starts as 0"],
+    match: (tokens) => matchRemember(tokens) },
+  { id: "starts-hidden", description: "Hidden until shown by an effect", since: "0.3",
+    examples: ["it starts hidden"],
+    match: (tokens) => matchStartsHidden(tokens) },
+  { id: "text-binding", description: "Text bound to state", since: "0.3",
+    examples: ["the text shows count of cart1"],
+    match: (tokens) => matchTextBinding(tokens) },
+  { id: "visibility-binding", description: "Visibility bound to state", since: "0.3",
+    examples: ["it is hidden unless isOpen of menu1 is true"],
+    match: (tokens) => matchVisibilityBinding(tokens) },
 ];
 
 export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
@@ -485,6 +535,7 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
   ...F1_TEMPLATES,
   ...F2_TEMPLATES,
   ...F3_TEMPLATES,
+  ...F4_TEMPLATES,
   {
     id: "property",
     description: "Regular property sentence",
@@ -551,6 +602,8 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "rotate",
   "move",
   "scale",
+  // kadam 0.3 (F4): a menu that is open only on phones
+  "visibility-binding",
 ]);
 
 const BREAKPOINTS: ReadonlySet<string> = new Set([
