@@ -1,0 +1,21 @@
+kadam 0.1
+
+component Button takes a label as text, a target as page {
+
+    action1 {
+        a button
+        the button text says "{$label}"
+        when clicked, go to page "{$target}"
+    }
+
+    variant outline {
+        action1 {
+            a button
+            has a white background
+            has a 2px blue border
+            the button text says "{$label}"
+            the text is blue
+            when clicked, go to page "{$target}"
+        }
+    }
+}

@@ -1,0 +1,9 @@
+page "Duplicates" {
+    card1 {
+        a card
+    }
+
+    card1 {
+        a container
+    }
+}

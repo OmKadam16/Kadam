@@ -1,0 +1,103 @@
+kadam 0.1
+
+page "About" {
+    the page background is #F7F5F0
+    the page text is #171717
+    the page font is sans serif
+
+    nav2 {
+        a navigation bar
+        has no background
+        it arranges its children in a row
+        it centers its children vertically
+        it has 24px padding on the left and right
+
+        brand2 {
+            a section heading
+            the text says "Kadam"
+            the text is 20px
+        }
+
+        homeLink1 {
+            a link
+            the link text says "Home"
+            when clicked, go to page "Home"
+        }
+    }
+
+    pageContent2 {
+        a container
+        it is full width
+        it centers its children horizontally
+
+        main1 {
+            a container
+            it is 760px wide
+            it has 64px padding on top
+            it has 64px padding on bottom
+            it has 24px gap between children
+            on tablets, it is 720px wide
+            on phones, it is full width
+            on phones, it has 24px padding on the left and right
+
+            aboutHeading1 {
+                a main heading
+                the text says "A language, not a prompt."
+                the text is 48px
+                on phones, the text is 32px
+            }
+
+            aboutIntro1 {
+                a paragraph
+                the text says "Kadam is a programming language for user interfaces. It borrows the readability of plain English but keeps the precision of a compiler. A line either has one documented meaning or it is an error."
+                the text is 18px
+            }
+
+            mark1 {
+                an image that is 240px by 240px
+                it shows "assets/kadam-mark.svg"
+                the description says "The Kadam mark: a blue and black gradient square with rounded corners"
+                has rounded corners
+                it has 32px margin on top
+                it has 32px margin on bottom
+            }
+
+            principles1 {
+                a card
+                has a white background
+                has a 1px #D4D4D4 border
+                has rounded corners
+                has a soft shadow
+                it has 32px padding
+
+                principlesTitle1 {
+                    a section heading
+                    the text says "The first principles"
+                    the text is 28px
+                }
+
+                principlesBody1 {
+                    a paragraph
+                    the text says "The source is the truth. Output is disposable. Parsing is deterministic. Ambiguity is an error. The compiler never calls a model or the network."
+                    the text is 16px
+                }
+            }
+
+            contact1 {
+                a text field
+                the label says "Email"
+                the placeholder says "you@example.com"
+                it accepts email addresses
+                it is required
+                it has 16px margin on top
+            }
+
+            backLink1 {
+                a link
+                the link text says "Back to home"
+                when clicked, go to page "Home"
+                it has 16px margin on top
+            }
+        }
+    }
+}

@@ -1,0 +1,10 @@
+kadam 0.1
+
+component ExternalLink takes a label as text, a url as url {
+
+    link1 {
+        a link
+        the link text says "{$label}"
+        when clicked, open "{$url}" in a new tab
+    }
+}

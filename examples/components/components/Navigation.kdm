@@ -1,0 +1,27 @@
+kadam 0.1
+
+component Navigation takes a homeTarget as page, an aboutTarget as page, a servicesTarget as page {
+
+    nav1 {
+        a navigation bar
+        has no background
+
+        homeLink1 {
+            a NavLink
+            with a label of "Home"
+            with a target of "{$homeTarget}"
+        }
+
+        aboutLink1 {
+            a NavLink
+            with a label of "About"
+            with a target of "{$aboutTarget}"
+        }
+
+        servicesLink1 {
+            a NavLink
+            with a label of "Services"
+            with a target of "{$servicesTarget}"
+        }
+    }
+}

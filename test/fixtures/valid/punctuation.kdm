@@ -1,0 +1,10 @@
+kadam 0.1
+// Comments may appear before the page.
+
+page "Punctuation" { // a header comment
+    card1 {
+        a card.
+        it has 16px padding on the top and bottom. // a trailing comment
+        it has 8px margin on the left and right.
+    }
+}

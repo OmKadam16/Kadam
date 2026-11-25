@@ -1,0 +1,61 @@
+kadam 0.1
+
+page "Home" {
+
+    navigation1 {
+        a Navigation
+        with a homeTarget of "Home"
+        with an aboutTarget of "About"
+        with a servicesTarget of "Services"
+    }
+
+    headline1 {
+        a main heading
+        the text says "Interfaces written in plain English"
+        the text is 56px
+    }
+
+    intro1 {
+        a paragraph
+        the text says "Declare a component once. Every instance expands at compile time."
+        the text is 20px
+    }
+
+    startAction1 {
+        a Button
+        with a label of "See pricing"
+        with a target of "Services"
+    }
+
+    pricing1 {
+        a PriceCard
+        with a title of "Starter"
+        with a price of "$9"
+    }
+
+    pricing2 {
+        a PriceCard
+        with a title of "Studio"
+        with a price of "$29"
+        with a badge of "Best value"
+    }
+
+    pricing3 {
+        a PriceCard in the featured variant
+        with a title of "Agency"
+        with a price of "$99"
+        with a picture of "assets/kadam-mark.svg"
+        with a priceSize of "40px"
+    }
+
+    email1 {
+        a FormField
+        with a label of "Work email"
+    }
+
+    email2 {
+        a FormField
+        with a label of "Backup email"
+        with a hint of "name@company.com"
+    }
+}

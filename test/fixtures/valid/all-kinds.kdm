@@ -1,0 +1,106 @@
+kadam 0.1
+
+page "AllKinds" {
+    mainHeading1 {
+        a main heading
+        the text says "Main heading"
+        the text is 48px
+        the text is bold
+        the text is centered
+    }
+
+    sectionHeading1 {
+        a section heading
+        the text says "Section heading"
+        the font is serif
+    }
+
+    minorHeading1 {
+        a minor heading
+        the text says "Minor heading"
+        the text is left aligned
+    }
+
+    paragraph1 {
+        a paragraph
+        the text says "A paragraph with an escaped quote: \"yes\"."
+        the text is 16px
+        it has 12px padding
+    }
+
+    button1 {
+        a button that is 180px by 52px
+        has a blue and black gradient
+        the gradient goes from left to right
+        on phones, the gradient goes from top to bottom
+        has a white border
+        has fully rounded corners
+        has a medium shadow
+        the button text says "Continue"
+        when hovered, the border turns black over 200ms
+        when hovered, it lifts by 2px
+        when hovered, it scales to 105%
+        it fades in over 600ms when the page loads
+    }
+
+    link1 {
+        a link
+        the link text says "External"
+        when clicked, open "https://example.com" in a new tab
+    }
+
+    field1 {
+        a text field
+        the label says "Email"
+        the placeholder says "you@example.com"
+        it accepts text
+        it is required
+        it has 16px margin on the top
+    }
+
+    image1 {
+        an image that is 240px by 240px
+        it shows "assets/mark.svg"
+        the description says "The Kadam mark"
+        has rounded corners
+    }
+
+    image2 {
+        an image
+        it shows "assets/decoration.png"
+        it is decorative
+    }
+
+    card1 {
+        a card
+        has no background
+        has no border
+        has no shadow
+        it is full height
+        it has 24px padding on the left and right
+        it has 16px gap between children
+        it arranges its children in a column
+        it centers its children
+        on phones, it has 12px padding on the top and bottom
+        on tablets, it is full width
+        on desktops, it centers its children horizontally
+    }
+
+    container1 {
+        a container
+        it is 960px wide
+        it is hidden
+    }
+
+    nav1 {
+        a navigation bar
+        it arranges its children in a row
+        it centers its children vertically
+    }
+
+    divider1 {
+        a divider
+        has a gray background
+        it has 24px margin on the top and bottom
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "kadam",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A deterministic, natural-language programming language for user interfaces.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "bin": {
+    "kadam": "./dist/cli/main.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "studio": "node studio/dist/host/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3"
+  }
+}

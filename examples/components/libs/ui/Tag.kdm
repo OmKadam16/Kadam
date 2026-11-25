@@ -1,0 +1,17 @@
+kadam 0.1
+
+component Tag takes a label as text {
+
+    tag1 {
+        a container
+        has a 1px #D4D4D4 border
+        has rounded corners
+        it has 6px padding
+
+        label1 {
+            a paragraph
+            the text says "{$label}"
+            the text is 14px
+        }
+    }
+}

@@ -1,0 +1,47 @@
+kadam 0.1
+
+page "Services" {
+
+    navigation1 {
+        a Navigation
+        with a homeTarget of "Home"
+        with an aboutTarget of "About"
+        with a servicesTarget of "Services"
+    }
+
+    headline1 {
+        a main heading
+        the text says "Plans"
+        the text is 44px
+    }
+
+    plan1 {
+        a PriceCard
+        with a title of "Team"
+        with a price of "$49"
+        with a badge of "Shared"
+        with an accent of "#15803D"
+    }
+
+    plan2 {
+        a PriceCard in the featured variant
+        with a title of "Enterprise"
+        with a price of "$199"
+        with a badge of "Priority"
+    }
+
+    contact1 {
+        a FormField
+        with a label of "Contact email"
+    }
+
+    notice1 {
+        a Panel
+        with a title of "Included"
+    }
+
+    tag1 {
+        a Tag from ui
+        with a label of "Team plan"
+    }
+}

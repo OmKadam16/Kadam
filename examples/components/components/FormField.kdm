@@ -1,0 +1,11 @@
+kadam 0.1
+
+component FormField takes a label as text, a hint as text defaulting to "you@example.com" {
+
+    field1 {
+        a text field
+        the label says "{$label}"
+        the placeholder says "{$hint}"
+        it accepts email addresses
+    }
+}

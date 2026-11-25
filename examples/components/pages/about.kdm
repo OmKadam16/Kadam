@@ -1,0 +1,48 @@
+kadam 0.1
+
+page "About" {
+
+    navigation1 {
+        a Navigation
+        with a homeTarget of "Home"
+        with an aboutTarget of "About"
+        with a servicesTarget of "Services"
+    }
+
+    headline1 {
+        a main heading
+        the text says "Components are source, not templates"
+        the text is 44px
+    }
+
+    body1 {
+        a paragraph
+        the text says "A component file contains one declaration. Kadam validates every component, even when no page uses it, then expands instances before lowering."
+    }
+
+    panel1 {
+        a Panel
+        with a title of "How slots work"
+
+        content1 {
+            a content slot
+            note1 {
+                a paragraph
+                the text says "The component owns the frame. The page owns the content it passes in."
+                the text is 18px
+            }
+        }
+    }
+
+    external1 {
+        a ExternalLink
+        with a label of "Example resource"
+        with a url of "https://example.com"
+    }
+
+    action1 {
+        a Button in the outline variant
+        with a label of "Back to home"
+        with a target of "Home"
+    }
+}

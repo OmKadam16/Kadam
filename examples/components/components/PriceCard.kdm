@@ -1,0 +1,77 @@
+kadam 0.1
+
+component PriceCard takes a title as text, a price as text, a badge as text defaulting to "Popular", a picture as image defaulting to "assets/kadam-mark.svg", a priceSize as length defaulting to "32px", an accent as color defaulting to "blue" {
+
+    card1 {
+        a card
+        has a white background
+        has a 1px #D4D4D4 border
+        has rounded corners
+        has a soft shadow
+
+        mark1 {
+            an image
+            it shows "{$picture}"
+            it is decorative
+            it is 32px by 32px
+        }
+
+        title1 {
+            a section heading
+            the heading text says "{$title}"
+            the text is 24px
+        }
+
+        price1 {
+            a paragraph
+            the paragraph text says "{$price}"
+            the text is "{$priceSize}"
+            the text is bold
+        }
+
+        badge1 {
+            a paragraph
+            the text says "{$badge}"
+            the text is 14px
+            the text is "{$accent}"
+        }
+    }
+
+    variant featured {
+        card1 {
+            a card
+            has a blue and black gradient
+            has a white border
+            has a medium shadow
+
+            mark1 {
+                an image
+                it shows "assets/kadam-mark.svg"
+                it is decorative
+                it is 32px by 32px
+            }
+
+            title1 {
+                a section heading
+                the heading text says "{$title}"
+                the text is 24px
+                the text is white
+            }
+
+            price1 {
+                a paragraph
+                the paragraph text says "{$price}"
+                the text is "{$priceSize}"
+                the text is bold
+                the text is white
+            }
+
+            badge1 {
+                a paragraph
+                the text says "{$badge}"
+                the text is 14px
+                the text is white
+            }
+        }
+    }
+}

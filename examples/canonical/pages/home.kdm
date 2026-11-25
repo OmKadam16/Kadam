@@ -1,0 +1,68 @@
+kadam 0.1
+
+page "Home" {
+    the page background is #F7F5F0
+    the page text is #171717
+    the page font is sans serif
+
+    nav1 {
+        a navigation bar
+        has no background
+        it arranges its children in a row
+        it centers its children vertically
+        it has 24px padding on the left and right
+
+        brand1 {
+            a section heading
+            the text says "Kadam"
+            the text is 20px
+        }
+
+        navLinks1 {
+            a container
+            it arranges its children in a row
+            it has 24px gap between children
+            it centers its children vertically
+
+            aboutLink1 {
+                a link
+                the link text says "About"
+                when clicked, go to page "About"
+            }
+        }
+    }
+
+    hero1 {
+        a container
+        it is full width
+        it centers its children horizontally
+        it has 96px padding on top
+        it has 64px padding on bottom
+        it has 24px gap between children
+
+        headline1 {
+            a main heading
+            the text says "Describe the interface. Ship the interface."
+            the text is 64px
+            the text is centered
+        }
+
+        intro1 {
+            a paragraph
+            it is 640px wide
+            the text says "Kadam is a programming language for building user interfaces with ordinary English."
+            the text is 20px
+            the text is centered
+        }
+
+        button1 {
+            a button that is 160px by 48px
+            has a blue and black gradient
+            has a white border
+            has rounded corners
+            when hovered, the border turns black
+            the button text says "Get Started"
+            when clicked, go to page "About"
+        }
+    }
+}

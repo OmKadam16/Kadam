@@ -1,0 +1,8 @@
+kadam 0.1
+
+page "Minimal" {
+    title1 {
+        a main heading
+        the text says "Hello, Kadam."
+    }
+}

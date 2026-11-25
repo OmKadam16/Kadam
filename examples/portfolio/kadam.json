@@ -1,0 +1,10 @@
+{
+  "kadam": "0.1",
+  "name": "kadam-portfolio",
+  "pages": [
+    { "file": "pages/home.kdm", "route": "/" },
+    { "file": "pages/about.kdm", "route": "/about" }
+  ],
+  "assets": "assets",
+  "outDir": "dist"
+}

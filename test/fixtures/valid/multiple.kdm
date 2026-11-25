@@ -1,0 +1,21 @@
+page "Multiple" {
+    intro1 {
+        a paragraph
+        the text says "First element."
+    }
+
+    action1 {
+        a button
+        the text says "Save"
+    }
+
+    action2 {
+        a link
+        the link text says "Read more"
+        when clicked, go to page "Nested"
+    }
+
+    rule1 {
+        a divider
+    }
+}

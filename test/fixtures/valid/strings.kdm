@@ -1,0 +1,11 @@
+page "Strings" {
+    quoted1 {
+        a paragraph
+        the text says "Quotes: \"Kadam\". A path: C:\\docs. // not a comment."
+    }
+
+    escaped1 {
+        a paragraph
+        the text says "Tab:\tLine:\nUnicode:\u00E9"
+    }
+}

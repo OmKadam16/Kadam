@@ -1,0 +1,10 @@
+kadam 0.1
+
+component NavLink takes a label as text, a target as page {
+
+    link1 {
+        a link
+        the link text says "{$label}"
+        when clicked, go to page "{$target}"
+    }
+}

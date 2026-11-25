@@ -1,0 +1,14 @@
+kadam 0.1
+
+page "About" {
+    heading1 {
+        a main heading
+        the text says "About"
+    }
+
+    homeLink1 {
+        a link
+        the link text says "Home"
+        when clicked, go to page "Home"
+    }
+}

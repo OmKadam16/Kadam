@@ -1,0 +1,28 @@
+kadam 0.1
+
+component Panel takes a title as text {
+
+    frame1 {
+        a container
+        has a white background
+        has a 1px #D4D4D4 border
+        has rounded corners
+        has a soft shadow
+        it has 32px padding
+        it has 16px gap between children
+
+        heading1 {
+            a minor heading
+            the heading text says "{$title}"
+            the text is 22px
+        }
+
+        content1 {
+            a content slot
+            empty1 {
+                a paragraph
+                the text says "This panel has no content yet."
+            }
+        }
+    }
+}

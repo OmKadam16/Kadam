@@ -1,0 +1,200 @@
+kadam 0.1
+
+page "Home" {
+    the page background is #FFA500
+    the page text is #171717
+    the page font is sans serif
+
+    pageContent1 {
+        a container
+        it is full width
+        it centers its children horizontally
+
+        nav1 {
+            a navigation bar
+            has no background
+            it arranges its children in a row
+            it centers its children vertically
+            it has 24px padding on the left and right
+
+            brand1 {
+                a section heading
+                the text says "Kadam"
+                the text is 20px
+            }
+
+            navLinks1 {
+                a container
+                it arranges its children in a row
+                it has 24px gap between children
+                it centers its children vertically
+
+                aboutLink1 {
+                    a link
+                    the link text says "About"
+                    when clicked, go to page "About"
+                }
+
+                startLink1 {
+                    a link
+                    the link text says "Get started"
+                    when clicked, go to page "About"
+                    on phones, it is hidden
+                }
+            }
+        }
+
+        hero1 {
+            a container
+            it is full width
+            it centers its children horizontally
+            it centers its children vertically
+            it has 96px padding on top
+            it has 64px padding on the bottom
+            it has 24px gap between children
+            on phones, it has 24px padding on the left and right
+
+            eyebrow1 {
+                a minor heading
+                the text says "A deterministic UI language"
+                the text is 14px
+                the text is semibold
+                the text is blue
+                the text is centered
+            }
+
+            headline1 {
+                a main heading
+                it is 880px wide
+                the text says "Describe the interface. Ship the interface Please."
+                the text is 64px
+                the text is centered
+                on tablets, it is 720px wide
+                on phones, it is full width
+                on phones, the text is 40px
+            }
+
+            intro1 {
+                a paragraph
+                it is 640px wide
+                the text says "Kadam is a programming language for building user interfaces with ordinary English. Every sentence is parsed deterministically. No prompts, no models, no surprises."
+                the text is 20px
+                the text is centered
+                on phones, it is full width
+            }
+
+            cta1 {
+                a button that is 180px by 52px
+                has a blue and black gradient
+                the gradient goes from top to bottom
+                has a white border
+                has rounded corners
+                has a medium shadow
+                when hovered, the border turns black
+                when hovered, it lifts by 5px
+                the button text says "Get Into Action"
+                when clicked, go to page "About"
+                it slides in from the bottom over 500ms when the page loads
+            }
+        }
+
+        features1 {
+            a container
+            it is 960px wide
+            it arranges its children in a row
+            it has 24px gap between children
+            on tablets, it is 720px wide
+            on phones, it is full width
+            on phones, it arranges its children in a column
+
+            card1 {
+                a card
+                it is full width
+                has a white background
+                has a 1px #D4D4D4 border
+                has rounded corners
+                has a soft shadow
+                when hovered, the border turns #2563EB
+                when hovered, it lifts by 4px
+
+                cardTitle1 {
+                    a minor heading
+                    the text says "Readable source"
+                    the text is 22px
+                }
+
+                cardBody1 {
+                    a paragraph
+                    the text says "The interface lives in one .kdm file, written as short English statements instead of markup, styles, and event wiring."
+                    the text is 16px
+                }
+            }
+
+            card2 {
+                a card
+                it is full width
+                has a white background
+                has a 1px #D4D4D4 border
+                has rounded corners
+                has a soft shadow
+                when hovered, the border turns #2563EB
+                when hovered, it lifts by 4px
+
+                cardTitle2 {
+                    a minor heading
+                    the text says "Deterministic compiler"
+                    the text is 22px
+                }
+
+                cardBody2 {
+                    a paragraph
+                    the text says "A lexer, parser, semantic analyzer, and code generator turn each sentence into static HTML and CSS. Unknown input is an error."
+                    the text is 16px
+                }
+            }
+
+            card3 {
+                a card
+                it is full width
+                has a green and white gradient
+                the gradient goes from left to right
+                has a 1px #D4D4D4 border
+                has rounded corners
+                has a soft shadow
+                when hovered, the border turns #2563EB
+                when hovered, it lifts by 4px
+
+                cardTitle3 {
+                    a minor heading
+                    the text says "Editor ready"
+                    the text is 22px
+                }
+
+                cardBody3 {
+                    a paragraph
+                    the text says "Every node carries a source span. The compiler stays independent from the future visual editor, so the same language powers the CLI and the canvas."
+                    the text is 16px
+                }
+            }
+        }
+
+        footer1 {
+            a container
+            it is 960px wide
+            it has 48px margin on top
+            it has 32px padding on top
+            on phones, it is full width
+
+            rule1 {
+                a divider
+            }
+
+            footerText1 {
+                a paragraph
+                the text says "Kadam compiles multi-page static websites from readable source. Every sentence is checked."
+                the text is 14px
+                the text is centered
+            }
+        }
+    }
+}

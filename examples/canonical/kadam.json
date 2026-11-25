@@ -1,0 +1,8 @@
+{
+  "kadam": "0.1",
+  "name": "Canonical",
+  "pages": [
+    { "source": "pages/home.kdm", "route": "/" },
+    { "source": "pages/about.kdm", "route": "/about" }
+  ]
+}

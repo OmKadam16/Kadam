@@ -1,0 +1,8 @@
+page "Values" {
+    card1 {
+        a card
+        has a #12345 background
+        it is 160 wide
+        when hovered, it scales to 90%
+    }
+}

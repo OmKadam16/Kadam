@@ -1,0 +1,39 @@
+{
+  "name": "@kadam/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local browser-based Kadam Studio host and editor shell.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "npm run build:compiler && npm run build:host && npm run build:web",
+    "build:compiler": "npm --prefix .. run build",
+    "build:host": "tsc -p tsconfig.host.json",
+    "build:web": "vite build",
+    "typecheck": "npm run build:compiler && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.host.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "start": "node dist/host/main.js"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/lint": "6.9.7",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
+    "codemirror": "6.0.2",
+    "kadam": "file:..",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.6"
+  }
+}

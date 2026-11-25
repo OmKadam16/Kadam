@@ -1,0 +1,6 @@
+page "Unsupported" {
+    divider1 {
+        a divider
+        has a white border
+    }
+}

@@ -1,0 +1,6 @@
+page "Ambiguity" {
+    card1 {
+        a card
+        it is 160px wide
+    }
+}

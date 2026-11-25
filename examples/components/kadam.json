@@ -1,0 +1,21 @@
+{
+  "kadam": "0.1",
+  "name": "kadam-components",
+  "components": [
+    "components/Button.kdm",
+    "components/ExternalLink.kdm",
+    "components/FormField.kdm",
+    "components/NavLink.kdm",
+    "components/Navigation.kdm",
+    "components/Panel.kdm",
+    "components/PriceCard.kdm",
+    { "source": "libs/ui/Tag.kdm", "namespace": "ui" }
+  ],
+  "pages": [
+    { "source": "pages/home.kdm", "route": "/" },
+    { "source": "pages/about.kdm", "route": "/about" },
+    { "source": "pages/services.kdm", "route": "/services" }
+  ],
+  "assets": "assets",
+  "outDir": "dist"
+}

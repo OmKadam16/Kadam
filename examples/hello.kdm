@@ -1,0 +1,34 @@
+// The smallest end-to-end compiler fixture.
+
+kadam 0.1
+
+page "Hello" {
+    title1 {
+        a main heading
+        the text says "Hello, Kadam."
+    }
+
+    intro1 {
+        a paragraph
+        the text says "One page and no page settings. The built-in defaults do the rest."
+    }
+
+    card1 {
+        a card
+
+        cardTitle1 {
+            a section heading
+            the text says "A deterministic start"
+        }
+
+        cardBody1 {
+            a paragraph
+            the text says "This fixture exercises nesting and default styles without optional features."
+        }
+
+        action1 {
+            a button
+            the text says "Continue"
+        }
+    }
+}

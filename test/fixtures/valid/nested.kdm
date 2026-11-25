@@ -1,0 +1,21 @@
+page "Nested" {
+    pageContent1 {
+        a container
+        it is full width
+
+        card1 {
+            a card
+            has a white background
+
+            cardTitle1 {
+                a section heading
+                the text says "Nested structure"
+            }
+
+            cardBody1 {
+                a paragraph
+                the text says "Containers may hold other containers."
+            }
+        }
+    }
+}

@@ -1,0 +1,5 @@
+page "UnknownKind" {
+    widget1 {
+        a gizmo
+    }
+}
