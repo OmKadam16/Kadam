@@ -253,5 +253,4 @@ service, or telemetry is involved.
 
 ## License
 
-No license has been selected. This is an open decision (`D-16` in the decision
-log) and must be resolved before the repository is published.
+Kadam is licensed under the [Apache License, Version 2.0](LICENSE).

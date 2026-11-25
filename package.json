@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "A deterministic, natural-language compiler evolving from declarative UI toward multi-target code generation.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OmKadam16/Kadam.git"
+  },
   "engines": {
     "node": ">=22.18"
   },

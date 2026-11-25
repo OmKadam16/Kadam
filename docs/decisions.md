@@ -477,18 +477,23 @@ and a future import-boundary test mitigate that.
 
 ### D-16 — Naming, publication, and licensing
 
-**Status:** Open — business/product decision
+**Status:** Partially resolved — Apache-2.0 selected; package name and
+publication remain open
 **Blocks:** public release, not M1
-**Recommendation:** Resolve before the first public package
+**Recommendation:** Resolve the remaining package-name and publication details
+before the first public release
 
-**Decision needed.** npm package name and scope (`kadam` is likely taken),
-whether the CLI stays `kadam`, domain ownership, repository host, and the
-license. The README currently states that no license has been selected.
+**Decision.** The source is licensed under the [Apache License, Version 2.0](../LICENSE).
+The npm package name and scope (`kadam` currently returns 404 in the registry
+but is not reserved), whether the CLI stays `kadam`, domain ownership, and final
+publication details remain open.
 
-**Trade-offs.** A permissive license (MIT/Apache-2.0) encourages adoption; a
-copyleft license protects the commons but may deter commercial use. The package
+**Trade-offs.** Apache-2.0 is permissive and includes an explicit patent grant,
+which supports adoption and embedding in commercial toolchains. A copyleft
+license would protect the commons but may deter commercial use. The package
 name affects imports, documentation, and future scoped packages. None of this
-changes language semantics, but all of it is expensive to change after launch.
+changes language semantics, but the remaining naming and publication choices
+are expensive to change after launch.
 
 ---
 
@@ -1039,7 +1044,7 @@ That constraint is what makes compatibility testable instead of aspirational.
 | D-13 | Accessibility errors | M2 | Approve | Approved |
 | D-14 | One page per file + manifest | M3 | Approve | Approved — implemented |
 | D-15 | Single package, zero deps | M0–M6 | Approve | Approved |
-| D-16 | Naming and license | Release | Resolve | Open |
+| D-16 | Naming and license | Release | Resolve | Apache-2.0 selected; publication open |
 | D-17 | Dev server: memory snapshots, HTTP, SSE | M4 | Approve | Approved — implemented |
 | D-18 | No client-side runtime in v0.1 | M5+ | Approve | Approved — implemented |
 | D-19 | Component files and explicit catalog | M6 | Approve | Approved — M6 architecture |
