@@ -44,7 +44,7 @@ function listFiles(root, prefix = "") {
 
 test("CLI reports the implementation and language versions", async () => {
   const { stdout } = await run(process.execPath, [cli, "--version"]);
-  assert.equal(stdout.trim(), "kadam 0.1.0 (language 0.1)");
+  assert.equal(stdout.trim(), "kadam 0.1.0 (language 0.1, 0.3)");
 });
 
 test("CLI exits with a usage error when no command is supplied", async () => {
@@ -196,4 +196,25 @@ component Broken {
     },
   );
   assert.equal(existsSync(join(projectRoot, "dist")), false);
+});
+
+test("kadam keywords prints the lexicon in sorted, machine-readable form", async () => {
+  const { KEYWORDS, NAMED_COLORS } = await import("../dist/core/lexer/lexicon.js");
+  const plain = await run(process.execPath, [cli, "keywords"]);
+  assert.deepEqual(plain.stdout.trim().split("\n"), [...KEYWORDS].sort());
+
+  const json = JSON.parse(
+    (await run(process.execPath, [cli, "keywords", "--colors", "--core", "--json"])).stdout,
+  );
+  assert.deepEqual(Object.keys(json), ["colors", "core"]);
+  assert.deepEqual(json.colors, [...NAMED_COLORS].sort());
+  assert.ok(json.core.includes("module"));
+
+  const properties = (await run(process.execPath, [cli, "keywords", "--properties"])).stdout.trim().split("\n");
+  assert.ok(properties.includes("line height") && properties.includes("text size"));
+
+  await assert.rejects(run(process.execPath, [cli, "keywords", "--bogus"]), (error) => {
+    assert.equal(error.code, 2);
+    return true;
+  });
 });

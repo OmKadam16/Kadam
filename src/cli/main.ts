@@ -23,6 +23,7 @@ import { compileProject } from "../compiler/project.js";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
 import { runCheckCommand } from "./check-command.js";
 import { runDevCommand } from "./dev-command.js";
+import { runKeywordsCommand } from "./keywords-command.js";
 import { parseText } from "../core/parser/parser.js";
 import { SourceFile } from "../core/source/source-file.js";
 import { compileV02Text } from "../v02/compile.js";
@@ -32,13 +33,13 @@ import {
   isTargetId,
   type TargetId,
 } from "../v02/target.js";
-import { KADAM_VERSION, LANGUAGE_VERSION } from "../version.js";
+import { KADAM_VERSION, UI_LANGUAGE_VERSIONS } from "../version.js";
 
 const args = process.argv.slice(2);
 const first = args[0];
 
 if (first === "--version" || first === "-v") {
-  console.log(`kadam ${KADAM_VERSION} (language ${LANGUAGE_VERSION})`);
+  console.log(`kadam ${KADAM_VERSION} (language ${UI_LANGUAGE_VERSIONS.join(", ")})`);
   process.exit(0);
 }
 
@@ -87,6 +88,10 @@ if (first === "parse") {
 if (first === "check") {
   runCheckCommand(args.slice(1));
   process.exit(0);
+}
+
+if (first === "keywords") {
+  process.exit(runKeywordsCommand(args.slice(1)));
 }
 
 if (first === "dev") {
@@ -240,7 +245,7 @@ if (first === "build") {
 
 console.error(
   `kadam: '${args.join(" ")}' is not available.\n` +
-    "The CLI provides build, check, dev, and parse. Run kadam --help for usage.\n" +
+    "The CLI provides build, check, dev, keywords, and parse. Run kadam --help for usage.\n" +
     "See docs/roadmap.md for the implementation plan.",
 );
 process.exit(1);
@@ -515,6 +520,8 @@ Commands:
   build [path] [options]              Compile a .kdm page, project, or v0.2 module
   check [path] [options]              Validate a page, project, or v0.2 module
   dev [project] [options]             Start the development server with live reload
+  keywords [--colors|--core|          Print reserved words or property names
+           --properties|--all]        (add --json for JSON)
 
 Build and check options:
   -p, --project <dir>                 Project directory containing kadam.json

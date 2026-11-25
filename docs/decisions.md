@@ -1026,6 +1026,95 @@ That constraint is what makes compatibility testable instead of aspirational.
 
 ---
 
+## Frontend track resolutions (F0)
+
+Recorded with [the frontend plan](frontend-plan.md). D-32 and D-35 were
+approved by the owner on 2026-11-24. Every `kadam 0.1` output stays
+byte-identical.
+
+### D-32 — The regular property sentence and the property table
+
+**Status:** Approved 2026-11-24 — implemented behind `kadam 0.3`
+**Blocks:** F1 and every later frontend phase
+
+**Decision.** Add one canonical sentence, `the <property> is <value>`, backed
+by a closed, typed table in `src/core/parser/properties.ts`. Each row names the
+property as written in source, its value type and bounds, the kinds it applies
+to, and the generated CSS property. The row drives matching, value checks,
+kind capability (`KDM3003`), duplicate keys (`KDM3004`), responsive scopes, and
+emission. A name that is not a row is not claimed and stays `KDM2001`. The
+existing hand-written sentences (`has rounded corners`, `the text is 18px`)
+remain as shorthands.
+
+A row has one of two shapes. A **shorthand-backed** row (`build`) produces
+exactly the AST node its existing sentence produces: `the text size is 18px`
+and `the text is 18px` are the same node. Kind capability, duplicate keys,
+responsive rules, component placeholders, and CSS output are therefore shared,
+and the two spellings compile byte-identically (tested for every row). A
+**native** row (`css`) exists only in the regular form and lowers to a
+`property` statement.
+
+The table has 15 rows: 13 shorthand-backed (`text size`, `text color`,
+`text weight`, `text style`, `text alignment`, `font family`, `width`,
+`height`, `padding`, `margin`, `gap`, `background color`, `corner radius`) and
+2 native (`line height`, `letter spacing`). `kadam keywords --properties` lists
+them. Shorthands whose values do not fit one regular value (`it is full width`,
+gradients, borders, per-side spacing) keep only their shorthand for now.
+
+**Alternatives considered.**
+
+1. One hand-written template per property. Today's approach; it does not scale
+   to the roughly 4x grammar growth F1–F3 need, and each template needs its own
+   docs, tests, and overlap checks.
+2. Arbitrary `the <css-property> is <css-value>` passthrough. Fast, but it is
+   raw CSS in English clothing: no typing, no kind checks, no determinism
+   guarantees beyond the string.
+
+**Trade-off:** authors see two ways to set some properties once shorthands are
+migrated. The shorthand stays primary in docs; the regular form exists so the
+vocabulary can grow without a template per property.
+
+### D-33 — Version gating for UI syntax
+
+**Status:** Implemented (F0)
+**Blocks:** F1
+
+**Decision.** UI syntax added after 0.1 ships under `kadam 0.3`; `0.2` stays
+the core-module version. Templates declare `since`. A newer template still
+matches in an older file, but it is rejected with `KDM2013`, which names the
+construct and the required version, instead of `KDM2001`. Files without a
+directive use the manifest's `kadam` version, or `0.1` in single-file mode. When
+the manifest declares a version, a file directive must match it (spec §4.1).
+Tooling that passes no version sees the newest vocabulary.
+
+### D-34 — Element names stay reserved; one bad name is one diagnostic
+
+**Status:** Implemented (F0)
+
+**Decision.** Grammar words and CSS color names remain invalid element names.
+F4 will reference elements by name inside sentences (`flip isOpen of menu1`),
+and allowing `text` or `open` as names would make those sentences ambiguous.
+Instead, an invalid or malformed element header reports one `KDM2007`/`KDM2002`
+with a concrete rename (`email` → `email1`), and the parser still opens the
+block, so the body and closing brace are not misattributed to the parent.
+`kadam keywords` prints the frozen reserved set, generated from the lexicon.
+
+### D-35 — Browser support matrix
+
+**Status:** Approved 2026-11-24
+**Blocks:** F2 (which CSS features may be emitted without fallbacks)
+
+**Decision.** Generated output targets the latest two major versions of
+Chrome, Edge, and Firefox, and Safari 16.4 or later on macOS and iOS. Within
+that matrix the compiler may emit `clamp()`, `gap` for flexbox, `:focus-visible`,
+`aspect-ratio`, `:has()`, container queries, and `dialog` without fallbacks.
+Features outside the matrix (for example scroll-driven animations or the
+`popover` attribute on older Safari) need either a documented fallback or an
+explicit capability diagnostic. The matrix is part of the language version, so
+changing it requires at least a minor version bump.
+
+---
+
 ## Approval checklist
 
 | ID | Decision | Blocks | Recommendation | Status |
@@ -1061,6 +1150,10 @@ That constraint is what makes compatibility testable instead of aspirational.
 | D-29 | CLI-first distribution; remove the browser editor | M7 | Implemented | Approved — implemented |
 | D-30 | v0.2 core + declarative UI subset | M7 | Review spec | Approved — implemented |
 | D-31 | Target adapters and typed external bindings | M7/M8 | Review contract | Approved — implemented for TypeScript/Python core targets |
+| D-32 | Regular property sentence + property table | F1 | Approve | Approved — implemented behind kadam 0.3 |
+| D-33 | Version gating for UI syntax (`kadam 0.3`, KDM2013) | F1 | Implemented | Implemented |
+| D-34 | Reserved element names; single-diagnostic recovery | F0 | Implemented | Implemented |
+| D-35 | Browser support matrix | F2 | Approve | Approved |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

@@ -1,3 +1,8 @@
+import {
+  LANGUAGE_VERSION,
+  isUiLanguageVersion,
+  type UiLanguageVersion,
+} from "../version.js";
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { DocumentNode, ElementNode } from "../core/ast/nodes.js";
@@ -145,6 +150,11 @@ export function compileProject(
   // Step 2: read and parse every declared page. Component kinds are allowed
   // here; the catalog and page-instance validators run before expansion.
   const loadedPages: LoadedPage[] = [];
+  // Files without a `kadam` directive use the manifest's language version.
+  const defaultLanguageVersion: UiLanguageVersion = isUiLanguageVersion(manifest.kadam)
+    ? manifest.kadam
+    : LANGUAGE_VERSION;
+
   for (const pageEntry of manifest.pages) {
     const sourcePath = pageEntry.source;
     const source = loadProjectSource({
@@ -164,23 +174,12 @@ export function compileProject(
     const parsed = parseSource(source, {
       validate: false,
       allowComponentKinds: true,
+      defaultLanguageVersion,
     });
     diagnostics.addAll(parsed.diagnostics);
 
+    reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     if (parsed.document.page === null) continue;
-
-    if (
-      parsed.document.version !== null &&
-      parsed.document.version !== "0.1"
-    ) {
-      diagnostics.error(
-        "KDM4004",
-        `unsupported language version ${JSON.stringify(
-          parsed.document.version,
-        )} in '${sourcePath}'; expected "0.1"`,
-        parsed.document.versionSpan ?? parsed.document.span,
-      );
-    }
 
     loadedPages.push({
       entry: pageEntry,
@@ -211,7 +210,8 @@ export function compileProject(
     });
     if (source === null) continue;
 
-    const parsed = parseComponentSource(source);
+    const parsed = parseComponentSource(source, { defaultLanguageVersion });
+    reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     componentFiles.push({
       source,
       namespace: entry.namespace,
@@ -742,4 +742,26 @@ function errorMessage(error: unknown): string {
 
 function compareText(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * Spec §4.1: in a project that declares a language version, a file directive
+ * must match it. Unsupported versions are already reported by the parser.
+ */
+function reportVersionMismatch(
+  document: DocumentNode,
+  projectVersion: string | undefined,
+  sourcePath: string,
+  diagnostics: DiagnosticBag,
+): void {
+  const version = document.version;
+  if (version === null || projectVersion === undefined) return;
+  if (!isUiLanguageVersion(version) || !isUiLanguageVersion(projectVersion)) return;
+  if (version === projectVersion) return;
+  diagnostics.error(
+    "KDM4004",
+    `'${sourcePath}' declares kadam ${version} but kadam.json declares ${projectVersion}`,
+    document.versionSpan ?? document.span,
+    `change the directive to kadam ${projectVersion}, or remove it to inherit the project version`,
+  );
 }

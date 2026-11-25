@@ -20,6 +20,7 @@ export type DiagnosticCode =
   | "KDM2010"
   | "KDM2011"
   | "KDM2012"
+  | "KDM2013"
   | "KDM3001"
   | "KDM3002"
   | "KDM3003"

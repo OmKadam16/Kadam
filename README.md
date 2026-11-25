@@ -173,7 +173,7 @@ node dist/cli/main.js --version
 
 ## CLI
 
-The CLI exposes `build`, `check`, `dev`, and `parse`.
+The CLI exposes `build`, `check`, `dev`, `keywords`, and `parse`.
 
 ```bash
 # Parse one file
@@ -194,7 +194,17 @@ kadam check --project examples/components
 
 # Edit with live reload at http://127.0.0.1:3000/
 kadam dev --project examples/portfolio
+
+# List reserved words (also --colors, --core, --properties, --all, --json)
+kadam keywords
 ```
+
+UI files may declare `kadam 0.3` to use syntax added for the frontend track,
+starting with the regular property sentence (`the line height is 1.6`,
+`the padding is 24px`). A
+`kadam 0.1` file compiles exactly as before. Run `npm run probes` to see how
+many everyday frontend features compile today; see
+[the frontend plan](docs/frontend-plan.md).
 
 A project is a `kadam.json` manifest plus one `.kdm` file per page, with an
 optional list of component source files. Routes are declared in the manifest,
@@ -215,6 +225,7 @@ copied into the output. See
 | `docs/architecture.md` | Compiler pipeline and module boundaries |
 | `docs/project-manifest.md` | `kadam.json` schema, routing, assets, output layout |
 | `docs/roadmap.md` | Development milestones and exit criteria |
+| `docs/frontend-plan.md` | Proposed plan to make Kadam a full frontend language |
 | `docs/decisions.md` | Technical decisions taken, proposed, and still open |
 | `examples/` | Smoke fixtures and the portfolio/component example projects |
 | `src/core/` | Source manager, lexer, parser, AST, diagnostics, semantics |
@@ -235,6 +246,7 @@ copied into the output. See
 - [M5 specification compliance matrix](docs/m5-compliance.md)
 - [Compiler architecture](docs/architecture.md)
 - [Roadmap](docs/roadmap.md)
+- [Frontend plan](docs/frontend-plan.md)
 - [Decision log](docs/decisions.md)
 
 ## Scope and limitations

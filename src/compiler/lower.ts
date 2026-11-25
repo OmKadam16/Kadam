@@ -1,3 +1,4 @@
+import { findProperty, isNativeProperty } from "../core/parser/properties.js";
 import type {
   BackgroundStatement,
   BorderStatement,
@@ -22,6 +23,7 @@ import type {
   MotionStatement,
   ResponsiveStatement,
   ShadowStatement,
+  PropertyStatement,
   SizeStatement,
   SpacingStatement,
   StatementNode,
@@ -337,6 +339,9 @@ function applyStatement(
     case "visibility":
       applyVisibility(statement, style, authored);
       return;
+    case "property":
+      applyProperty(statement, authored);
+      return;
     case "gradient-direction":
     case "text":
     case "image-source":
@@ -352,6 +357,21 @@ function applyStatement(
     case "responsive":
       return;
   }
+}
+
+function applyProperty(statement: PropertyStatement, authored: MutableAuthored): void {
+  const definition = findProperty(statement.name);
+  if (definition === undefined || !isNativeProperty(definition)) {
+    throw new InternalCompilerError(
+      `property ${JSON.stringify(statement.name)} is not a native row of the property table`,
+      statement.span,
+    );
+  }
+  const value =
+    statement.value.type === "number"
+      ? { value: statement.value.value, unit: null }
+      : { value: statement.value.value, unit: statement.value.unit };
+  authored.properties = [...(authored.properties ?? []), { css: definition.css, value }];
 }
 
 function applySize(

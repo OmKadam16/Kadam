@@ -254,6 +254,11 @@ function checkCapability(
         return;
       }
       return;
+    case "property":
+      if (!TEXT_BEARING.has(kindName)) {
+        reject(`the ${statement.name} applies to text-bearing kinds: button, link, headings, paragraph, and text field`);
+      }
+      return;
     case "typography":
     case "font-family":
       if (!TEXT_BEARING.has(kindName)) {
@@ -501,6 +506,8 @@ function describeStatement(statement: StatementNode): string {
       return "a click statement";
     case "motion":
       return "an entrance animation";
+    case "property":
+      return `a ${statement.name} statement`;
     case "responsive":
       return "a responsive statement";
   }
@@ -597,6 +604,8 @@ function propertyKeys(statement: StatementNode): string[] {
       return ["click"];
     case "motion":
       return ["motion"];
+    case "property":
+      return [statement.name];
     case "responsive":
       return [];
   }

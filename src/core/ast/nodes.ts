@@ -250,6 +250,7 @@ export type StatementNode =
   | HoverStatement
   | ClickStatement
   | MotionStatement
+  | PropertyStatement
   | ResponsiveStatement;
 
 export interface SizeStatement extends NodeBase {
@@ -370,6 +371,23 @@ export type LayoutStatement =
       readonly property: "align";
       readonly axis: "both" | "horizontal" | "vertical";
     });
+
+/** A unitless number, e.g. a line height of 1.6. */
+export interface NumberValue {
+  readonly type: "number";
+  readonly value: number;
+  readonly raw: string;
+}
+
+/**
+ * D-32 regular property sentence: `the <property> is <value>`. `name` is a
+ * row of the property table in `src/core/parser/properties.ts`.
+ */
+export interface PropertyStatement extends NodeBase {
+  readonly type: "property";
+  readonly name: string;
+  readonly value: LengthValue | NumberValue;
+}
 
 export interface VisibilityStatement extends NodeBase {
   readonly type: "visibility";

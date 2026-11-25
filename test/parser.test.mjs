@@ -715,3 +715,36 @@ test("parser never throws on arbitrary deterministic input", () => {
     }
   }
 });
+
+test("an invalid element name yields one diagnostic and keeps the block balanced", () => {
+  const source = [
+    'page "P" {',
+    "    signup {",
+    "        a card",
+    "        email {",
+    "            a text field",
+    '            the label says "Email"',
+    "        }",
+    "        red {",
+    "            a container",
+    "        }",
+    "        two words {",
+    "            a container",
+    "        }",
+    "        last1 {",
+    "            a button",
+    '            the text says "Go"',
+    "        }",
+    "    }",
+    "}",
+    "",
+  ].join("\n");
+  const result = parseText("names.kdm", source);
+  assert.deepEqual(codes(result), ["KDM2007", "KDM2007", "KDM2002"]);
+  const [email, red] = result.diagnostics;
+  assert.match(email.message, /"email" is a reserved word/);
+  assert.match(email.hint, /email1/);
+  assert.match(red.message, /"red" is a color name/);
+  // Siblings after the bad names still nest under signup.
+  assert.ok(findElement(result, "last1"));
+});

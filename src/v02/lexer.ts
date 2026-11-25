@@ -31,7 +31,7 @@ export interface V02LexResult {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-const KEYWORDS: ReadonlySet<string> = new Set([
+export const CORE_KEYWORDS: ReadonlySet<string> = new Set([
   "affects",
   "and",
   "as",
@@ -131,7 +131,7 @@ export function lexV02(source: SourceFile): V02LexResult {
       }
       const raw = text.slice(start, index);
       const normalized = raw.toLowerCase();
-      if (KEYWORDS.has(normalized)) {
+      if (CORE_KEYWORDS.has(normalized)) {
         push("keyword", start, index, normalized);
       } else {
         push("identifier", start, index);

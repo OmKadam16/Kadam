@@ -1,3 +1,4 @@
+import { UI_LANGUAGE_VERSIONS, isUiLanguageVersion } from "../version.js";
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import {
@@ -192,10 +193,10 @@ export function loadManifest(
 
   // Validate language version kadam
   if ("kadam" in raw) {
-    if (typeof raw.kadam !== "string" || raw.kadam !== "0.1") {
+    if (!isUiLanguageVersion(raw.kadam)) {
       diagnostics.error(
         "KDM4004",
-        `unsupported language version ${JSON.stringify(raw.kadam)}; expected "0.1"`,
+        `unsupported language version ${JSON.stringify(raw.kadam)}; expected ${UI_LANGUAGE_VERSIONS.map((v) => JSON.stringify(v)).join(" or ")}`,
         rootSpan,
         'set "kadam": "0.1"',
       );

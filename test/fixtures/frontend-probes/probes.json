@@ -1,0 +1,467 @@
+{
+  "_comment": "Frontend coverage probes; see docs/frontend-plan.md section 11. 'compiles' is the expected result; update it in the same change that adds the feature.",
+  "probes": [
+    {
+      "id": "p01",
+      "phase": "F1",
+      "kind": "section",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p02",
+      "phase": "F1",
+      "kind": "header",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p03",
+      "phase": "F1",
+      "kind": "footer",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p04",
+      "phase": "F1",
+      "kind": "list",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p05",
+      "phase": "F1",
+      "kind": "table",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p06",
+      "phase": "F1",
+      "kind": "video",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p07",
+      "phase": "F1",
+      "kind": "icon",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p08",
+      "phase": "F1",
+      "kind": "checkbox",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p09",
+      "phase": "F1",
+      "kind": "dropdown",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p10",
+      "phase": "F1",
+      "kind": "text area",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p11",
+      "phase": "F1",
+      "kind": "form",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p12",
+      "phase": "F1",
+      "kind": "badge",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p13",
+      "phase": "F4",
+      "kind": "dialog",
+      "statement": "",
+      "compiles": false
+    },
+    {
+      "id": "p14",
+      "phase": "F1",
+      "kind": "paragraph",
+      "statement": "the text says \"Line one\" then on a new line \"Line two\"",
+      "compiles": false
+    },
+    {
+      "id": "p15",
+      "phase": "F1",
+      "kind": "paragraph",
+      "statement": "the text says \"Read the docs\" where \"docs\" goes to page \"P\"",
+      "compiles": false
+    },
+    {
+      "id": "p16",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it arranges its children in 3 columns",
+      "compiles": false
+    },
+    {
+      "id": "p17",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it wraps its children",
+      "compiles": false
+    },
+    {
+      "id": "p18",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it spaces its children evenly",
+      "compiles": false
+    },
+    {
+      "id": "p19",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it is placed over its parent",
+      "compiles": false
+    },
+    {
+      "id": "p20",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it sticks to the top",
+      "compiles": false
+    },
+    {
+      "id": "p21",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it is 50% wide",
+      "compiles": false
+    },
+    {
+      "id": "p22",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it is at most 1200px wide",
+      "compiles": false
+    },
+    {
+      "id": "p23",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it is at least 300px tall",
+      "compiles": false
+    },
+    {
+      "id": "p24",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it is 80vh tall",
+      "compiles": false
+    },
+    {
+      "id": "p25",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "it scrolls vertically",
+      "compiles": false
+    },
+    {
+      "id": "p26",
+      "phase": "F2",
+      "kind": "container",
+      "statement": "on wide screens, it is hidden",
+      "compiles": false
+    },
+    {
+      "id": "p27",
+      "phase": "-",
+      "kind": "container",
+      "statement": "has a #FF000080 background",
+      "compiles": true
+    },
+    {
+      "id": "p28",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "has a rgb(255, 0, 0) background",
+      "compiles": false
+    },
+    {
+      "id": "p29",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "has a dashed red border",
+      "compiles": false
+    },
+    {
+      "id": "p30",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "has a 2px red border on the bottom",
+      "compiles": false
+    },
+    {
+      "id": "p31",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "the opacity is 50%",
+      "compiles": false
+    },
+    {
+      "id": "p32",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "has a blue and white and red gradient",
+      "compiles": false
+    },
+    {
+      "id": "p33",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "has a \"assets/bg.png\" background image",
+      "compiles": false
+    },
+    {
+      "id": "p34",
+      "phase": "F3",
+      "kind": "paragraph",
+      "statement": "the text is underlined",
+      "compiles": false
+    },
+    {
+      "id": "p35",
+      "phase": "F3",
+      "kind": "paragraph",
+      "statement": "the text is uppercase",
+      "compiles": false
+    },
+    {
+      "id": "p36",
+      "phase": "F3",
+      "kind": "paragraph",
+      "statement": "the line height is 1.8",
+      "compiles": true
+    },
+    {
+      "id": "p37",
+      "phase": "F3",
+      "kind": "paragraph",
+      "statement": "the letter spacing is 2px",
+      "compiles": true
+    },
+    {
+      "id": "p38",
+      "phase": "F3",
+      "kind": "paragraph",
+      "statement": "the font is \"Inter\"",
+      "compiles": false
+    },
+    {
+      "id": "p39",
+      "phase": "-",
+      "kind": "paragraph",
+      "statement": "the text is 1.5rem",
+      "compiles": true
+    },
+    {
+      "id": "p40",
+      "phase": "F2",
+      "kind": "paragraph",
+      "statement": "the text is 2em",
+      "compiles": false
+    },
+    {
+      "id": "p41",
+      "phase": "F2",
+      "kind": "paragraph",
+      "statement": "the text is between 1rem and 2rem",
+      "compiles": false
+    },
+    {
+      "id": "p42",
+      "phase": "-",
+      "kind": "paragraph",
+      "statement": "the text is #555",
+      "compiles": true
+    },
+    {
+      "id": "p43",
+      "phase": "-",
+      "kind": "paragraph",
+      "statement": "the text is rebeccapurple",
+      "compiles": true
+    },
+    {
+      "id": "p44",
+      "phase": "F3",
+      "kind": "page",
+      "statement": "the page is dark when the system is dark",
+      "compiles": false
+    },
+    {
+      "id": "p45",
+      "phase": "F3",
+      "kind": "page",
+      "statement": "the brand color is #FF0066",
+      "compiles": false
+    },
+    {
+      "id": "p46",
+      "phase": "F3",
+      "kind": "button",
+      "statement": "when pressed, the background turns red",
+      "compiles": false
+    },
+    {
+      "id": "p47",
+      "phase": "F3",
+      "kind": "button",
+      "statement": "when focused, the border turns red",
+      "compiles": false
+    },
+    {
+      "id": "p48",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "it spins forever",
+      "compiles": false
+    },
+    {
+      "id": "p49",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "it fades in when it scrolls into view",
+      "compiles": false
+    },
+    {
+      "id": "p50",
+      "phase": "F3",
+      "kind": "container",
+      "statement": "when hovered, it rotates by 10deg",
+      "compiles": false
+    },
+    {
+      "id": "p51",
+      "phase": "F1",
+      "kind": "page",
+      "statement": "the page description says \"A landing page\"",
+      "compiles": false
+    },
+    {
+      "id": "p52",
+      "phase": "F1",
+      "kind": "page",
+      "statement": "the page language is \"fr\"",
+      "compiles": false
+    },
+    {
+      "id": "p53",
+      "phase": "F1",
+      "kind": "page",
+      "statement": "the page icon is \"assets/icon.png\"",
+      "compiles": false
+    },
+    {
+      "id": "p54",
+      "phase": "F1",
+      "kind": "button",
+      "statement": "it is disabled",
+      "compiles": false
+    },
+    {
+      "id": "p55",
+      "phase": "F1",
+      "kind": "text field",
+      "statement": "it accepts phone numbers",
+      "compiles": false
+    },
+    {
+      "id": "p56",
+      "phase": "F1",
+      "kind": "text field",
+      "statement": "it accepts dates",
+      "compiles": false
+    },
+    {
+      "id": "p57",
+      "phase": "F1",
+      "kind": "text field",
+      "statement": "it is at least 8 characters",
+      "compiles": false
+    },
+    {
+      "id": "p58",
+      "phase": "F4",
+      "kind": "text field",
+      "statement": "the error says \"Required\"",
+      "compiles": false
+    },
+    {
+      "id": "p59",
+      "phase": "F4",
+      "kind": "card",
+      "statement": "when clicked, go to page \"P\"",
+      "compiles": false
+    },
+    {
+      "id": "p60",
+      "phase": "F4",
+      "kind": "button",
+      "statement": "when clicked, go to \"features\"",
+      "compiles": false
+    },
+    {
+      "id": "p61",
+      "phase": "F4",
+      "kind": "link",
+      "statement": "when clicked, send an email to \"a@b.com\"",
+      "compiles": false
+    },
+    {
+      "id": "p62",
+      "phase": "F4",
+      "kind": "button",
+      "statement": "when clicked, show \"x2\"",
+      "compiles": false
+    },
+    {
+      "id": "p63",
+      "phase": "F4",
+      "kind": "button",
+      "statement": "when clicked, flip \"menu1\"",
+      "compiles": false
+    },
+    {
+      "id": "p64",
+      "phase": "F4",
+      "kind": "button",
+      "statement": "when the Escape key is pressed, it is hidden",
+      "compiles": false
+    },
+    {
+      "id": "p65",
+      "phase": "F6",
+      "kind": "page",
+      "statement": "css \"body { margin: 0 }\"",
+      "compiles": false
+    },
+    {
+      "id": "p66",
+      "phase": "F6",
+      "kind": "page",
+      "statement": "script \"console.log(1)\"",
+      "compiles": false
+    }
+  ]
+}

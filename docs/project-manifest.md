@@ -41,7 +41,7 @@ MyWebsite/
 
 | Property | Type | Required | Default | Meaning |
 | --- | --- | --- | --- | --- |
-| `kadam` | string | no | — | Language version. If present it must be `"0.1"`. |
+| `kadam` | string | no | — | UI language version: `"0.1"` or `"0.3"`. Files without a directive use it; a file directive must match it. |
 | `name` | string | **yes** | — | Non-empty project name. |
 | `version` | string | no | — | Project version label; not interpreted. |
 | `pages` | array | **yes** | — | At least one page entry. Order defines diagnostic and emission order. |

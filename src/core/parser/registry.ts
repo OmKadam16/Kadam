@@ -30,6 +30,7 @@ import {
 } from "./matchers-appearance.js";
 import { matchClick, matchHover, matchMotion } from "./matchers-interaction.js";
 import { matchKindStatement } from "./kind.js";
+import { PROPERTIES, matchPropertySentence, propertyNamed } from "./properties.js";
 import { closestMatches } from "./suggest.js";
 import type {
   StatementMatchBody,
@@ -37,6 +38,11 @@ import type {
   TemplateContext,
 } from "./statement-types.js";
 import { describeTokens, isKeyword, spanFromTokens } from "./values.js";
+import {
+  LATEST_UI_LANGUAGE_VERSION,
+  uiVersionAtLeast,
+  type UiLanguageVersion,
+} from "../../version.js";
 
 export interface ResponsiveTemplate extends StatementTemplate {
   readonly id: "responsive";
@@ -260,6 +266,13 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
     ],
     match: (tokens) => matchMotion(tokens),
   },
+  {
+    id: "property",
+    description: "Regular property sentence",
+    examples: PROPERTIES.map((property) => property.example),
+    since: "0.3",
+    match: (tokens) => matchPropertySentence(tokens),
+  },
 ];
 
 export const RESPONSIVE_TEMPLATE: ResponsiveTemplate = {
@@ -287,6 +300,7 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "spacing",
   "layout",
   "visibility",
+  "property",
 ]);
 
 const BREAKPOINTS: ReadonlySet<string> = new Set([
@@ -323,7 +337,7 @@ export function matchLine(
   }
 
   if (context.allowResponsive && isKeyword(tokens[0], "on")) {
-    return matchResponsiveLine(tokens, templates);
+    return matchResponsiveLine(tokens, context, templates);
   }
 
   const matches = collectMatches(tokens, context, templates);
@@ -355,17 +369,55 @@ function collectMatches(
   templates: readonly StatementTemplate[],
 ): TemplateMatch[] {
   const matches: TemplateMatch[] = [];
+  const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
   for (const template of templates) {
     const body = template.match(tokens, context);
     if (body === null) continue;
     if (body.statement === null && body.diagnostics.length === 0) continue;
+    const since = template.since ?? "0.1";
+    if (!uiVersionAtLeast(version, since)) {
+      // The line is well-formed newer syntax. Claim it (so it is not reported
+      // as unrecognized) but reject it with an explicit version diagnostic.
+      matches.push({
+        template,
+        body: {
+          statement: null,
+          diagnostics: [requiresVersion(tokens, constructName(template, tokens), since, version)],
+        },
+      });
+      continue;
+    }
     matches.push({ template, body });
   }
   return matches;
 }
 
+/** What a version diagnostic calls the construct: the property, if known. */
+function constructName(template: StatementTemplate, tokens: readonly Token[]): string {
+  if (template.id === "property") {
+    const property = propertyNamed(tokens);
+    if (property !== undefined) return `the ${property.name}`;
+  }
+  return template.description.toLowerCase();
+}
+
+function requiresVersion(
+  tokens: readonly Token[],
+  construct: string,
+  since: UiLanguageVersion,
+  version: UiLanguageVersion,
+): DiagnosticSpec {
+  return {
+    code: "KDM2013",
+    message: `${construct} requires kadam ${since}; this file is kadam ${version}`,
+    span: spanFromTokens(tokens),
+    hint: `put kadam ${since} on the first line of the file, or set "kadam": "${since}" in kadam.json`,
+  };
+}
+
 function matchResponsiveLine(
   tokens: readonly Token[],
+  context: TemplateContext,
   templates: readonly StatementTemplate[],
 ): MatchLineResult {
   const span = spanFromTokens(tokens);
@@ -447,7 +499,10 @@ function matchResponsiveLine(
     };
   }
 
-  const innerContext: TemplateContext = { allowResponsive: false };
+  const innerContext: TemplateContext = {
+    allowResponsive: false,
+    languageVersion: context.languageVersion,
+  };
   const innerMatches = collectMatches(innerTokens, innerContext, templates);
   if (innerMatches.length === 0) {
     diagnostics.push(unrecognizedStatement(innerTokens));

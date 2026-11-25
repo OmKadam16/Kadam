@@ -17,9 +17,15 @@ import {
   SourceFile,
   type Span,
 } from "../source/source-file.js";
-import { LANGUAGE_VERSION } from "../../version.js";
+import {
+  LANGUAGE_VERSION,
+  UI_LANGUAGE_VERSIONS,
+  isUiLanguageVersion,
+  type UiLanguageVersion,
+} from "../../version.js";
 import { matchLine } from "./registry.js";
 import { matchPropertyBinding } from "./property.js";
+import { describeInvalidElementName } from "./names.js";
 import {
   splitLogicalLines,
   type LogicalLine,
@@ -63,13 +69,26 @@ interface ElementBuilder {
 }
 
 /** Parse one component source file. No file-system access. */
-export function parseComponentSource(source: SourceFile): ParseResult {
+export interface ComponentParseOptions {
+  /** Version used when the file has no directive (the manifest's, or 0.1). */
+  readonly defaultLanguageVersion?: UiLanguageVersion | undefined;
+}
+
+export function parseComponentSource(
+  source: SourceFile,
+  options: ComponentParseOptions = {},
+): ParseResult {
   const lexed = lex(source);
   const diagnostics = new DiagnosticBag();
   diagnostics.addAll(lexed.diagnostics);
 
   const lines = splitLogicalLines(lexed.tokens, source);
-  const document = new ComponentParser(source, lines, diagnostics).parse();
+  const document = new ComponentParser(
+    source,
+    lines,
+    diagnostics,
+    options.defaultLanguageVersion ?? LANGUAGE_VERSION,
+  ).parse();
 
   return {
     source,
@@ -99,6 +118,7 @@ class ComponentParser {
 
   #version: string | null = null;
   #versionSpan: Span | null = null;
+  #languageVersion: UiLanguageVersion;
   #sawTopLevelLine = false;
   #componentSeen = false;
   #component: ComponentBuilder | null = null;
@@ -112,7 +132,9 @@ class ComponentParser {
     source: SourceFile,
     lines: readonly LogicalLine[],
     diagnostics: DiagnosticBag,
+    defaultLanguageVersion: UiLanguageVersion,
   ) {
+    this.#languageVersion = defaultLanguageVersion;
     this.#source = source;
     this.#lines = lines;
     this.#diagnostics = diagnostics;
@@ -300,10 +322,12 @@ class ComponentParser {
     const version = tokens[1]!.text;
     this.#version = version;
     this.#versionSpan = line.span;
-    if (version !== LANGUAGE_VERSION) {
+    if (isUiLanguageVersion(version)) {
+      this.#languageVersion = version;
+    } else {
       this.#error(
         "KDM4004",
-        `language version ${version} is not supported; this compiler implements ${LANGUAGE_VERSION}`,
+        `language version ${version} is not supported; this compiler implements ${UI_LANGUAGE_VERSIONS.join(" and ")}`,
         tokens[1]!.span,
         `change the directive to: kadam ${LANGUAGE_VERSION}`,
       );
@@ -596,25 +620,33 @@ class ComponentParser {
         line.span,
         "an element header is a lower-camel name followed by {",
       );
+      // Open a placeholder block so the body and closing brace stay balanced.
+      this.#elementStack.push({
+        name: tokens.map((token) => token.text).join(""),
+        nameSpan: tokens[0]?.span ?? line.span,
+        headerSpan: line.span,
+        kind: null,
+        statements: [],
+        properties: [],
+        children: [],
+        endSpan: line.span,
+      });
       return;
     }
 
     const nameToken = tokens[0]!;
-    if (nameToken.kind !== "identifier") {
-      this.#error(
-        "KDM2007",
-        nameToken.kind === "keyword"
-          ? `element name ${JSON.stringify(nameToken.text)} is a reserved word`
-          : `invalid element name ${JSON.stringify(nameToken.text)}`,
-        nameToken.span,
-        "use a lower-camel name such as button1 or heroSection",
-      );
-      return;
+    const validName = nameToken.kind === "identifier";
+    if (!validName) {
+      const report = describeInvalidElementName(nameToken);
+      this.#error("KDM2007", report.message, nameToken.span, report.hint);
+      // Open the block anyway so its body stays attributed to this element.
     }
 
     const names = this.#currentNames();
-    const previous = names.get(nameToken.text);
-    if (previous !== undefined) {
+    const previous = validName ? names.get(nameToken.text) : undefined;
+    if (!validName) {
+      // Invalid names never participate in duplicate checks.
+    } else if (previous !== undefined) {
       this.#error(
         "KDM3008",
         `duplicate element name ${JSON.stringify(nameToken.text)}`,
@@ -697,7 +729,10 @@ class ComponentParser {
       return;
     }
 
-    const match = matchLine(tokens, { allowResponsive: true });
+    const match = matchLine(tokens, {
+      allowResponsive: true,
+      languageVersion: this.#languageVersion,
+    });
     for (const diagnostic of match.diagnostics) this.#diagnostics.addSpec(diagnostic);
     const node = match.selected?.body.statement ?? null;
     if (node === null) return;

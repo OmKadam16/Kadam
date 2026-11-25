@@ -32,7 +32,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.mjs",
     "check": "npm run typecheck && npm test",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "probes": "npm run build && node test/helpers/probe-report.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

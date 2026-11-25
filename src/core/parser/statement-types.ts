@@ -1,9 +1,16 @@
 import type { KindNode, PageSettingNode, StatementNode } from "../ast/nodes.js";
 import type { DiagnosticSpec } from "../diagnostics/diagnostic.js";
 import type { Token } from "../lexer/token.js";
+import type { UiLanguageVersion } from "../../version.js";
 
 export interface TemplateContext {
   readonly allowResponsive: boolean;
+  /**
+   * Language version of the file being parsed. Templates newer than this
+   * still match (so the diagnostic can name the construct) but are rejected
+   * with KDM2013. Omitted means the latest version, for tooling.
+   */
+  readonly languageVersion?: UiLanguageVersion | undefined;
 }
 
 /**
@@ -27,6 +34,8 @@ export interface StatementTemplate {
   readonly id: string;
   readonly description: string;
   readonly examples: readonly string[];
+  /** First language version that accepts this template. Default "0.1". */
+  readonly since?: UiLanguageVersion | undefined;
   readonly match: StatementMatcher;
 }
 

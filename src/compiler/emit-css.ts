@@ -511,6 +511,18 @@ function appendTypographyDeclarations(
   authored: IrAuthoredStyle,
   typography: IrTypography | null,
 ): void {
+  appendTypographyPresets(declarations, authored, typography);
+  if (typography === null) return;
+  for (const property of authored.properties ?? []) {
+    declarations.push([property.css, formatLength(property.value)]);
+  }
+}
+
+function appendTypographyPresets(
+  declarations: Declaration[],
+  authored: IrAuthoredStyle,
+  typography: IrTypography | null,
+): void {
   const selected = authored.typography;
   if (selected === undefined || typography === null) return;
   if (selected.fontSize !== undefined) {

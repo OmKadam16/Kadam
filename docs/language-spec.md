@@ -202,6 +202,12 @@ kadam 0.1
 ```
 
 - The version MUST have the form `major.minor`.
+- This compiler accepts `0.1` and `0.3`. `0.2` is the general-purpose core
+  module language ([language-v0.2.md](language-v0.2.md)), not a UI version.
+  `0.3` accepts everything in `0.1` with the same meaning and byte-identical
+  output, plus the additions marked *kadam 0.3* in this document.
+- A construct introduced after the file's version is rejected with `KDM2013`,
+  which names the construct and the version that introduced it.
 - In a project, a file directive MUST match the project's `kadam` version.
 - If omitted, the file inherits the project version. In single-file mode, the
   installed compiler's language version is used.
@@ -607,6 +613,56 @@ A divider is a one-pixel line by default. Its line color is its background
 color. It accepts `has a <color> background` and `has no background`; gradients
 and gradient directions are not supported. Border, corners, shadow, padding,
 text, and layout statements are not supported on a divider (`KDM3003`).
+
+### 6.14 Regular property sentence (*kadam 0.3*)
+
+```kdm
+the line height is 1.6
+the letter spacing is 1px
+```
+
+`the <property> is <value>` sets one property from the closed property table
+(decision D-32, `kadam keywords --properties`). The table is the normative
+list. Most rows are a regular spelling of an existing sentence and mean exactly
+the same thing: same kinds, same defaults, same generated CSS.
+
+| Property | Value | Same as |
+| --- | --- | --- |
+| `text size` | length | `the text is 18px` |
+| `text color` | color | `the text is #171717` |
+| `text weight` | `light`, `regular`, `medium`, `semibold`, `bold` | `the text is semibold` |
+| `text style` | `italic` | `the text is italic` |
+| `text alignment` | `left`, `centered`, `right` | `the text is centered` |
+| `font family` | `sans serif`, `serif`, `monospace` | `the font is monospace` |
+| `width` | length | `it is 320px wide` |
+| `height` | length | `it is 48px tall` |
+| `padding` | length (all four sides) | `it has 24px padding` |
+| `margin` | length (all four sides) | `it has 16px margin` |
+| `gap` | length | `it has 16px gap between children` |
+| `background color` | color | `has a #F7F5F0 background` |
+| `corner radius` | length | `has 12px rounded corners` |
+
+Two rows exist only in the regular form:
+
+| Property | Value | Applies to | CSS |
+| --- | --- | --- | --- |
+| `line height` | number from 0.5 to 4 | text-bearing kinds | `line-height` |
+| `letter spacing` | length | text-bearing kinds | `letter-spacing` |
+
+- A regular sentence and its equivalent sentence set the same property, so
+  writing both in one scope is a duplicate (`KDM3004`).
+- Rows that mirror an existing sentence accept component placeholders
+  (`"{$tone}"`) wherever that sentence does.
+
+- A name not in the table is not a property sentence; the line is reported as
+  an unrecognized statement (`KDM2001`).
+- Values are typed: a length where a number is expected, or a number outside
+  its bounds, is `KDM3005`.
+- A property outside its kinds is `KDM3003`; a second sentence for the same
+  property in the same scope is `KDM3004`.
+- Property sentences are allowed in responsive scopes (§9).
+- On a text field, text properties apply to the input, as typography does.
+- In a `kadam 0.1` file the sentence is `KDM2013`.
 
 ---
 
@@ -1179,6 +1235,8 @@ error[KDM3003]: borders are not supported on a divider
 | KDM2009 | Block delimiter is not on its own line |
 | KDM2010 | Unexpected token or punctuation |
 | KDM2011 | Element nesting exceeds 64 levels |
+| KDM2012 | A source file contains more than one page or component |
+| KDM2013 | Construct requires a newer language version (*kadam 0.3*) |
 
 **Semantic and typed (`KDM3xxx`)**
 
@@ -1415,6 +1473,7 @@ text have their own defaults.
 | --- | --- |
 | text content | button, link, headings, paragraph |
 | typography | button, link, headings, paragraph, text field |
+| regular properties (*kadam 0.3*) | per row of the property table (§6.14) |
 | size, background, margin, visibility | all (divider background: solid or none only) |
 | border, corners, shadow, padding | all except divider |
 | layout | container, card, navigation bar |
@@ -1448,7 +1507,8 @@ px rem ms s
 The table above is illustrative: the normative reserved set is the union of
 every fixed word in every canonical template, every unit, every font/weight
 keyword, every breakpoint, and every CSS named color. The compiler will expose
-the exact frozen list as `kadam keywords` when the lexer lands.
+the exact frozen list with `kadam keywords` (`--colors` for named colors,
+`--all` for every group, `--json` for tooling).
 
 ---
 

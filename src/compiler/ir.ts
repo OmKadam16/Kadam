@@ -149,6 +149,17 @@ export interface IrAuthoredStyle {
     readonly gap?: IrLength;
   };
   readonly visibility?: "hidden";
+  /**
+   * D-32 table properties in source order. `css` is the generated property
+   * name; text properties are emitted wherever typography is emitted.
+   */
+  readonly properties?: readonly IrTextProperty[];
+}
+
+export interface IrTextProperty {
+  readonly css: string;
+  /** A unitless number (line height) has a null unit. */
+  readonly value: IrLength;
 }
 
 export type IrHoverEffect =
