@@ -1291,6 +1291,65 @@ when a document changes.
 
 ---
 
+### 6.23 Loading data at run time (*kadam 0.3*, F5 step 6, D-41)
+
+An element can load a JSON list while the page is open and show it with a
+data list:
+
+```kdm
+catalog {
+    a container
+    it loads products from "/api/products.json"
+    each product has a name as text, a price as a number, a link as a url, and an inStock as true or false
+    while loading, it shows loadingNote
+    when there are none, it shows emptyNote
+    when loading fails, it shows errorNote
+
+    tile {
+        a ProductCard for each product in products
+        only where the inStock of product is true
+        sorted by the price of product from highest to lowest
+        with a name of the name of product
+        with a link of the link of product
+    }
+    again {
+        a button
+        the text says "Reload"
+        when clicked, reload products
+    }
+    loadingNote { ... }
+    emptyNote { ... }
+    errorNote { ... }
+}
+```
+
+- **Where from.** A path on the same site (`/api/...`), or a full `https`
+  address whose origin is declared in `kadam.json` as `"connect":
+  ["https://api.example.com"]` (`KDM3046`). `http` is allowed only for
+  `localhost`. `kadam dev` sends the same origins as `connect-src`.
+- **What comes back.** A JSON array, or `{ "items": [...] }`, of at most 1000
+  records and 2 MB, fetched with GET and no cookies. Every record must have
+  every field in the shape, with its type: text, a number, a url (`http`,
+  `https`, `mailto`, or a path on the site), or true or false. Anything else
+  shows the error state; a partly valid list is never shown.
+- **The three states are required** (`KDM3045`). Each names an element inside
+  the loading element (`KDM3012`). The loading element is a status region and
+  shows first; the others start hidden. With JavaScript off, only the error
+  state shows.
+- **The list** reads fields with `the <field> of <record>`, checked against
+  the shape (`KDM3043`). Its record name must match the shape. `only where`,
+  `sorted by` and `showing at most` work as for data files. A url parameter
+  needs a url field, and image, page, length and color parameters cannot come
+  from loaded data yet (`KDM3026`). A loaded list cannot have child elements
+  yet (`KDM3040`), and every loaded name must be shown by a list (`KDM3045`).
+- **`reload <name>`** is an effect: it loads the data again, and a newer
+  request cancels an older one.
+- **Output.** The component is emitted once inside a `<template>`. The page
+  script clones it per record and fills values only into text and checked
+  attributes, so data can never add HTML or a `javascript:` link.
+
+---
+
 ## 7. Events and interactions
 
 Events are declarative. There are no handlers, expressions, or user-written
@@ -1890,6 +1949,8 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3042 | Unknown data name, or a data list in a single-file build (*kadam 0.3*) |
 | KDM3043 | Unknown field, wrong record name, a true/false field used as a value, or a filter value of the wrong type (*kadam 0.3*) |
 | KDM3044 | A data list makes an element name that is already used (*kadam 0.3*) |
+| KDM3045 | Loaded data is missing its shape or a loading, empty, or error state, is loaded twice, or is never shown (*kadam 0.3*, D-41) |
+| KDM3046 | A loaded URL is not https, not same-site, or its origin is not in `connect` (*kadam 0.3*, D-41) |
 
 **Project (`KDM4xxx`)**
 

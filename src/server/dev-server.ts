@@ -21,9 +21,13 @@ const MAX_EVENT_CLIENTS = 32;
 const HEARTBEAT_MS = 15_000;
 const PORT_ATTEMPTS = 10;
 
-const SECURITY_POLICY =
-  "default-src 'self'; img-src 'self' data:; style-src 'self'; " +
-  "script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'";
+/** kadam 0.3 (D-41): pages may load data from the origins kadam.json declares. */
+function securityPolicy(connect: readonly string[]): string {
+  return (
+    "default-src 'self'; img-src 'self' data:; style-src 'self'; " +
+    `script-src 'self'; connect-src ${["'self'", ...connect].join(" ")}; object-src 'none'; base-uri 'none'`
+  );
+}
 
 export interface DevServerOptions {
   readonly projectRoot: string;
@@ -103,7 +107,7 @@ export async function createDevServer(
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
-    res.setHeader("Content-Security-Policy", SECURITY_POLICY);
+    res.setHeader("Content-Security-Policy", securityPolicy(session.connectOrigins));
 
     if (!hostAllowed(req.headers.host, host)) {
       sendText(res, 403, "Forbidden");

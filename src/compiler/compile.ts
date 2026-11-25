@@ -6,6 +6,7 @@ import {
 } from "../core/diagnostics/diagnostic.js";
 import { parseSource } from "../core/parser/parser.js";
 import { expandDocuments } from "../core/data/markdown.js";
+import { checkLoadOrigins } from "../core/data/data.js";
 import { analyzeDocument, type SemanticPage } from "../core/semantics/analyze.js";
 import {
   createSourceFile,
@@ -88,6 +89,8 @@ function compileWithSource(
   const diagnostics = new DiagnosticBag();
   diagnostics.addAll(sourceDiagnostics);
   diagnostics.addAll(parsed.diagnostics);
+  // A single file has no manifest, so it may only load from its own site.
+  if (document.page !== null) checkLoadOrigins(document.page.elements, [], documentDiagnostics);
   diagnostics.addAll(documentDiagnostics.sorted());
   if (document.page !== null) {
     diagnostics.addAll(analyzeDocument(document, { pages, fonts: new Set(Object.keys(options.fonts ?? {})) }));

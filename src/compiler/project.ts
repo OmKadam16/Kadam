@@ -21,7 +21,7 @@ import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
 import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
-import { expandData, generatePages, parseDataFile, readsRecordFields, type DataSet } from "../core/data/data.js";
+import { checkLoadOrigins, expandData, generatePages, parseDataFile, readsRecordFields, type DataSet } from "../core/data/data.js";
 import { expandDocuments } from "../core/data/markdown.js";
 import {
   analyzeDocument,
@@ -267,6 +267,7 @@ export function compileProject(
     if (parsed.document.page === null) continue;
 
     const template = parsed.document.page;
+    checkLoadOrigins(template.elements, manifest.connect ?? [], diagnostics);
     const dynamicRoute = pageEntry.route.split("/").some((segment) => segment.startsWith(":"));
     // kadam 0.3 (F5 step 3): a page made for each record becomes one page per record.
     const generated =

@@ -305,6 +305,8 @@ export interface ElementNode extends NodeBase {
   readonly componentOrigin?: ComponentElementOrigin | undefined;
   /** Deterministic suffix when a component body uses length parameters. */
   readonly styleKey?: string | undefined;
+  /** kadam 0.3 (D-41): this element is the template of a runtime data list. */
+  readonly runtimeList?: RuntimeList | undefined;
 }
 
 export type PageSettingNode =
@@ -463,6 +465,10 @@ export type F4Statement =
       readonly initial: StateLiteral;
     })
   | (NodeBase & { readonly type: "starts-hidden" })
+  // kadam 0.3 (F5 step 6, D-41): runtime data.
+  | (NodeBase & { readonly type: "data-load"; readonly name: string; readonly nameSpan: Span; readonly url: string; readonly urlSpan: Span })
+  | (NodeBase & { readonly type: "data-shape"; readonly item: string; readonly itemSpan: Span; readonly fields: readonly ShapeField[] })
+  | (NodeBase & { readonly type: "data-state"; readonly state: "loading" | "empty" | "error"; readonly target: string; readonly targetSpan: Span })
   | (NodeBase & {
       readonly type: "event";
       readonly trigger: "click" | "key";
@@ -504,7 +510,30 @@ export type Effect =
   | { readonly type: "focus"; readonly target: ElementReference }
   | { readonly type: "set-state"; readonly state: StateReference; readonly value: StateLiteral }
   | { readonly type: "flip-state"; readonly state: StateReference }
-  | { readonly type: "add-state"; readonly state: StateReference; readonly amount: number; readonly amountSpan: Span };
+  | { readonly type: "add-state"; readonly state: StateReference; readonly amount: number; readonly amountSpan: Span }
+  /** kadam 0.3 (D-41): `reload products` loads a runtime data source again. */
+  | { readonly type: "reload"; readonly source: string; readonly span: Span };
+
+export type ShapeFieldType = "text" | "number" | "yes/no" | "url";
+
+export interface ShapeField {
+  readonly name: string;
+  readonly type: ShapeFieldType;
+  readonly span: Span;
+}
+
+/**
+ * kadam 0.3 (D-41): an instance that repeats for each record of runtime data.
+ * It is expanded once, with placeholders, and becomes a `<template>`.
+ */
+export interface RuntimeList {
+  readonly source: string;
+  readonly item: string;
+  readonly filters: readonly RepeatFilter[];
+  readonly sort: RepeatSort | null;
+  readonly limit: number | null;
+  readonly span: Span;
+}
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 

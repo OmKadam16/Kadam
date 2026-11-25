@@ -129,6 +129,11 @@ export class DevSession {
     return this.#outDir;
   }
 
+  /** kadam 0.3 (D-41): origins pages may load data from. */
+  get connectOrigins(): readonly string[] {
+    return this.#manifest?.connect ?? [];
+  }
+
   /** Project-relative paths the watcher must observe. Empty means fallback. */
   get watchPaths(): readonly string[] {
     if (this.#manifest === null) return [];

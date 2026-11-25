@@ -154,7 +154,7 @@ function splitAnd(tokens: readonly Token[]): Token[][] {
   return parts;
 }
 
-const EFFECT_VERBS: ReadonlySet<string> = new Set(["show", "hide", "flip", "open", "close", "focus", "set", "add", "subtract"]);
+const EFFECT_VERBS: ReadonlySet<string> = new Set(["show", "hide", "flip", "open", "close", "focus", "set", "add", "subtract", "reload"]);
 
 /** The click effects added in step 2. `matchClick` (0.1) steps aside for them. */
 export function isEffectList(rest: readonly Token[]): boolean {
@@ -197,6 +197,13 @@ function readEffect(tokens: readonly Token[]): Effect | string {
       return { type: "close-dialog", span: spanFromTokens(tokens) };
     }
     return "write: close the dialog";
+  }
+  if (verb === "reload") {
+    const name = tokens[1];
+    if (tokens.length === 2 && name !== undefined && isWordToken(name) && STATE_NAME.test(name.text)) {
+      return { type: "reload", source: name.text, span: spanFromTokens(tokens) };
+    }
+    return "reload names the data an element loads, e.g. reload products";
   }
   if (verb === "focus") {
     const target = readTarget(rest);

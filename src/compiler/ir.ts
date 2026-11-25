@@ -380,6 +380,8 @@ export interface IrElement {
   readonly scopes?: readonly IrScopedStyle[];
   /** A scroll container: keyboard users can focus and scroll it. */
   readonly scrollable?: true;
+  /** kadam 0.3 (D-41): emitted inside a `<template>` the runtime clones per record. */
+  readonly template?: true;
   /** kadam 0.3 (F4 step 2): runtime attributes, emitted after data-kdm-id. */
   readonly attributes?: readonly (readonly [string, string])[];
   /** kadam 0.3 (F3) interaction states. */

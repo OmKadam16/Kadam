@@ -1,0 +1,26 @@
+kadam 0.3
+
+component ProductCard takes a name as text, a price as text, a link as url {
+    card1 {
+        a card
+        it is full width
+        has a white background
+        has a 1px #E5E7EB border
+        has 12px rounded corners
+        it has 16px padding
+        it has 6px gap between children
+        name1 {
+            a section heading
+            the text says "{$name}"
+        }
+        price1 {
+            a paragraph
+            the text says "{$price} USD"
+        }
+        link1 {
+            a link
+            the text says "View {$name}"
+            when clicked, open "{$link}" in a new tab
+        }
+    }
+}

@@ -410,6 +410,7 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     ...(rules.length === 0 ? {} : { rules }),
     ...(loops.length === 0 ? {} : { loops }),
     ...(runtimeAttributes === undefined ? {} : { attributes: runtimeAttributes }),
+    ...(element.runtimeList === undefined ? {} : { template: true as const }),
   };
 }
 

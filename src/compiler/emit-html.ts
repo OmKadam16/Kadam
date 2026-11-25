@@ -72,6 +72,12 @@ function metaLines(title: string, meta: IrPageMeta): string[] {
 }
 
 function renderElement(element: IrElement, depth: number): string {
+  // kadam 0.3 (D-41): a runtime list's component, cloned once per record.
+  if (element.template === true) {
+    const { template: _template, ...inner } = element;
+    const indent = "  ".repeat(depth);
+    return `${indent}<template data-kdm-template="${element.nodeId}">\n${renderElement(inner, depth + 1)}\n${indent}</template>`;
+  }
   let html = renderElementTag(element, depth);
   const marker = `data-kdm-id="${element.nodeId}"`;
   // kadam 0.3 (F4 step 2): runtime attributes (hidden state, aria-live).

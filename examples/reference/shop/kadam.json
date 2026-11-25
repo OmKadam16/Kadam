@@ -1,0 +1,7 @@
+{
+  "kadam": "0.3",
+  "name": "reference-shop",
+  "components": ["components/ProductCard.kdm"],
+  "pages": [{ "source": "pages/index.kdm", "route": "/" }],
+  "outDir": "dist"
+}

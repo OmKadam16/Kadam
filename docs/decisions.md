@@ -1280,6 +1280,100 @@ building F5; open to revision. Covers build-time data only. Runtime loading
 
 ---
 
+### D-41 — Runtime data for `kadam 0.3` (F5 step 6)
+
+**Status:** Approved by the user on 2026-11-25.
+
+**Problem.** Build-time data (D-40) covers content that changes when the site
+is rebuilt. Dashboards, shops and search need data that changes while the page
+is open. That means network requests in the browser, which brings in security,
+failure states and types the compiler cannot see at build time.
+
+**Proposal.**
+
+```kdm
+catalog {
+    a container
+    it loads products from "https://api.example.com/products"
+    each product has a name as text, a price as number, and a picture as url
+    while loading, it shows loadingNote
+    when there are none, it shows emptyNote
+    when loading fails, it shows errorNote
+
+    tile {
+        a ProductCard for each product in products
+        sorted by the price of product
+        with a name of the name of product
+        with a price of the price of product
+    }
+    loadingNote { ... }
+    emptyNote { ... }
+    errorNote { ... }
+}
+```
+
+1. **The compiler never touches the network.** Requests run only in the page
+   runtime (D-36). Builds stay deterministic and offline.
+2. **Origins are declared.** A URL must be same-origin, or its origin must be
+   listed in `kadam.json` as `"connect": ["https://api.example.com"]`
+   (`KDM4001` otherwise). HTTPS is required except for `localhost`. `kadam dev`
+   sends a matching `connect-src` CSP, so a request to an undeclared origin
+   fails in development, not just in review.
+3. **Requests are GET only, with no cookies by default.** The runtime uses
+   `fetch(url, { credentials: "omit" })` and accepts only a JSON array (or
+   `{ "items": [...] }`) of at most 1000 records and 2 MB. Sending data, auth
+   headers and cookies belong to the backend boundary, which is a separate
+   decision.
+4. **The shape is declared and checked twice.** `each product has ...` (text,
+   number, yes/no, url) types every field. At build time, every sentence that
+   reads a field is checked against the shape, with the same errors and
+   suggestions as D-40. At run time, each response is validated. A missing
+   field or wrong type shows the error state; a partly valid list is never
+   shown. A `url` field must be `http`, `https` or a same-site path, so a
+   `javascript:` link from an API cannot reach the page.
+5. **All three states are required.** A list without `while loading`,
+   `when there are none` and `when loading fails` is a compile error. Each
+   names an element in the same container, which the runtime shows and hides
+   as the request goes. The loading element is a polite live region, so
+   screen readers hear it.
+6. **No HTML from data, ever.** The compiler emits each repeated component
+   once as a `<template>`. The runtime clones it per record and fills values
+   only with `textContent` and checked `setAttribute`: no `innerHTML`, no
+   `eval`. `script-src 'self'` keeps working.
+7. **The same list sentences work.** `only where`, `sorted by` and `showing
+   at most` run in the runtime with the same meaning as at build time.
+8. **Without JavaScript**, the error element is shown with a `noscript` rule.
+   The author writes it to say that the content needs JavaScript or to link
+   elsewhere.
+9. **Loading.** Data loads once when the page opens. `when clicked, reload
+   products` on a button loads it again. A new request cancels the previous
+   one, so slow responses can never overwrite newer ones.
+10. **Budget.** At most about 2 KB minified extra runtime for a page that
+    loads data, tree-shaken like the rest of D-36.
+
+**Tests.** Unit tests for the checks; Playwright tests against a local mock
+server for loading, empty, error, wrong-shape, slow-then-fast ordering,
+`javascript:` URL rejection, reload, keyboard use and the strict CSP. The
+dashboard reference loads its table from the mock server.
+
+**Not included (later decisions).** Sending data (forms to an API), auth
+headers and cookies, polling and live updates, caching across pages, and
+pagination. Pagination needs URL state (`?page=2`), the next F5 step.
+
+**Alternatives considered.**
+
+1. Fetching at build time: breaks determinism and offline builds, and is
+   already covered by data files.
+2. Allowing any origin: simpler, but one typo or injected URL could send
+   requests anywhere. Declaring origins costs one manifest line.
+3. Optional states with defaults: shorter, but a blank area on a slow network
+   or a failed API is the most common real-world bug. Kadam makes it
+   impossible.
+4. A framework data layer (React Query, htmx): contradicts D-15 and the
+   runtime budget.
+
+---
+
 ## Approval checklist
 
 | ID | Decision | Blocks | Recommendation | Status |
@@ -1324,6 +1418,7 @@ building F5; open to revision. Covers build-time data only. Runtime loading
 | D-38 | Theme colors and dark mode | F3 | Approve | Approved — implemented behind kadam 0.3 |
 | D-39 | Contrast check is a warning in 0.3 | F3 | Approve | Approved — implemented |
 | D-40 | Build-time data files and data lists | F5 step 1 | Review | Implemented under the user's go-ahead |
+| D-41 | Runtime data: declared origins, typed shapes, required loading/empty/error states | F5 step 6 | Approve | Approved |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

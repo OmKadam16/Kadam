@@ -7,6 +7,7 @@ import type {
   PropertyBindingNode,
   StatementNode,
 } from "../ast/nodes.js";
+import { runtimeField } from "../data/data.js";
 import { DiagnosticBag, type Diagnostic } from "../diagnostics/diagnostic.js";
 import { closestMatches } from "../parser/suggest.js";
 import { isAbsoluteHttpUrl } from "../parser/matchers-interaction.js";
@@ -320,6 +321,20 @@ function validateBinding(
   const expected = parameter.valueType;
   const scan = scanPlaceholders(binding.value);
   const span = binding.valueSpan;
+
+  // kadam 0.3 (D-41): a field of data loaded at run time.
+  const loaded = runtimeField(binding.value);
+  if (loaded !== null) {
+    const problem =
+      expected === "text" ? null
+      : expected === "url" ? (loaded.type === "url" ? null : `${loaded.name} is ${loaded.type === "number" ? "a number" : "text"}, but ${parameter.name} needs a url field`)
+      : expected === "image" ? "pictures from loaded data are not supported yet"
+      : `a ${expected} parameter cannot come from loaded data`;
+    if (problem !== null) {
+      diagnostics.error("KDM3026", problem, span, expected === "url" ? `declare ${loaded.name} as a url in the shape` : "pass a fixed value here, or use a text or url parameter", [{ span: parameter.nameSpan, message: `${expected} property declared here` }]);
+    }
+    return;
+  }
 
   // A page file has no component scope: its binding values are literal
   // strings. Only component bodies interpolate their own bindings.

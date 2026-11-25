@@ -9,13 +9,30 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".xml": "application/xml", ".txt": "text/plain" };
 
 /** Compile a reference project in memory and serve it on a free port. */
-export async function serve(name, { csp = false } = {}) {
+/**
+ * `api(path, count)` (kadam 0.3, D-41) answers /api/ requests: it returns
+ * { status, body, delay } or undefined for a 404. `count` is the request number.
+ */
+export async function serve(name, { csp = false, api = null, port = 0 } = {}) {
+  let requests = 0;
   const result = compileProject({ projectRoot: `${root}examples/reference/${name}` });
   const errors = result.diagnostics.filter((d) => d.severity === "error");
   if (errors.length > 0) throw new Error(errors.map((d) => d.message).join("\n"));
   const files = new Map(result.files.map((file) => [`/${file.path}`, file.contents]));
-  const server = createServer((request, response) => {
+  const server = createServer(async (request, response) => {
     const path = new URL(request.url, "http://x").pathname;
+    if (api !== null && path.startsWith("/api/")) {
+      requests += 1;
+      const answer = await api(path, requests);
+      if (answer === undefined) {
+        response.writeHead(404).end();
+        return;
+      }
+      if (answer.delay) await new Promise((resolve) => setTimeout(resolve, answer.delay));
+      response.writeHead(answer.status ?? 200, { "content-type": "application/json" });
+      response.end(typeof answer.body === "string" ? answer.body : JSON.stringify(answer.body));
+      return;
+    }
     const key = files.has(path) ? path : `${path.replace(/\/$/, "")}/index.html`;
     const body = files.get(key);
     if (body === undefined) {
@@ -25,11 +42,11 @@ export async function serve(name, { csp = false } = {}) {
     // With csp, a strict policy: the runtime must work without inline scripts or eval (D-36).
     response.writeHead(200, {
       "content-type": TYPES[extname(key)] ?? "application/octet-stream",
-      ...(csp ? { "content-security-policy": "script-src 'self'" } : {}),
+      ...(csp ? { "content-security-policy": "script-src 'self'; connect-src 'self'" } : {}),
     });
     response.end(body);
   });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve));
   const routes = result.files
     .filter((file) => file.path.endsWith("index.html"))
     .map((file) => `/${file.path.replace(/index\.html$/, "")}`)

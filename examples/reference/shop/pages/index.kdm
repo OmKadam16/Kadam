@@ -1,0 +1,55 @@
+kadam 0.3
+
+page "Shop" {
+    the page background is #F9FAFB
+
+    catalog {
+        a container
+        it is at most 640px wide
+        it is centered
+        it has 40px padding on the top and bottom
+        it has 20px padding on the left and right
+        it has 16px gap between children
+        it loads products from "/api/products.json"
+        each product has a name as text, a price as a number, a link as a url, and an inStock as true or false
+        while loading, it shows loadingNote
+        when there are none, it shows emptyNote
+        when loading fails, it shows errorNote
+
+        headline {
+            a main heading
+            the text says "Products"
+        }
+
+        again {
+            a button
+            the text says "Reload products"
+            when clicked, reload products
+        }
+
+        loadingNote {
+            a paragraph
+            the text says "Loading products..."
+        }
+
+        emptyNote {
+            a paragraph
+            the text says "Nothing is in stock right now."
+        }
+
+        errorNote {
+            a paragraph
+            the text says "Products could not be loaded. Try again later."
+        }
+
+        tile {
+            a ProductCard for each product in products
+            only where the inStock of product is true
+            sorted by the price of product from highest to lowest
+            showing at most 10
+            with a name of the name of product
+            with a price of the price of product
+            with a link of the link of product
+        }
+    }
+}

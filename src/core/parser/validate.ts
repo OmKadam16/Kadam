@@ -588,6 +588,13 @@ function checkCapability(
     case "submit":
       if (kindName !== "button") reject("it submits the form applies only to a button");
       return;
+    case "data-load":
+    case "data-shape":
+    case "data-state":
+      if (!["container", "card", "section", "article", "sidebar", "dialog"].includes(kindName)) {
+        reject("loaded data goes in a container, card, section, article, sidebar, or dialog");
+      }
+      return;
     case "document-source":
       if (!["container", "card", "section", "article", "sidebar", "dialog"].includes(kindName)) {
         reject("a document goes inside a container, card, section, article, sidebar, or dialog");
@@ -959,6 +966,12 @@ function describeStatement(statement: StatementNode): string {
       return "an inline span statement";
     case "document-source":
       return "a document statement";
+    case "data-load":
+      return "an it loads statement";
+    case "data-shape":
+      return "an each ... has statement";
+    case "data-state":
+      return `a ${statement.state} state statement`;
     case "size-limit":
       return "a size limit statement";
     case "aspect-ratio":
@@ -1153,6 +1166,10 @@ function propertyKeys(statement: StatementNode): string[] {
     case "text-span":
       // Several spans per text; overlaps are checked in semantic analysis.
       return [];
+    case "data-state":
+      return [`data-state-${statement.state}`];
+    case "data-load":
+    case "data-shape":
     case "document-source":
     case "caption":
     case "media-source":

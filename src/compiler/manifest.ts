@@ -62,6 +62,8 @@ export interface KadamManifest {
   readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
   /** kadam 0.3: project theme file with theme colors (D-38). */
   readonly theme?: string | undefined;
+  /** kadam 0.3 (D-41): origins pages may load data from at run time. */
+  readonly connect?: readonly string[] | undefined;
   /** kadam 0.3 (F5): data names to project-relative JSON files, e.g. { "projects": "data/projects.json" }. */
   readonly data?: Readonly<Record<string, string>> | undefined;
 }
@@ -96,6 +98,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "fonts",
   "theme",
   "data",
+  "connect",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -412,6 +415,31 @@ export function loadManifest(
       diagnostics.error("KDM4001", "'theme' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove theme');
     } else if (typeof raw.theme !== "string" || !raw.theme.endsWith(".kdm")) {
       diagnostics.error("KDM4001", "'theme' in kadam.json must be the path of a .kdm file", rootSpan, 'use "theme": "theme.kdm"');
+    }
+  }
+
+  // Validate connect origins (kadam 0.3, D-41)
+  if ("connect" in raw) {
+    const value = raw.connect;
+    const hint = 'use "connect": ["https://api.example.com"]';
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'connect' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove connect');
+    } else if (!Array.isArray(value) || value.length > 16) {
+      diagnostics.error("KDM4001", "'connect' in kadam.json must be a list of at most 16 origins", rootSpan, hint);
+    } else {
+      for (const origin of value) {
+        let valid = false;
+        if (typeof origin === "string") {
+          try {
+            const url = new URL(origin);
+            const local = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "[::1]";
+            valid = url.origin === origin && (url.protocol === "https:" || (url.protocol === "http:" && local));
+          } catch {
+            valid = false;
+          }
+        }
+        if (!valid) diagnostics.error("KDM4001", `connect origin ${JSON.stringify(origin)} must be an https origin with no path, such as "https://api.example.com"`, rootSpan, hint);
+      }
     }
   }
 
@@ -782,6 +810,7 @@ export function loadManifest(
     siteUrl: typeof raw.siteUrl === "string" ? raw.siteUrl.replace(/\/$/, "") : undefined,
     fonts: readFonts(raw.fonts),
     theme: typeof raw.theme === "string" ? raw.theme : undefined,
+    connect: Array.isArray(raw.connect) ? (raw.connect as string[]) : undefined,
     data:
       typeof raw.data === "object" && raw.data !== null && !Array.isArray(raw.data)
         ? (raw.data as Record<string, string>)

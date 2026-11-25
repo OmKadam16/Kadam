@@ -1,4 +1,4 @@
-import type { ElementNode, PageNode, PropertyBindingNode, RecordFieldReference } from "../ast/nodes.js";
+import type { ElementNode, PageNode, PropertyBindingNode, RecordFieldReference, RuntimeList, ShapeFieldType, StatementNode } from "../ast/nodes.js";
 import type { DiagnosticBag } from "../diagnostics/diagnostic.js";
 import type { SourceFile, Span } from "../source/source-file.js";
 import { closestMatches } from "../parser/suggest.js";
@@ -103,8 +103,93 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
   };
   collect(page.elements);
 
-  const expandList = (elements: readonly ElementNode[]): ElementNode[] =>
-    elements.flatMap((element) => (element.kind?.repeat === undefined ? [{ ...element, children: expandList(element.children) }] : repeat(element)));
+  // kadam 0.3 (D-41): data an ancestor loads at run time, by name.
+  type Loaded = { readonly element: ElementNode; readonly shape: Extract<StatementNode, { type: "data-shape" }> | null };
+  const expandList = (elements: readonly ElementNode[], loaded: ReadonlyMap<string, Loaded>): ElementNode[] =>
+    elements.flatMap((element) => {
+      let scope = loaded;
+      const load = element.statements.find((statement): statement is Extract<StatementNode, { type: "data-load" }> => statement.type === "data-load");
+      if (load !== undefined) {
+        const shape = element.statements.find((statement): statement is Extract<StatementNode, { type: "data-shape" }> => statement.type === "data-shape") ?? null;
+        scope = new Map([...loaded, [load.name, { element, shape }]]);
+      }
+      if (element.kind?.repeat === undefined) return [{ ...element, children: expandList(element.children, scope) }];
+      const runtime = loaded.get(element.kind.repeat.source);
+      if (runtime !== undefined) return runtimeRepeat(element, runtime);
+      return repeat(element);
+    });
+
+  /** One instance with typed placeholders; the runtime clones it per record. */
+  const runtimeRepeat = (element: ElementNode, loaded: Loaded): ElementNode[] => {
+    const clause = element.kind!.repeat!;
+    if (data?.has(clause.source) === true) {
+      diagnostics.error("KDM3042", `"${clause.source}" is both a data file and data loaded here`, clause.sourceSpan, "rename one of them");
+      return [];
+    }
+    if (loaded.shape === null) return []; // reported with the loader
+    const shape = loaded.shape;
+    if (clause.item !== shape.item) {
+      diagnostics.error("KDM3043", `the shape describes each "${shape.item}", but this list names each record "${clause.item}"`, clause.itemSpan, `write: for each ${shape.item} in ${clause.source}`);
+      return [];
+    }
+    if (element.children.length > 0) {
+      diagnostics.error("KDM3040", "a list of loaded data cannot have child elements yet", element.children[0]!.nameSpan, "move the content into the component, and pass the values in as parameters");
+      return [];
+    }
+    const types = new Map(shape.fields.map((field) => [field.name, field.type]));
+    let ok = true;
+    const check = (field: RecordFieldReference): ShapeFieldType | null => {
+      if (field.item !== clause.item) {
+        diagnostics.error("KDM3043", `"${field.item}" is not the record name here`, field.span, `this list names each record "${clause.item}": the ${field.name} of ${clause.item}`);
+        ok = false;
+        return null;
+      }
+      const type = types.get(field.name);
+      if (type === undefined) {
+        const close = closestMatches(field.name, [...types.keys()], 3);
+        diagnostics.error("KDM3043", `each ${shape.item} has no field "${field.name}"`, field.span, close.length > 0 ? `did you mean: ${close.join(", ")}?` : `the shape lists: ${[...types.keys()].join(", ")}`);
+        ok = false;
+        return null;
+      }
+      return type;
+    };
+    const properties: PropertyBindingNode[] = [];
+    for (const binding of element.properties) {
+      if (binding.field === undefined) {
+        properties.push(binding);
+        continue;
+      }
+      const type = check(binding.field);
+      if (type === "yes/no") {
+        diagnostics.error("KDM3043", `the field "${binding.field.name}" is true or false, which cannot be shown as a value`, binding.field.span, "use a text, number, or url field");
+        ok = false;
+      }
+      if (type === null || type === "yes/no") continue;
+      const { field: _field, ...literal } = binding;
+      properties.push({ ...literal, value: runtimeFieldPlaceholder(binding.field.name, type) });
+    }
+    for (const filter of clause.filters ?? []) {
+      const type = check(filter.field);
+      const valueType = typeof filter.value === "string" ? "text" : typeof filter.value === "number" ? "number" : "yes/no";
+      if (type !== null && (type === "url" ? "text" : type) !== valueType) {
+        diagnostics.error("KDM3043", `the field "${filter.field.name}" is ${type}, but it is compared with ${valueType}`, filter.valueSpan, "compare it with a value of the same type");
+        ok = false;
+      }
+    }
+    if (clause.sort !== undefined) check(clause.sort.field);
+    if (!ok) return [];
+    const kind = { ...element.kind! };
+    delete (kind as { repeat?: unknown }).repeat;
+    const runtimeList: RuntimeList = {
+      source: clause.source,
+      item: clause.item,
+      filters: clause.filters ?? [],
+      sort: clause.sort ?? null,
+      limit: clause.limit?.count ?? null,
+      span: clause.span,
+    };
+    return [{ ...element, kind, properties, children: [], runtimeList }];
+  };
 
   const repeat = (element: ElementNode): ElementNode[] => {
     const clause = element.kind!.repeat!;
@@ -249,7 +334,7 @@ export function expandData(page: PageNode, data: ReadonlyMap<string, DataSet | n
     return ok ? instances : [];
   };
 
-  return { ...page, elements: expandList(page.elements) };
+  return { ...page, elements: expandList(page.elements, new Map()) };
 }
 
 export function usesData(elements: readonly ElementNode[]): boolean {
@@ -431,4 +516,59 @@ function renameTree(elements: readonly ElementNode[], prefix: string): ElementNo
 
 function flattenNames(elements: readonly ElementNode[]): string[] {
   return elements.flatMap((element) => [element.name, ...flattenNames(element.children)]);
+}
+
+/**
+ * kadam 0.3 (D-41): the value a runtime field gets while its list is expanded
+ * at build time. It is a valid https URL, so url parameters accept it, and it
+ * carries the field's type, so component checks can reject a wrong one. The
+ * runtime replaces it in text and attributes; it is never shown.
+ */
+export const RUNTIME_FIELD = /https:\/\/kadam\.invalid\/field\/(text|number|url)\/([a-z][A-Za-z0-9]{0,63})/g;
+
+export function runtimeFieldPlaceholder(name: string, type: "text" | "number" | "url"): string {
+  return `https://kadam.invalid/field/${type}/${name}`;
+}
+
+/** The runtime field a bound value stands for, if it is one. */
+export function runtimeField(value: string): { readonly name: string; readonly type: "text" | "number" | "url" } | null {
+  const match = /^https:\/\/kadam\.invalid\/field\/(text|number|url)\/([a-z][A-Za-z0-9]{0,63})$/.exec(value);
+  return match === null ? null : { name: match[2]!, type: match[1] as "text" | "number" | "url" };
+}
+
+/**
+ * kadam 0.3 (D-41): a loaded URL is same-origin, or its origin is declared in
+ * kadam.json `connect`. HTTPS is required except on localhost.
+ */
+export function checkLoadOrigins(elements: readonly ElementNode[], connect: readonly string[], diagnostics: DiagnosticBag): void {
+  for (const element of elements) {
+    for (const statement of element.statements) {
+      if (statement.type !== "data-load") continue;
+      const url = statement.url;
+      if (url.startsWith("/") && !url.startsWith("//")) continue;
+      let parsed: URL | null = null;
+      try {
+        parsed = new URL(url);
+      } catch {
+        parsed = null;
+      }
+      if (parsed === null) {
+        diagnostics.error("KDM3046", `"${url}" is not a URL Kadam can load`, statement.urlSpan, 'use a path on this site, such as "/api/products", or a full https address');
+        continue;
+      }
+      const local = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "[::1]";
+      if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && local)) {
+        diagnostics.error("KDM3046", `"${url}" must use https`, statement.urlSpan, "only localhost may use http");
+        continue;
+      }
+      if (parsed.username !== "" || parsed.password !== "") {
+        diagnostics.error("KDM3046", "a loaded URL cannot contain a user name or password", statement.urlSpan, "remove the credentials from the URL");
+        continue;
+      }
+      if (!connect.includes(parsed.origin)) {
+        diagnostics.error("KDM3046", `the origin ${parsed.origin} is not declared`, statement.urlSpan, `add it to kadam.json: "connect": ["${parsed.origin}"]`);
+      }
+    }
+    checkLoadOrigins(element.children, connect, diagnostics);
+  }
 }

@@ -33,6 +33,7 @@ import {
 } from "./matchers-appearance.js";
 import { MIN_SCALE_03, matchClick, matchHover, matchMotion } from "./matchers-interaction.js";
 import { BUILTIN_KIND_INFO, matchKindStatement } from "./kind.js";
+import { matchDataLoad, matchDataShape, matchDataState } from "./matchers-f5.js";
 import {
   matchCaption,
   matchCaptions,
@@ -316,6 +317,16 @@ const F4_TEMPLATES: readonly StatementTemplate[] = [
 ];
 
 export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
+  // kadam 0.3 (F5 step 6, D-41): runtime data.
+  { id: "data-load", description: "Load data at run time", since: "0.3",
+    examples: ['it loads products from "https://api.example.com/products"'],
+    match: (tokens) => matchDataLoad(tokens) },
+  { id: "data-shape", description: "Shape of loaded records", since: "0.3",
+    examples: ["each product has a name as text, a price as a number, and a link as a url"],
+    match: (tokens) => matchDataShape(tokens) },
+  { id: "data-state", description: "Loading, empty, and error states", since: "0.3",
+    examples: ["while loading, it shows loadingNote", "when there are none, it shows emptyNote", "when loading fails, it shows errorNote"],
+    match: (tokens) => matchDataState(tokens) },
   {
     id: "kind",
     description: "Element kind declaration",

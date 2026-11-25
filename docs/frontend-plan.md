@@ -302,8 +302,20 @@ elements, so every page check applies; raw HTML is an error. The blog
 reference's post bodies are Markdown files. Repeated instances can now pass
 child content into slots, reading `{the <field> of <record>}`.
 
-**Next steps:** runtime data with required loading, empty and error states
-(needs a decision record), then URL state.
+**Step 6 status: shipped (D-41).** `it loads products from "..."` with a
+declared shape and required loading, empty and error states. Origins are
+same-site or declared in `connect`; responses are checked record by record;
+lists render from a `<template>` with text and checked attributes only;
+`reload products` cancels stale requests. `examples/reference/shop` is tested
+in Playwright against a mock API: loading, filtering and sorting, empty, five
+kinds of bad response, HTML in data, stale responses, keyboard reload, strict
+CSP, and JavaScript off. The shop page's whole runtime is 4.8 KB unminified
+(1.9 KB gzipped). Changed from the plan: the live-data reference is a new shop
+project rather than the dashboard, so the dashboard's golden screenshots stay
+as they are.
+
+**Next steps:** URL state (`?page=2`) for pagination and filters, then F6
+interop.
 
 
 - **Build-time data:** `kadam.json` declares typed data files (JSON/CSV in the

@@ -24,7 +24,25 @@ export type IrEffect =
   | { readonly type: "focus"; readonly target: string }
   | { readonly type: "set"; readonly key: string; readonly value: IrStateValue }
   | { readonly type: "flip"; readonly key: string }
-  | { readonly type: "add"; readonly key: string; readonly amount: number };
+  | { readonly type: "add"; readonly key: string; readonly amount: number }
+  | { readonly type: "reload"; readonly source: string };
+
+/** kadam 0.3 (D-41): one element that loads data, and the lists that show it. */
+export interface IrLoader {
+  readonly source: string;
+  readonly url: string;
+  readonly nodeId: string;
+  readonly fields: readonly (readonly [string, "text" | "number" | "yes/no" | "url"])[];
+  readonly loading: string;
+  readonly empty: string;
+  readonly error: string;
+  readonly lists: readonly {
+    readonly template: string;
+    readonly filters: readonly (readonly [string, boolean, string | number | boolean])[];
+    readonly sort: readonly [string, boolean] | null;
+    readonly limit: number | null;
+  }[];
+}
 
 export interface IrRuntime {
   /** `assets/kadam.<page>.js`, relative to the site root. */
@@ -53,6 +71,8 @@ export interface IrRuntime {
   }[];
   /** Responsive hide attributes the stylesheet must define. */
   readonly scopes: readonly Breakpoint[];
+  /** kadam 0.3 (D-41): runtime data. */
+  readonly loaders: readonly IrLoader[];
 }
 
 export interface RuntimeLowering {
@@ -122,6 +142,8 @@ export function lowerRuntime(
         return { type: "flip", key: keyOf(stateFor(effect.state, from)) };
       case "add-state":
         return { type: "add", key: keyOf(stateFor(effect.state, from)), amount: effect.amount };
+      case "reload":
+        return { type: "reload", source: effect.source };
     }
   };
 
@@ -195,6 +217,49 @@ export function lowerRuntime(
     }
   });
 
+  // kadam 0.3 (D-41): loaders. Empty and error states start hidden; the
+  // loading state is a status region and starts shown.
+  const loaders: IrLoader[] = [];
+  const templates = new Map<string, ElementNode[]>();
+  visit(elements, (element) => {
+    if (element.runtimeList === undefined) return;
+    const list = templates.get(element.runtimeList.source) ?? [];
+    list.push(element);
+    templates.set(element.runtimeList.source, list);
+  });
+  visit(elements, (element) => {
+    const load = element.statements.find((s) => s.type === "data-load");
+    if (load === undefined || load.type !== "data-load") return;
+    const shape = element.statements.find((s) => s.type === "data-shape");
+    const stateOf = (want: "loading" | "empty" | "error"): ElementNode => {
+      const state = element.statements.find((s) => s.type === "data-state" && s.state === want);
+      if (state === undefined || state.type !== "data-state") throw new InternalCompilerError(`a ${want} state reached lowering unresolved`, load.span);
+      return elementFor({ name: state.target, span: state.targetSpan }, element);
+    };
+    const loading = stateOf("loading");
+    const empty = stateOf("empty");
+    const error = stateOf("error");
+    addAttribute(loading, "role", "status");
+    addAttribute(empty, "data-kdm-hidden");
+    addAttribute(error, "data-kdm-hidden");
+    if (shape === undefined || shape.type !== "data-shape") throw new InternalCompilerError("a loader without a shape reached lowering", load.span);
+    loaders.push({
+      source: load.name,
+      url: load.url,
+      nodeId: nodeIdOf(element),
+      fields: shape.fields.map((field) => [field.name, field.type] as const),
+      loading: nodeIdOf(loading),
+      empty: nodeIdOf(empty),
+      error: nodeIdOf(error),
+      lists: (templates.get(load.name) ?? []).map((list) => ({
+        template: nodeIdOf(list),
+        filters: list.runtimeList!.filters.map((filter) => [filter.field.name, filter.negated, filter.value] as const),
+        sort: list.runtimeList!.sort === null ? null : ([list.runtimeList!.sort.field.name, list.runtimeList!.sort.descending] as const),
+        limit: list.runtimeList!.limit,
+      })),
+    });
+  });
+
   return {
     runtime: {
       script: `assets/kadam.${slug}.js`,
@@ -204,6 +269,7 @@ export function lowerRuntime(
       visibilityBindings,
       controllers,
       scopes: (["phones", "tablets", "desktops"] as const).filter((breakpoint) => scopes.has(breakpoint)),
+      loaders,
     },
     attributes,
     texts,

@@ -66,7 +66,7 @@ export function usesRuntime(elements: readonly ElementNode[]): boolean {
         kindOf(element) === "dialog" ||
         element.statements.some((statement) => {
           const type = inner(statement).type;
-          return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden";
+          return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden" || type === "data-load";
         }) ||
         visit(element.children),
     );
@@ -108,6 +108,7 @@ export function checkRuntime(elements: readonly ElementNode[], diagnostics: Diag
   const index = indexPage(elements);
   const visibilityTargets = new Map<ElementNode, true>();
   const bound = new Set<ElementNode>();
+  const loaders = checkLoaders(elements, index, diagnostics);
 
   const state = (reference: StateReference, from: ElementNode, expected: StateType | null, what: string): DeclaredState | null => {
     const resolved = resolveState(reference, from, index);
@@ -178,6 +179,11 @@ export function checkRuntime(elements: readonly ElementNode[], diagnostics: Diag
       case "add-state":
         state(value.state, from, "number", value.amount >= 0 ? "add" : "subtract");
         return;
+      case "reload":
+        if (!loaders.has(value.source)) {
+          diagnostics.error("KDM3012", `nothing on this page loads "${value.source}"`, value.span, "reload names the data an element loads with it loads <name> from \"...\"");
+        }
+        return;
     }
   };
 
@@ -205,4 +211,86 @@ export function checkRuntime(elements: readonly ElementNode[], diagnostics: Diag
         "control it one way: either it is hidden unless ..., or show/hide/flip with it starts hidden");
     }
   }
+}
+
+const STATE_WORDS = { loading: "while loading", empty: "when there are none", error: "when loading fails" } as const;
+
+/**
+ * kadam 0.3 (D-41): every element that loads data declares its shape and all
+ * three states, each state names an element inside it, and a list shows it.
+ * Returns the loaders by name.
+ */
+function checkLoaders(elements: readonly ElementNode[], index: PageRuntimeIndex, diagnostics: DiagnosticBag): Map<string, ElementNode> {
+  const loaders = new Map<string, ElementNode>();
+  const lists = new Map<string, ElementNode[]>();
+  const descendants = (element: ElementNode): Set<ElementNode> => {
+    const found = new Set<ElementNode>();
+    const walk = (list: readonly ElementNode[]): void => {
+      for (const child of list) {
+        found.add(child);
+        walk(child.children);
+      }
+    };
+    walk(element.children);
+    return found;
+  };
+  const visit = (list: readonly ElementNode[]): void => {
+    for (const element of list) {
+      if (element.runtimeList !== undefined) {
+        const entry = lists.get(element.runtimeList.source) ?? [];
+        entry.push(element);
+        lists.set(element.runtimeList.source, entry);
+      }
+      const load = element.statements.find((s) => s.type === "data-load");
+      const shape = element.statements.find((s) => s.type === "data-shape");
+      const states = element.statements.filter((s): s is Extract<StatementNode, { type: "data-state" }> => s.type === "data-state");
+      if (load === undefined) {
+        const stray = shape ?? states[0];
+        if (stray !== undefined) {
+          diagnostics.error("KDM3045", "this line describes loaded data, but this element does not load any", stray.span, 'add it loads <name> from "..." to the same element');
+        }
+        visit(element.children);
+        continue;
+      }
+      if (load.type !== "data-load") continue;
+      if (loaders.has(load.name)) {
+        diagnostics.error("KDM3045", `two elements load "${load.name}"`, load.nameSpan, "give each loaded data its own name");
+      }
+      loaders.set(load.name, element);
+      if (shape === undefined) {
+        diagnostics.error("KDM3045", `${element.name} loads ${load.name} but does not say what each record has`, load.span, "add: each <record> has a <field> as text, ...");
+      }
+      const inside = descendants(element);
+      const used = new Map<ElementNode, string>();
+      for (const want of ["loading", "empty", "error"] as const) {
+        const state = states.find((s) => s.state === want);
+        if (state === undefined) {
+          diagnostics.error("KDM3045", `${element.name} loads ${load.name} but has no ${STATE_WORDS[want]} state`, load.span, `add: ${STATE_WORDS[want]}, it shows <element name>`);
+          continue;
+        }
+        const target = index.elements.get(state.target);
+        if (target === undefined || target === null || !inside.has(target)) {
+          diagnostics.error("KDM3012", `${STATE_WORDS[want]} names "${state.target}", which is not an element inside ${element.name}`, state.targetSpan, `name one element inside ${element.name}`);
+          continue;
+        }
+        if (used.has(target)) {
+          diagnostics.error("KDM3045", `${state.target} is already the ${used.get(target)} state`, state.targetSpan, "use a different element for each state");
+          continue;
+        }
+        used.set(target, want);
+        if (target.statements.some((s) => { const t = inner(s).type; return t === "visibility" || t === "visibility-binding" || t === "starts-hidden"; })) {
+          diagnostics.error("KDM3005", `${state.target} is shown and hidden by the data, so it cannot also be hidden by another statement`, state.targetSpan, `remove the hidden statement from ${state.target}`);
+        }
+      }
+      visit(element.children);
+    }
+  };
+  visit(elements);
+  for (const [name, element] of loaders) {
+    if (!lists.has(name)) {
+      const load = element.statements.find((s) => s.type === "data-load")!;
+      diagnostics.error("KDM3045", `${name} is loaded but no list shows it`, load.span, `add a component inside ${element.name}: a ProductCard for each <record> in ${name}`);
+    }
+  }
+  return loaders;
 }

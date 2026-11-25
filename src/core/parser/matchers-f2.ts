@@ -455,6 +455,8 @@ export function matchImageFocus(tokens: readonly Token[]): Body {
 // it loads lazily | it loads right away
 export function matchLoading(tokens: readonly Token[]): Body {
   if (!isKeyword(tokens[0], "it") || !isAnyWord(tokens[1], "loads")) return null;
+  // kadam 0.3 (D-41): `it loads products from "..."` is runtime data.
+  if (isAnyWord(tokens[3], "from")) return null;
   const span = spanFromTokens(tokens);
   if (tokens.length === 3 && isAnyWord(tokens[2], "lazily")) return ok({ type: "loading", mode: "lazy", span });
   if (tokens.length === 4 && words(tokens.slice(2), "right", "away")) {

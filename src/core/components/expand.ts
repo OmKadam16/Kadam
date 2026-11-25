@@ -404,7 +404,9 @@ function expandInstance(
   state.active.push(target.key);
   try {
     const expanded = expandComponentNode(body[0]!, state, bindings, nextScope);
-    return expanded.length === 1 ? expanded[0]! : null;
+    if (expanded.length !== 1) return null;
+    // kadam 0.3 (D-41): the instance root carries its runtime list.
+    return element.runtimeList === undefined ? expanded[0]! : { ...expanded[0]!, runtimeList: element.runtimeList };
   } finally {
     state.active.pop();
   }
