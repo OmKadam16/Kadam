@@ -358,6 +358,14 @@ errors. Warnings (such as contrast) never open it: the terminal prints them and
 the browser console gets a one-line summary. The overlay loads its own
 stylesheet, so it is styled on every page.
 
+### 5.4c Where an element is written
+
+`/__kadam/source` returns, for every `data-kdm-id` in the last good build,
+the element's name, kind, project-relative file, absolute path, line and
+column (of its name), and its component if it came from one. The client uses
+it for Alt-click (Option-click): a panel shows the location with Copy and
+Open in editor (`vscode://file/...`).
+
 ### 5.5 Port selection
 
 - Default `3000`; `--port <n>` sets it explicitly; `--port 0` is allowed and

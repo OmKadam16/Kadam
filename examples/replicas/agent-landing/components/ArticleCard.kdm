@@ -24,7 +24,7 @@ component ArticleCard takes a figure as text, a caption as text, a title as text
             figure1 {
                 a paragraph
                 the text says "{$figure}"
-            the letter spacing is -1.5px
+                the letter spacing is -1.5px
                 the text is 44px
                 the text is #111110
                 the line height is 1

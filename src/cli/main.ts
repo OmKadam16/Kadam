@@ -19,6 +19,10 @@ import {
   sep,
 } from "node:path";
 import { compileText } from "../compiler/compile.js";
+import { startLanguageServer } from "../lsp/server.js";
+import { runFormatCommand } from "./format-command.js";
+import { runNewCommand } from "./new-command.js";
+import { runExplainCommand } from "./explain-command.js";
 import { compileWebComponents } from "../compiler/web-components.js";
 import { compileProject } from "../compiler/project.js";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
@@ -93,6 +97,24 @@ if (first === "check") {
 
 if (first === "keywords") {
   process.exit(runKeywordsCommand(args.slice(1)));
+}
+
+if (first === "explain") {
+  process.exit(runExplainCommand(args.slice(1)));
+}
+
+if (first === "new") {
+  process.exit(runNewCommand(args.slice(1)));
+}
+
+if (first === "format") {
+  process.exit(runFormatCommand(args.slice(1)));
+}
+
+if (first === "lsp") {
+  // Runs until the editor sends exit; nothing else may write to stdout.
+  startLanguageServer();
+  await new Promise(() => {});
 }
 
 if (first === "dev") {
@@ -256,7 +278,7 @@ if (first === "build") {
 
 console.error(
   `kadam: '${args.join(" ")}' is not available.\n` +
-    "The CLI provides build, check, dev, keywords, and parse. Run kadam --help for usage.\n" +
+    "The CLI provides build, check, dev, explain, format, keywords, lsp, new, and parse. Run kadam --help for usage.\n" +
     "See docs/roadmap.md for the implementation plan.",
 );
 process.exit(1);
@@ -585,6 +607,12 @@ Commands:
   dev [project] [options]             Start the development server with live reload
   keywords [--colors|--core|          Print reserved words or property names
            --properties|--all]        (add --json for JSON)
+  explain [code...] [--json]          Explain a diagnostic code, such as KDM3005,
+                                       or list every code
+  new <dir> [--template <name>]       Start a project from a template (--list shows them)
+  format [paths...] [--check]         Rewrite .kdm files in the canonical layout;
+                                       --check only reports, for CI
+  lsp                                 Run the language server over stdio, for editors
 
 Build and check options:
   -p, --project <dir>                 Project directory containing kadam.json

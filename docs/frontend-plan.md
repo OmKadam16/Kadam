@@ -489,6 +489,15 @@ it.
   exists).
 - **Dogfooding:** the Kadam documentation site is written in Kadam.
 
+**F7 status (2026-11-26).** Shipped: `kadam explain` (all 99 codes, kept
+complete by a test), `kadam new` (seven templates from the reference
+projects), `kadam format` (whitespace only, `--check` for CI, proven not to
+change any example's output), `kadam lsp` (diagnostics, completion, hover,
+go to definition, formatting; tested over stdio), and Alt-click in
+`kadam dev` to see an element's source line. See `docs/tooling.md`.
+Still open: state-preserving reload, a published VS Code extension, and the
+documentation site written in Kadam.
+
 ### F8 — Rich visuals and immersive UI (later; after F3 and F4)
 
 The long-term goal is that Kadam can build both calm static pages and

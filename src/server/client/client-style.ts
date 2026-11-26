@@ -125,6 +125,37 @@ export const CLIENT_STYLE = `/* Kadam development server. Not part of generated 
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
 }
 
+#kadam-source {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+}
+
+#kadam-source[hidden] {
+  display: none;
+}
+
+#kadam-source button,
+#kadam-source a {
+  font: inherit;
+  color: #93c5fd;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 #kadam-badge[hidden] {
   display: none;
 }

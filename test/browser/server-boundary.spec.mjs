@@ -10,6 +10,12 @@ import { expect, test } from "@playwright/test";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 let TARGET = "typescript";
+// Every generated server a test starts is stopped afterwards, even when the test fails.
+const running = new Set();
+test.afterEach(() => {
+  for (const child of running) child.kill();
+  running.clear();
+});
 
 /** Build the fixture (optionally with a changed module) and run its server. */
 async function start(changeModule = (text) => text, target = TARGET, extraArgs = []) {
@@ -25,6 +31,7 @@ async function start(changeModule = (text) => text, target = TARGET, extraArgs =
   const child = target === "python"
     ? spawn("python3", ["-u", join(out, "server/server.py")], { env: { ...process.env, PORT: "0" } })
     : spawn(process.execPath, ["--experimental-strip-types", "--no-warnings", join(out, "server/server.ts")], { env: { ...process.env, PORT: "0" } });
+  running.add(child);
   const origin = await new Promise((resolve, reject) => {
     let output = "";
     child.stdout.on("data", (chunk) => {

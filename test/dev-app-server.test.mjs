@@ -98,3 +98,16 @@ test("kadam dev runs a python server module the same way", async (t) => {
   assert.equal(server.rebuild().ok, true);
   assert.equal((await names(server.origin))[0], "Torch");
 });
+
+test("the dev server says where each element is written, for Alt-click", async (t) => {
+  const { server } = await start(t, copyFixture());
+  const sources = await (await fetch(`${server.origin}/__kadam/source`)).json();
+  assert.deepEqual(sources["home-signupForm"], {
+    name: "signupForm", kind: "form", file: "pages/index.kdm", absolute: sources["home-signupForm"].absolute, line: 34, column: 5,
+  });
+  assert.ok(sources["home-signupForm"].absolute.endsWith("pages/index.kdm"));
+  const card = Object.values(sources).find((entry) => entry.component === "ItemCard");
+  assert.equal(card.file, "components/ItemCard.kdm");
+  const client = await (await fetch(`${server.origin}/__kadam/client.js`)).text();
+  assert.match(client, /if \(!event\.altKey\) return;/);
+});

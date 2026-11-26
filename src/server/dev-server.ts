@@ -149,6 +149,10 @@ export async function createDevServer(
       sendJson(res, 200, session.status, headOnly);
       return;
     }
+    if (pathname === `${DEV_PREFIX}/source`) {
+      sendJson(res, 200, session.sourceLocations, headOnly);
+      return;
+    }
     if (pathname === `${DEV_PREFIX}/client.js`) {
       sendBody(res, 200, CLIENT_SCRIPT, "text/javascript; charset=utf-8", headOnly);
       return;

@@ -287,6 +287,54 @@ export const CLIENT_SCRIPT = String.raw`(function () {
     };
   }
 
+  // F7: Alt-click (Option-click) an element to see where it is written.
+  var sourcePanel = null;
+  function showSource(entry) {
+    if (sourcePanel === null) {
+      sourcePanel = document.createElement("div");
+      sourcePanel.id = "kadam-source";
+      sourcePanel.setAttribute("role", "status");
+      document.body.appendChild(sourcePanel);
+    }
+    sourcePanel.textContent = "";
+    var title = document.createElement("div");
+    title.className = "kadam-source-title";
+    title.textContent = entry.name + " (" + entry.kind + (entry.component ? ", from " + entry.component : "") + ")";
+    var where = entry.file + ":" + entry.line + ":" + entry.column;
+    var place = document.createElement("button");
+    place.type = "button";
+    place.className = "kadam-source-location";
+    place.textContent = where;
+    place.setAttribute("aria-label", "Copy location " + where);
+    place.addEventListener("click", function () { copy(where); });
+    var open = document.createElement("a");
+    open.className = "kadam-source-open";
+    open.href = "vscode://file" + encodeURI(entry.absolute) + ":" + entry.line + ":" + entry.column;
+    open.textContent = "Open in editor";
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "kadam-source-close";
+    close.textContent = "Close";
+    close.addEventListener("click", function () { sourcePanel.hidden = true; });
+    sourcePanel.appendChild(title);
+    sourcePanel.appendChild(place);
+    sourcePanel.appendChild(open);
+    sourcePanel.appendChild(close);
+    sourcePanel.hidden = false;
+  }
+  document.addEventListener("click", function (event) {
+    if (!event.altKey) return;
+    var target = event.target && event.target.closest ? event.target.closest("[data-kdm-id]") : null;
+    if (target === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    var id = target.getAttribute("data-kdm-id");
+    fetch("/__kadam/source", { cache: "no-store" })
+      .then(function (response) { return response.json(); })
+      .then(function (sources) { if (sources[id]) showSource(sources[id]); })
+      .catch(function () {});
+  }, true);
+
   ensureOverlay();
   connect();
 })();`;

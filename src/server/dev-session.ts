@@ -54,6 +54,19 @@ export interface BuildOutcome {
   readonly sources: readonly SourceFile[];
 }
 
+/** F7: where an element on a built page was written. */
+export interface SourceLocation {
+  readonly name: string;
+  readonly kind: string;
+  /** Project-relative, with `/`. */
+  readonly file: string;
+  readonly absolute: string;
+  readonly line: number;
+  readonly column: number;
+  /** Set when the element comes from a component. */
+  readonly component?: string;
+}
+
 export interface DevSessionOptions {
   readonly projectRoot: string;
   readonly basePath?: string | undefined;
@@ -89,6 +102,7 @@ export class DevSession {
   /** Markdown documents the last build read; they are inputs too. */
   #latestDocuments: readonly string[] = [];
   #routes: readonly RouteSummary[] = [];
+  #sources: Readonly<Record<string, SourceLocation>> = {};
   #sourceOverrides: ReadonlyMap<string, string | Uint8Array> = new Map();
   #basePath = "";
   #outDir: string;
@@ -98,6 +112,11 @@ export class DevSession {
     this.#outDir = resolve(this.projectRoot, "dist");
     this.#basePathOption = options.basePath;
     this.#now = options.now ?? Date.now;
+  }
+
+  /** F7: source locations of the last successful build's elements, by `data-kdm-id`. */
+  get sourceLocations(): Readonly<Record<string, SourceLocation>> {
+    return this.#sources;
   }
 
   /** Every file of the last successful build, including the generated server (D-44). */
@@ -217,6 +236,23 @@ export class DevSession {
       route: page.route,
       title: page.title,
     }));
+    // F7: where each element came from, for Alt-click in the browser.
+    const sources: Record<string, SourceLocation> = {};
+    for (const page of result.pages) {
+      for (const entry of page.sourceMap) {
+        const file = projectRelative(entry.span.file, this.projectRoot);
+        sources[entry.nodeId] = {
+          name: entry.name,
+          kind: entry.kind,
+          file,
+          absolute: resolve(this.projectRoot, file),
+          line: entry.nameSpan.start.line,
+          column: entry.nameSpan.start.column,
+          ...(entry.componentOrigin === undefined ? {} : { component: entry.componentOrigin.component }),
+        };
+      }
+    }
+    this.#sources = sources;
     this.#status = {
       buildId: next.buildId,
       phase: "success",

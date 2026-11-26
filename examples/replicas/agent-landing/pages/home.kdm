@@ -156,7 +156,7 @@ page "Lumen Machines" {
                 a container
                 it stretches its children
 
-                                it is 300px wide
+                it is 300px wide
                 it does not shrink
                 has a #F7F7F5 background
                 has a 1px #E6E5E1 border on the right
@@ -285,12 +285,12 @@ page "Lumen Machines" {
 
                 it stretches its children
 
-                                it grows to fill the space
+                it grows to fill the space
                 it has 14px padding
                 it has 16px gap between children
                 chatBar {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it spreads its children apart
                     it centers its children vertically
                     chatTitle {
@@ -308,7 +308,7 @@ page "Lumen Machines" {
                 }
                 promptRow {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     promptBubble {
                         a paragraph
                         the text says "Migrate the C++ ledger to Rust. Keep decimal precision and the existing behavior."
@@ -374,7 +374,7 @@ page "Lumen Machines" {
                 }
                 composer {
                     a container
-                                        it sits at the end
+                    it sits at the end
                     it arranges its children in a row
                     it spreads its children apart
                     it centers its children vertically
@@ -402,7 +402,7 @@ page "Lumen Machines" {
 
                 it stretches its children
 
-                                it is 400px wide
+                it is 400px wide
                 it does not shrink
                 has a 1px #E6E5E1 border on the left
                 it has 14px padding
@@ -410,7 +410,7 @@ page "Lumen Machines" {
                 on tablets, it is hidden
                 reviewTabs {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it has 14px gap between children
                     tabPr {
                         a paragraph
@@ -432,7 +432,7 @@ page "Lumen Machines" {
                 }
                 statusRow {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it spreads its children apart
                     it centers its children vertically
                     openPill {
@@ -479,7 +479,7 @@ page "Lumen Machines" {
                 }
                 mergeRow {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it spreads its children apart
                     it centers its children vertically
                     has a 1px #E6E5E1 border
@@ -504,7 +504,7 @@ page "Lumen Machines" {
                 }
                 reviewSections {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it has 14px gap between children
                     has a 1px #ECEBE7 border on the bottom
                     it has 8px padding on the bottom
@@ -666,10 +666,10 @@ page "Lumen Machines" {
 
                 it stretches its children
 
-                                it is hidden unless suite is "terminal"
+                it is hidden unless suite is "terminal"
                 termLumen {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -704,7 +704,7 @@ page "Lumen Machines" {
                 }
                 termCodex {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -739,7 +739,7 @@ page "Lumen Machines" {
                 }
                 termPi {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -774,7 +774,7 @@ page "Lumen Machines" {
                 }
                 termDevin {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -815,10 +815,10 @@ page "Lumen Machines" {
 
                 it stretches its children
 
-                                it is hidden unless suite is "deep"
+                it is hidden unless suite is "deep"
                 deepLumen {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -853,7 +853,7 @@ page "Lumen Machines" {
                 }
                 deepCodex {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -894,10 +894,10 @@ page "Lumen Machines" {
 
                 it stretches its children
 
-                                it is hidden unless suite is "atlas"
+                it is hidden unless suite is "atlas"
                 atlasLumen {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -932,7 +932,7 @@ page "Lumen Machines" {
                 }
                 atlasPi {
                     a container
-                                        it arranges its children in a row
+                    it arranges its children in a row
                     it centers its children vertically
                     it has 20px gap between children
                     has a 1px #ECEBE7 border on the top
@@ -1417,7 +1417,7 @@ page "Lumen Machines" {
             it has 56px gap between children
             footerTop {
                 a container
-                                it arranges its children in a row
+                it arranges its children in a row
                 it wraps its children
                 it has 48px gap between children
                 footerBrand {
@@ -1553,7 +1553,7 @@ page "Lumen Machines" {
             }
             footerBottom {
                 a container
-                                it arranges its children in a row
+                it arranges its children in a row
                 it spreads its children apart
                 copyright {
                     a paragraph
