@@ -1,0 +1,1573 @@
+kadam 0.3
+
+// A Kadam replica of an AI-agent product landing page, built to test how
+// close the language gets to a real, polished design. Brand, people and
+// company names are stand-ins.
+page "Lumen Machines" {
+    the page description says "Lumen helps your AI agents work together, for less."
+    the page background is #FCFCFC
+    the page text is #1C1C1C
+    the page font is sans serif
+
+    banner {
+        a container
+        it is full width
+        has a #000000 background
+        it has 6px padding on the top and bottom
+        it arranges its children in a row
+        it centers its children horizontally
+        it centers its children vertically
+        it has 6px gap between children
+        bannerMark {
+            a paragraph
+            the text says "Y"
+            the text is 9px
+            the text is bold
+            the text is #FFFFFF
+            has a #F26522 background
+            it has 1px padding on the top and bottom
+            it has 3px padding on the left and right
+        }
+        bannerText {
+            a paragraph
+            the text says "Backed by a startup accelerator (F26)"
+            the text is 12px
+            the text is #FFFFFF
+        }
+    }
+
+    siteHeader {
+        a header
+        it sticks to the top
+        the layer is 20
+        has a #FCFCFCE6 background
+        it blurs the background behind it by 8px
+        it has 12px padding on the top and bottom
+        it has 24px padding on the left and right
+        headerRow {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it arranges its children in a row
+            it spreads its children apart
+            it centers its children vertically
+            brandRow {
+                a container
+                it arranges its children in a row
+                it centers its children vertically
+                it has 10px gap between children
+                brandDot {
+                    a container
+                    it is 13px wide
+                    it is 13px tall
+                    has fully rounded corners
+                    has a #111110 background
+                }
+                brandName {
+                    a paragraph
+                    the text says "Lumen Machines"
+                    the text is 16px
+                    the text is #111110
+                }
+            }
+            startButton {
+                a button
+                the text says "Get started"
+                the text is 15px
+                the text weight is 420
+                has a #111110 background
+                has fully rounded corners
+                it has 10px padding on the top and bottom
+                it has 18px padding on the left and right
+                when hovered, the background turns #3A3A38
+                when clicked, go to "closing"
+            }
+        }
+    }
+
+    hero {
+        a section
+        it has 96px padding on the top
+        it has 24px padding on the left and right
+        it has 40px padding on the bottom
+        it has 22px gap between children
+        heroTitle {
+            a main heading
+            the letter spacing is -1.32px
+            the text says "Meet Lumen, the most effective agent you can run."
+            the text is between 2rem and 2.75rem
+            the text weight is 420
+            the text is #111110
+            the line height is 1.08
+            it is full width
+            it is at most 1320px wide
+            it is centered
+        }
+        heroLead {
+            a paragraph
+            the text says "Lumen helps you get the most out of AI for the least spend."
+            the text is 19px
+            the text is #62615D
+            the line height is 1.5
+            it is full width
+            it is at most 1320px wide
+            it is centered
+        }
+        heroActions {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it has 10px padding on the top
+            downloadButton {
+                a button
+                the text says "Download for macOS"
+                the text is 17px
+                the text weight is 420
+                has a #111110 background
+                has fully rounded corners
+                it has 15px padding on the top and bottom
+                it has 22px padding on the left and right
+                when hovered, the background turns #3A3A38
+                when pressed, it scales to 98%
+                when clicked, go to "closing"
+            }
+        }
+
+        appWindow {
+            a container
+
+            it stretches its children
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it is 560px tall
+            has a #FFFFFF background
+            has a 1px #E6E5E1 border
+            has 10px rounded corners
+            has a soft shadow
+            it hides overflow
+            it arranges its children in a row
+            it has 34px margin on the top
+            on phones, it is hidden
+
+            sidebar {
+                a container
+                it stretches its children
+
+                                it is 300px wide
+                it does not shrink
+                has a #F7F7F5 background
+                has a 1px #E6E5E1 border on the right
+                it has 14px padding
+                it has 2px gap between children
+                lights {
+                    a container
+                    it arranges its children in a row
+                    it has 7px gap between children
+                    it has 14px padding on the bottom
+                    lightStop {
+                        a container
+                        it is 12px wide
+                        it is 12px tall
+                        has fully rounded corners
+                        has a #FF5F57 background
+                    }
+                    lightWait {
+                        a container
+                        it is 12px wide
+                        it is 12px tall
+                        has fully rounded corners
+                        has a #FEBC2E background
+                    }
+                    lightGo {
+                        a container
+                        it is 12px wide
+                        it is 12px tall
+                        has fully rounded corners
+                        has a #28C840 background
+                    }
+                }
+                navNew {
+                    a paragraph
+                    the line height is 1.3
+                    the text says "+  New"
+                    the text is 13px
+                    the text is #111110
+                    it has 5px padding on the top and bottom
+                    it has 8px padding on the left and right
+                }
+                navSearch {
+                    a paragraph
+                    the line height is 1.3
+                    the text says "Search"
+                    the text is 13px
+                    the text is #111110
+                    it has 5px padding on the top and bottom
+                    it has 8px padding on the left and right
+                }
+                navAutomations {
+                    a paragraph
+                    the line height is 1.3
+                    the text says "Automations"
+                    the text is 13px
+                    the text is #111110
+                    it has 5px padding on the top and bottom
+                    it has 8px padding on the left and right
+                }
+                navCustomize {
+                    a paragraph
+                    the line height is 1.3
+                    the text says "Customize"
+                    the text is 13px
+                    the text is #111110
+                    it has 5px padding on the top and bottom
+                    it has 8px padding on the left and right
+                }
+                groupLabel {
+                    a paragraph
+                    the text says "Agents"
+                    the text is 11px
+                    the text is #8D8C87
+                    it has 10px padding on the top
+                    it has 4px padding on the bottom
+                    it has 8px padding on the left and right
+                }
+                agentLumen {
+                    an AgentRow
+                    with a title of "Lumen"
+                    with a note of "While you were away: the flaky checkout test is fixed."
+                    with a tint of "#111110"
+                }
+                agentOncall {
+                    an AgentRow
+                    with a title of "Platform on-call"
+                    with a note of "Two pages overnight, both resolved and written up."
+                    with a tint of "#F26B1D"
+                }
+                agentWeb {
+                    an AgentRow
+                    with a title of "Web app"
+                    with a note of "Done for this week: 14 patch and minor upgrades."
+                    with a tint of "#8B5E3C"
+                }
+                agentBilling {
+                    an AgentRow
+                    with a title of "Billing"
+                    with a note of "Three failed charges, all expired cards; emails sent."
+                    with a tint of "#3B5BDB"
+                }
+                agentDesign {
+                    an AgentRow
+                    with a title of "Design review"
+                    with a note of "Left six comments; the empty state needs a pass."
+                    with a tint of "#8E44C9"
+                }
+                agentRelease {
+                    an AgentRow
+                    with a title of "Release train"
+                    with a note of "42 pull requests, canary clean, promoted at noon."
+                    with a tint of "#2F9E55"
+                }
+                showMore {
+                    a paragraph
+                    the text says "Show more"
+                    the text is 12px
+                    the text is #62615D
+                    it has 8px padding on the top
+                    it has 8px padding on the left and right
+                }
+            }
+
+            chat {
+                a container
+
+                it stretches its children
+
+                                it grows to fill the space
+                it has 14px padding
+                it has 16px gap between children
+                chatBar {
+                    a container
+                                        it arranges its children in a row
+                    it spreads its children apart
+                    it centers its children vertically
+                    chatTitle {
+                        a paragraph
+                        the text says "Migrate the C++ ledger to Rust"
+                        the text is 13px
+                        the text is #111110
+                    }
+                    chatMore {
+                        a paragraph
+                        the text says "..."
+                        the text is 13px
+                        the text is #8D8C87
+                    }
+                }
+                promptRow {
+                    a container
+                                        it arranges its children in a row
+                    promptBubble {
+                        a paragraph
+                        the text says "Migrate the C++ ledger to Rust. Keep decimal precision and the existing behavior."
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.45
+                        has a #F1F1EF background
+                        has 12px rounded corners
+                        it has 10px padding on the top and bottom
+                        it has 14px padding on the left and right
+                        it is at most 280px wide
+                        it sits at the end
+                    }
+                }
+                workedFor {
+                    a paragraph
+                    the text says "›  Worked for 31s"
+                    the text is 12px
+                    the text is #8D8C87
+                }
+                answerOne {
+                    a paragraph
+                    the text says "The ledger rounds half away from zero on display. I will keep that rule in a Decimal-backed Amount type."
+                    the words "Decimal" are code
+                    the words "Amount" are code
+                    the text is 13px
+                    the text is #1C1C1C
+                    the line height is 1.5
+                }
+                answerTwo {
+                    a paragraph
+                    the text says "All 128 parity tests passed, including rounding boundaries, negative balances, and invalid records."
+                    the words "128 parity tests passed" are bold
+                    the text is 13px
+                    the text is #1C1C1C
+                    the line height is 1.5
+                }
+                answerThree {
+                    a paragraph
+                    the text says "The pull request is ready for your review."
+                    the text is 13px
+                    the text is #1C1C1C
+                }
+                waiting {
+                    a container
+                    it arranges its children in a row
+                    it centers its children vertically
+                    it has 8px gap between children
+                    it has 12px padding on the top
+                    waitingDot {
+                        a container
+                        it is 7px wide
+                        it is 7px tall
+                        has fully rounded corners
+                        has a #F2994A background
+                    }
+                    waitingText {
+                        a paragraph
+                        the text says "Lumen is waiting for instructions"
+                        the text is 12px
+                        the text is #8D8C87
+                    }
+                }
+                composer {
+                    a container
+                                        it sits at the end
+                    it arranges its children in a row
+                    it spreads its children apart
+                    it centers its children vertically
+                    has a 1px #E6E5E1 border
+                    has 14px rounded corners
+                    it has 10px padding on the top and bottom
+                    it has 14px padding on the left and right
+                    composerHint {
+                        a paragraph
+                        the text says "+   Ask Lumen to build features, fix bugs, or work on your code"
+                        the text is 12px
+                        the text is #8D8C87
+                    }
+                    composerModel {
+                        a paragraph
+                        the text says "Model · Medium"
+                        the text is 12px
+                        the text is #62615D
+                    }
+                }
+            }
+
+            review {
+                a container
+
+                it stretches its children
+
+                                it is 400px wide
+                it does not shrink
+                has a 1px #E6E5E1 border on the left
+                it has 14px padding
+                it has 12px gap between children
+                on tablets, it is hidden
+                reviewTabs {
+                    a container
+                                        it arranges its children in a row
+                    it has 14px gap between children
+                    tabPr {
+                        a paragraph
+                        the text says "PR #142"
+                        the text is 12px
+                        the text is #111110
+                        has a #F1F1EF background
+                        has 6px rounded corners
+                        it has 3px padding on the top and bottom
+                        it has 8px padding on the left and right
+                    }
+                    tabChanges {
+                        a paragraph
+                        the text says "Changes"
+                        the text is 12px
+                        the text is #62615D
+                        it has 3px padding on the top and bottom
+                    }
+                }
+                statusRow {
+                    a container
+                                        it arranges its children in a row
+                    it spreads its children apart
+                    it centers its children vertically
+                    openPill {
+                        a paragraph
+                        the text says "Open"
+                        the text is 12px
+                        the text is #1E7F45
+                        has a #E3F5EA background
+                        has 6px rounded corners
+                        it has 3px padding on the top and bottom
+                        it has 9px padding on the left and right
+                    }
+                    reviewButton {
+                        a paragraph
+                        the text says "Review"
+                        the text is 12px
+                        the text is #111110
+                        has a 1px #E6E5E1 border
+                        has 6px rounded corners
+                        it has 4px padding on the top and bottom
+                        it has 10px padding on the left and right
+                    }
+                }
+                repoName {
+                    a paragraph
+                    the text says "northstar/platform · #142"
+                    the text is 12px
+                    the text is #8D8C87
+                }
+                prTitle {
+                    a minor heading
+                    the text says "Migrate the C++ ledger to Rust"
+                    the text is 16px
+                    the text is semibold
+                    the text is #111110
+                }
+                prMeta {
+                    a paragraph
+                    the text says "Opened 2 months ago · 2 files · +25 −4"
+                    the words "+25" are #1E7F45
+                    the words "−4" are #D64545
+                    the text is 12px
+                    the text is #8D8C87
+                }
+                mergeRow {
+                    a container
+                                        it arranges its children in a row
+                    it spreads its children apart
+                    it centers its children vertically
+                    has a 1px #E6E5E1 border
+                    has 8px rounded corners
+                    it has 8px padding
+                    mergeState {
+                        a paragraph
+                        the text says "Open"
+                        the text is 12px
+                        the text is #111110
+                    }
+                    mergeButton {
+                        a paragraph
+                        the text says "Merge"
+                        the text is 12px
+                        the text is #FFFFFF
+                        has a #111110 background
+                        has fully rounded corners
+                        it has 5px padding on the top and bottom
+                        it has 12px padding on the left and right
+                    }
+                }
+                reviewSections {
+                    a container
+                                        it arranges its children in a row
+                    it has 14px gap between children
+                    has a 1px #ECEBE7 border on the bottom
+                    it has 8px padding on the bottom
+                    sectionChanges {
+                        a paragraph
+                        the text says "Changes 2"
+                        the text is 12px
+                        the text is #62615D
+                    }
+                    sectionDescription {
+                        a paragraph
+                        the text says "Description"
+                        the text is 12px
+                        the text is #111110
+                        has a #F1F1EF background
+                        has 6px rounded corners
+                        it has 2px padding on the top and bottom
+                        it has 8px padding on the left and right
+                    }
+                    sectionDiscussion {
+                        a paragraph
+                        the text says "Discussion 0"
+                        the text is 12px
+                        the text is #62615D
+                    }
+                }
+                prBody {
+                    a paragraph
+                    the text says "Keeps decimal precision and file formats. All 128 parity tests pass."
+                    the text is 13px
+                    the text is #1C1C1C
+                    the line height is 1.5
+                }
+            }
+        }
+    }
+
+    proof {
+        a section
+        it has 56px padding on the top and bottom
+        it has 24px padding on the left and right
+        it has 12px gap between children
+        logoRow {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it arranges its children in a row
+            it centers its children vertically
+            it has 28px gap between children
+            it wraps its children
+            lovedTitle {
+                a small heading
+                the text says "♥  Loved by 20,000+ engineers at"
+                the words "♥" are #E5484D
+                the text is 16px
+                the text weight is 420
+                the text is #62615D
+            }
+            logoOne {
+                a paragraph
+                the text says "Boardwalk"
+                the text is 16px
+                the text is #8D8C87
+            }
+            logoTwo {
+                a paragraph
+                the text says "Superframe"
+                the text is 16px
+                the text is #8D8C87
+            }
+            logoThree {
+                a paragraph
+                the text says "Databank"
+                the text is 16px
+                the text is #8D8C87
+            }
+            logoFour {
+                a paragraph
+                the text says "ZOOMR"
+                the text is 18px
+                the text is bold
+                the text is #8D8C87
+            }
+            logoFive {
+                a paragraph
+                the text says "Harbor"
+                the text is 16px
+                the text is #8D8C87
+            }
+            logoSix {
+                a paragraph
+                the text says "Framewise"
+                the text is 16px
+                the text is #8D8C87
+            }
+        }
+        quotes {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it arranges its children in columns at least 250px wide
+            it has 8px gap between children
+            quoteOne {
+                a Quote
+                with a person of "Nadia"
+                with a handle of "@nadia_builds · Nov 2, 2026"
+                with a body of "Just tried Lumen and wow. It is what every coding bot should have been."
+            }
+            quoteTwo {
+                a Quote
+                with a person of "Joel Hart"
+                with a handle of "@joelhart · Nov 2, 2026"
+                with a body of "Living the dream: Lumen on my laptop, driving my desktop over SSH with my own subscription."
+            }
+            quoteThree {
+                a Quote
+                with a person of "Yara"
+                with a handle of "@yara_writes · Oct 25, 2026"
+                with a body of "My ranking of AI software engineers: 1. Lumen. 2. Everything else."
+            }
+            quoteFour {
+                a Quote
+                with a person of "Colin"
+                with a handle of "@colin_ex · Oct 21, 2026"
+                with a body of "It came back with 9 real issues. Every one had steps, a screenshot and a fix."
+            }
+        }
+    }
+
+    bench {
+        a section
+        it has 64px padding on the top and bottom
+        it has 24px padding on the left and right
+        it has 32px gap between children
+        it remembers suite, a text that starts as "terminal"
+        benchTitle {
+            a section heading
+            the letter spacing is -1.1px
+            the text says "Lumen is frontier while being the absolute cheapest."
+            the text is between 2rem and 2.75rem
+            the text weight is 420
+            the text is #111110
+            the line height is 1.1
+            it is full width
+            it is at most 1320px wide
+            it is centered
+        }
+        chart {
+            a container
+            it stretches its children
+            it is full width
+            it is at most 808px wide
+            it is centered
+
+            barsTerminal {
+                a container
+
+                it stretches its children
+
+                                it is hidden unless suite is "terminal"
+                termLumen {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    it has 10px padding on the top and bottom
+                    termLumenName {
+                        a paragraph
+                        the text says "Lumen\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    termLumenTrack {
+                        a container
+                        it grows to fill the space
+                        termLumenBar {
+                            a container
+                            it is 100% wide
+                            it is 18px tall
+                            has a #1E6EF4 background
+                        }
+                    }
+                    termLumenValue {
+                        a paragraph
+                        the text says "59.1%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+                termCodex {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    it has 10px padding on the top and bottom
+                    termCodexName {
+                        a paragraph
+                        the text says "Codex\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    termCodexTrack {
+                        a container
+                        it grows to fill the space
+                        termCodexBar {
+                            a container
+                            it is 98% wide
+                            it is 18px tall
+                            has a #DCDCDA background
+                        }
+                    }
+                    termCodexValue {
+                        a paragraph
+                        the text says "58.2%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+                termPi {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    it has 10px padding on the top and bottom
+                    termPiName {
+                        a paragraph
+                        the text says "Pi\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    termPiTrack {
+                        a container
+                        it grows to fill the space
+                        termPiBar {
+                            a container
+                            it is 93% wide
+                            it is 18px tall
+                            has a #DCDCDA background
+                        }
+                    }
+                    termPiValue {
+                        a paragraph
+                        the text says "55.0%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+                termDevin {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    has a 1px #ECEBE7 border on the bottom
+                    it has 10px padding on the top and bottom
+                    termDevinName {
+                        a paragraph
+                        the text says "Cognition\nDevin · GPT-6 Astra + SWE-2"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    termDevinTrack {
+                        a container
+                        it grows to fill the space
+                        termDevinBar {
+                            a container
+                            it is 85% wide
+                            it is 18px tall
+                            has a #DCDCDA background
+                        }
+                    }
+                    termDevinValue {
+                        a paragraph
+                        the text says "50.0%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+            }
+
+            barsDeep {
+                a container
+
+                it stretches its children
+
+                                it is hidden unless suite is "deep"
+                deepLumen {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    it has 10px padding on the top and bottom
+                    deepLumenName {
+                        a paragraph
+                        the text says "Lumen\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    deepLumenTrack {
+                        a container
+                        it grows to fill the space
+                        deepLumenBar {
+                            a container
+                            it is 100% wide
+                            it is 18px tall
+                            has a #1E6EF4 background
+                        }
+                    }
+                    deepLumenValue {
+                        a paragraph
+                        the text says "71.4%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+                deepCodex {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    has a 1px #ECEBE7 border on the bottom
+                    it has 10px padding on the top and bottom
+                    deepCodexName {
+                        a paragraph
+                        the text says "Codex\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    deepCodexTrack {
+                        a container
+                        it grows to fill the space
+                        deepCodexBar {
+                            a container
+                            it is 90% wide
+                            it is 18px tall
+                            has a #DCDCDA background
+                        }
+                    }
+                    deepCodexValue {
+                        a paragraph
+                        the text says "64.3%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+            }
+
+            barsAtlas {
+                a container
+
+                it stretches its children
+
+                                it is hidden unless suite is "atlas"
+                atlasLumen {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    it has 10px padding on the top and bottom
+                    atlasLumenName {
+                        a paragraph
+                        the text says "Lumen\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    atlasLumenTrack {
+                        a container
+                        it grows to fill the space
+                        atlasLumenBar {
+                            a container
+                            it is 100% wide
+                            it is 18px tall
+                            has a #1E6EF4 background
+                        }
+                    }
+                    atlasLumenValue {
+                        a paragraph
+                        the text says "48.7%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+                atlasPi {
+                    a container
+                                        it arranges its children in a row
+                    it centers its children vertically
+                    it has 20px gap between children
+                    has a 1px #ECEBE7 border on the top
+                    has a 1px #ECEBE7 border on the bottom
+                    it has 10px padding on the top and bottom
+                    atlasPiName {
+                        a paragraph
+                        the text says "Pi\nGPT-6 Astra"
+                        the text is 13px
+                        the text is #111110
+                        the line height is 1.25
+                        it is 160px wide
+                        it does not shrink
+                    }
+                    atlasPiTrack {
+                        a container
+                        it grows to fill the space
+                        atlasPiBar {
+                            a container
+                            it is 81% wide
+                            it is 18px tall
+                            has a #DCDCDA background
+                        }
+                    }
+                    atlasPiValue {
+                        a paragraph
+                        the text says "39.5%"
+                        the text is 13px
+                        the text is #111110
+                        it is 48px wide
+                        the text is right aligned
+                    }
+                }
+            }
+        }
+        suiteTabs {
+            a container
+            it arranges its children in a row
+            it is centered
+            has a #ECECEA background
+            has 10px rounded corners
+            it has 4px padding
+            it has 4px gap between children
+            tabDeep {
+                a button
+                the text says "DeepSWE"
+                the text is 13px
+                the text weight is 420
+                has 8px rounded corners
+                it has 7px padding on the top and bottom
+                it has 12px padding on the left and right
+                the text is #62615D
+                has no background
+                has a 1px #ECECEA border
+                when suite is "deep", the text is #111110
+                when suite is "deep", has a #FFFFFF background
+                when suite is "deep", has a 1px #111110 border
+                when clicked, set suite to "deep"
+            }
+            tabTerminal {
+                a button
+                the text says "Terminal-Bench"
+                the text is 13px
+                the text weight is 420
+                has 8px rounded corners
+                it has 7px padding on the top and bottom
+                it has 12px padding on the left and right
+                the text is #62615D
+                has no background
+                has a 1px #ECECEA border
+                when suite is "terminal", the text is #111110
+                when suite is "terminal", has a #FFFFFF background
+                when suite is "terminal", has a 1px #111110 border
+                when clicked, set suite to "terminal"
+            }
+            tabAtlas {
+                a button
+                the text says "SWE-Atlas QnA"
+                the text is 13px
+                the text weight is 420
+                has 8px rounded corners
+                it has 7px padding on the top and bottom
+                it has 12px padding on the left and right
+                the text is #62615D
+                has no background
+                has a 1px #ECECEA border
+                when suite is "atlas", the text is #111110
+                when suite is "atlas", has a #FFFFFF background
+                when suite is "atlas", has a 1px #111110 border
+                when clicked, set suite to "atlas"
+            }
+        }
+        benchNote {
+            a paragraph
+            the text says "Benchmarks: our own runs of three public suites, alongside published results from other teams that we did not run. Method, sources and raw data are linked from the report."
+            the words "Method, sources and raw data" are underlined
+            the text is 12px
+            the text is #62615D
+            the line height is 1.55
+            the text is centered
+            it is at most 570px wide
+        }
+    }
+
+    howTo {
+        a section
+        it has 64px padding on the top and bottom
+        it has 24px padding on the left and right
+        it has 32px gap between children
+        howTitle {
+            a section heading
+            the letter spacing is -1.1px
+            the text says "How to use Lumen."
+            the text is between 2rem and 2.75rem
+            the text weight is 420
+            the text is #111110
+            it is full width
+            it is at most 1320px wide
+            it is centered
+        }
+        ways {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it arranges its children in columns at least 300px wide
+            it has 12px gap between children
+
+            wayApi {
+                a container
+                it has 10px gap between children
+                apiArt {
+                    a container
+                    it is full width
+                    it is 470px tall
+                    has a #B9BDC2 and #E4E5E6 gradient
+                    the gradient goes at 180deg
+                    has 4px rounded corners
+                    it hides overflow
+                    it has 96px padding on the top
+                    it has 72px padding on the left
+                    apiCode {
+                        a code block
+                        it is full width
+                        the text says "curl api.lumen.dev/v3/sessions \\\n  -H \"Authorization: Bearer $LUMEN_KEY\" \\\n  -d '{\"prompt\": \"Fix the flaky checkout test\"}'\n\n{\n  \"session_id\": \"ses_8f21c...\",\n  \"status\": \"running\"\n}"
+                        the text is 13px
+                        the text is #E8E8E6
+                        has a #161616 background
+                        has 6px rounded corners on the top left
+                        it has 18px padding
+                        the line height is 1.7
+                        it grows to fill the space
+                    }
+                }
+                apiName {
+                    a minor heading
+                    the text says "API"
+                    the text is 20px
+                    the text weight is 420
+                    the text is #111110
+                    it has 8px padding on the top
+                }
+                apiText {
+                    a paragraph
+                    the text says "Start a session from a script, a CI job or your own product. Poll it, stream it, read the result."
+                    the text is 16px
+                    the text is #8D8C87
+                    the line height is 1.5
+                }
+                apiLink {
+                    a link
+                    the text says "Read the API docs →"
+                    the text is 14px
+                    the text is #111110
+                    the text is not underlined
+                    when clicked, go to "closing"
+                }
+            }
+
+            wayApp {
+                a container
+                it has 10px gap between children
+                appArt {
+                    a container
+                    it is full width
+                    it is 470px tall
+                    has a #BFC6CF and #E8EAEC gradient
+                    the gradient goes at 180deg
+                    has 4px rounded corners
+                    it hides overflow
+                    it has 96px padding on the top
+                    it has 72px padding on the left
+                    appList {
+                        a container
+                        it is full width
+                        it grows to fill the space
+                        has a #FFFFFF background
+                        has 6px rounded corners on the top left
+                        it has 12px padding
+                        it has 2px gap between children
+                        appToggle {
+                            a paragraph
+                            the text says "Agents    Teammates"
+                            the words "Agents" are bold
+                            the text is 13px
+                            the text is #111110
+                            it has 10px padding on the bottom
+                        }
+                        appRowOne {
+                            a paragraph
+                            the text says "Platform on-call\nTeammate · Maya, Sam, Daniel"
+                            the text is 13px
+                            the text is #111110
+                            the line height is 1.45
+                            has a 1px #ECEBE7 border on the bottom
+                            it has 8px padding on the top and bottom
+                        }
+                        appRowTwo {
+                            a paragraph
+                            the text says "●  Port the ledger to Rust\n    Lumen"
+                            the words "●" are #3B5BDB
+                            the text is 13px
+                            the text is #111110
+                            the line height is 1.45
+                            has a 1px #ECEBE7 border on the bottom
+                            it has 8px padding on the top and bottom
+                        }
+                        appRowThree {
+                            a paragraph
+                            the text says "●  Fix flaky checkout e2e test\n    Claude Code"
+                            the words "●" are #2F9E55
+                            the text is 13px
+                            the text is #111110
+                            the line height is 1.45
+                            has a 1px #ECEBE7 border on the bottom
+                            it has 8px padding on the top and bottom
+                        }
+                        appRowFour {
+                            a paragraph
+                            the text says "●  Add rate limiting to the API\n    Codex"
+                            the words "●" are #2F9E55
+                            the text is 13px
+                            the text is #111110
+                            the line height is 1.45
+                            it has 8px padding on the top and bottom
+                        }
+                    }
+                }
+                appName {
+                    a minor heading
+                    the text says "App"
+                    the text is 20px
+                    the text weight is 420
+                    the text is #111110
+                    it has 8px padding on the top
+                }
+                appText {
+                    a paragraph
+                    the text says "Your teammates and your agents in one app. Give an agent a name and a team, and run other coding agents beside it."
+                    the text is 16px
+                    the text is #8D8C87
+                    the line height is 1.5
+                }
+                appLink {
+                    a link
+                    the text says "Download the app →"
+                    the text is 14px
+                    the text is #111110
+                    the text is not underlined
+                    when clicked, go to "closing"
+                }
+            }
+
+            wayChat {
+                a container
+                it has 10px gap between children
+                chatArt {
+                    a container
+                    it is full width
+                    it is 470px tall
+                    has a #C3C7CC and #EADFD8 gradient
+                    the gradient goes at 180deg
+                    has 4px rounded corners
+                    it hides overflow
+                    it has 96px padding on the top
+                    it has 72px padding on the left
+                    chatCard {
+                        a container
+                        it is full width
+                        it grows to fill the space
+                        has a #FFFFFF background
+                        has 6px rounded corners on the top left
+                        it has 12px padding
+                        it has 10px gap between children
+                        channel {
+                            a paragraph
+                            the text says "# engineering"
+                            the text is 13px
+                            the text is #111110
+                        }
+                        askLine {
+                            a paragraph
+                            the text says "Daniel  10:42 AM\n@Lumen make the Q3 reliability review deck from the incident log."
+                            the words "@Lumen" are #1E6EF4
+                            the text is 13px
+                            the text is #111110
+                            the line height is 1.45
+                        }
+                        replyLine {
+                            a paragraph
+                            the text says "Lumen  APP  10:49 AM\nDone: 12 slides. Uptime was 99.97%; every chart is attached."
+                            the text is 13px
+                            the text is #111110
+                            the line height is 1.45
+                        }
+                        fileChip {
+                            a paragraph
+                            the text says "PPTX  Q3-reliability-review.pptx"
+                            the words "PPTX" are #D64545
+                            the text is 12px
+                            the text is #111110
+                            has a 1px #ECEBE7 border
+                            has 6px rounded corners
+                            it has 5px padding on the top and bottom
+                            it has 8px padding on the left and right
+                            it is as wide as its content
+                        }
+                    }
+                }
+                chatName {
+                    a minor heading
+                    the text says "Slack"
+                    the text is 20px
+                    the text weight is 420
+                    the text is #111110
+                    it has 8px padding on the top
+                }
+                chatText {
+                    a paragraph
+                    the text says "Mention @Lumen in a thread. It replies with the pull request, the deck or the answer when it is done."
+                    the text is 16px
+                    the text is #8D8C87
+                    the line height is 1.5
+                }
+                chatLink {
+                    a link
+                    the text says "Add to Slack →"
+                    the text is 14px
+                    the text is #111110
+                    the text is not underlined
+                    when clicked, go to "closing"
+                }
+            }
+        }
+    }
+
+    articles {
+        a section
+        it has 64px padding on the top and bottom
+        it has 24px padding on the left and right
+        it has 18px gap between children
+        articlesBar {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it arranges its children in a row
+            it spreads its children apart
+            it centers its children vertically
+            articlesTitle {
+                a small heading
+                the text says "|  Articles"
+                the text is 14px
+                the text weight is 420
+                the text is #8D8C87
+            }
+            arrows {
+                a container
+                it arranges its children in a row
+                it has 6px gap between children
+                arrowBack {
+                    a paragraph
+                    the text says "‹"
+                    the text is 16px
+                    the text is #C7C6C1
+                    has a #F1F1EF background
+                    has 4px rounded corners
+                    it has 4px padding on the top and bottom
+                    it has 10px padding on the left and right
+                }
+                arrowNext {
+                    a paragraph
+                    the text says "›"
+                    the text is 16px
+                    the text is #111110
+                    has a 1px #E6E5E1 border
+                    has 4px rounded corners
+                    it has 4px padding on the top and bottom
+                    it has 10px padding on the left and right
+                }
+            }
+        }
+        articleGrid {
+            a container
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            it arranges its children in columns at least 240px wide
+            it has 8px gap between children
+            articleOne {
+                an ArticleCard
+                with a figure of "Aspen"
+                with a caption of "Scaling agent commits beyond what Git was built for"
+                with a title of "Aspen: scaling agent commits beyond what Git was built for"
+                with a date of "2026.11.05"
+            }
+            articleTwo {
+                an ArticleCard
+                with a figure of "γ ≤ 0.8244"
+                with a caption of "A tighter upper bound, found with Lumen"
+                with a title of "An improved upper bound for a classic constant"
+                with a date of "2026.10.27"
+            }
+            articleThree {
+                an ArticleCard
+                with a figure of "22%"
+                with a caption of "lower cost per solved task"
+                with a title of "Introducing Lumen 1.1"
+                with a date of "2026.10.10"
+            }
+            articleFour {
+                an ArticleCard
+                with a figure of "39%"
+                with a caption of "lower median solving time"
+                with a title of "Introducing Lumen 1.0"
+                with a date of "2026.09.14"
+            }
+        }
+    }
+
+    closing {
+        a section
+        it has 110px padding on the top and bottom
+        it has 24px padding on the left and right
+        it has 24px gap between children
+        it centers its children horizontally
+        closingTitle {
+            a section heading
+            the letter spacing is -1.8px
+            the text says "More AI usage, for less cost."
+            the text is between 2.25rem and 3.75rem
+            the text weight is 420
+            the text is #111110
+            the text is centered
+        }
+        closingButton {
+            a button
+            the text says "Download for macOS"
+            the text is 17px
+            the text weight is 420
+            has a #111110 background
+            has fully rounded corners
+            it has 15px padding on the top and bottom
+            it has 22px padding on the left and right
+            when hovered, the background turns #3A3A38
+            when clicked, go to "hero"
+        }
+    }
+
+    siteFooter {
+        a footer
+        it has 24px padding on the left and right
+        it has 40px padding on the bottom
+        footerInner {
+            a container
+            it stretches its children
+            it is full width
+            it is at most 1320px wide
+            it is centered
+            has a 1px #ECEBE7 border on the top
+            it has 44px padding on the top
+            it has 56px gap between children
+            footerTop {
+                a container
+                                it arranges its children in a row
+                it wraps its children
+                it has 48px gap between children
+                footerBrand {
+                    a container
+                    it is 420px wide
+                    it has 18px gap between children
+                    footerBrandRow {
+                        a container
+                        it arranges its children in a row
+                        it centers its children vertically
+                        it has 10px gap between children
+                        footerDot {
+                            a container
+                            it is 13px wide
+                            it is 13px tall
+                            has fully rounded corners
+                            has a #111110 background
+                        }
+                        footerName {
+                            a paragraph
+                            the text says "Lumen Machines"
+                            the text is 16px
+                            the text is #111110
+                        }
+                    }
+                    footerBacked {
+                        a paragraph
+                        the text says "Backed by a startup accelerator (F26)"
+                        the text is 13px
+                        the text is #62615D
+                    }
+                }
+                colProduct {
+                    a container
+                    it is 140px wide
+                    it has 9px gap between children
+                    colProductTitle {
+                        a paragraph
+                        the text says "Product"
+                        the text is 14px
+                        the text is #8D8C87
+                    }
+                    linkDownload {
+                        a FooterLink
+                        with a label of "Download"
+                    }
+                    linkDesktop {
+                        a FooterLink
+                        with a label of "Desktop app"
+                    }
+                    linkNetwork {
+                        a FooterLink
+                        with a label of "Lumen Network"
+                    }
+                    linkEmployees {
+                        a FooterLink
+                        with a label of "AI employees"
+                    }
+                    linkGuides {
+                        a FooterLink
+                        with a label of "Guides"
+                    }
+                    linkDocs {
+                        a FooterLink
+                        with a label of "Docs"
+                    }
+                }
+                colCompany {
+                    a container
+                    it is 200px wide
+                    it has 9px gap between children
+                    colCompanyTitle {
+                        a paragraph
+                        the text says "Company"
+                        the text is 14px
+                        the text is #8D8C87
+                    }
+                    linkBlog {
+                        a FooterLink
+                        with a label of "Blog"
+                    }
+                    linkCareers {
+                        a FooterLink
+                        with a label of "Careers"
+                    }
+                    linkContact {
+                        a FooterLink
+                        with a label of "Contact"
+                    }
+                }
+                colLegal {
+                    a container
+                    it is 140px wide
+                    it has 9px gap between children
+                    colLegalTitle {
+                        a paragraph
+                        the text says "Legal"
+                        the text is 14px
+                        the text is #8D8C87
+                    }
+                    linkPrivacy {
+                        a FooterLink
+                        with a label of "Privacy"
+                    }
+                    linkTerms {
+                        a FooterLink
+                        with a label of "Terms"
+                    }
+                    linkTrust {
+                        a FooterLink
+                        with a label of "Trust center"
+                    }
+                }
+                colConnect {
+                    a container
+                    it is 100px wide
+                    it has 9px gap between children
+                    colConnectTitle {
+                        a paragraph
+                        the text says "Connect"
+                        the text is 14px
+                        the text is #8D8C87
+                    }
+                    linkX {
+                        a FooterLink
+                        with a label of "X"
+                    }
+                    linkLinkedin {
+                        a FooterLink
+                        with a label of "LinkedIn"
+                    }
+                }
+            }
+            footerBottom {
+                a container
+                                it arranges its children in a row
+                it spreads its children apart
+                copyright {
+                    a paragraph
+                    the text says "© 2026 Lumen Machines"
+                    the text is 14px
+                    the text is #8D8C87
+                }
+                language {
+                    a paragraph
+                    the text says "English"
+                    the text is 14px
+                    the text is #111110
+                }
+            }
+        }
+    }
+}

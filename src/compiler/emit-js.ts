@@ -31,6 +31,9 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   if (runtime.visibilityBindings.length > 0) {
     lines.push(`const shown = ${json(runtime.visibilityBindings.map((b) => [b.nodeId, b.key, b.value, b.attribute]))};`);
   }
+  if (runtime.whenBindings.length > 0) {
+    lines.push(`const styled = ${json(runtime.whenBindings.map((b) => [b.nodeId, b.key, b.value, b.attribute]))};`);
+  }
   if (runtime.controllers.length > 0) {
     lines.push(`const controllers = ${json(runtime.controllers.map((c) => [c.nodeId, c.targets, c.key]))};`);
   }
@@ -50,6 +53,9 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   }
   if (runtime.visibilityBindings.length > 0) {
     render.push("  for (const [id, key, value, attribute] of shown) nodes.get(id).toggleAttribute(attribute, state.get(key) !== value);");
+  }
+  if (runtime.whenBindings.length > 0) {
+    render.push("  for (const [id, key, value, attribute] of styled) nodes.get(id).toggleAttribute(attribute, state.get(key) === value);");
   }
   if (runtime.controllers.length > 0) {
     render.push(

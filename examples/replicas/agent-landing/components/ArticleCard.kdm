@@ -1,0 +1,53 @@
+kadam 0.3
+
+component ArticleCard takes a figure as text, a caption as text, a title as text, a date as text {
+    article1 {
+        a container
+        it has 10px gap between children
+        art1 {
+            a container
+            it is full width
+            it keeps a 16 by 9 shape
+            has a #C9D3DD and #EAD9DA gradient
+            the gradient goes at 180deg
+            has a 1px #D9DCE0 border
+            it has 16px padding
+            it arranges its children in a column
+            it spreads its children apart
+            dot1 {
+                a container
+                it is 8px wide
+                it is 8px tall
+                has fully rounded corners
+                has a #111110 background
+            }
+            figure1 {
+                a paragraph
+                the text says "{$figure}"
+            the letter spacing is -1.5px
+                the text is 44px
+                the text is #111110
+                the line height is 1
+            }
+            caption1 {
+                a paragraph
+                the text says "{$caption}"
+                the text is 9px
+                the text is #3A3A38
+            }
+        }
+        title1 {
+            a paragraph
+            the text says "{$title}"
+            the text is 14px
+            the text is #111110
+            the line height is 1.35
+        }
+        date1 {
+            a paragraph
+            the text says "{$date}"
+            the text is 12px
+            the text is #8D8C87
+        }
+    }
+}

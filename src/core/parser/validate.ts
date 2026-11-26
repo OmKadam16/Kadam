@@ -347,6 +347,7 @@ function scopeKey(statement: ResponsiveStatement | ScopedStatement): string {
   if (statement.type === "responsive") return statement.breakpoint;
   const scope = statement.scope;
   if (scope.kind === "dark") return "dark mode";
+  if (scope.kind === "state") return `when ${scope.state.name}${scope.state.owner === null ? "" : ` of ${scope.state.owner}`} is ${JSON.stringify(scope.value.value)}`;
   return scope.kind === "breakpoint"
     ? `${scope.name} screens`
     : `parent ${scope.comparison} than ${scope.width.raw}`;
@@ -1214,7 +1215,7 @@ function propertyKeys(statement: StatementNode): string[] {
       // Same property as `the text is 18px`.
       return ["text-size"];
     case "flex-rule":
-      return [statement.rule === "wrap" ? "flex-wrap" : "child-spacing"];
+      return [statement.rule === "wrap" ? "flex-wrap" : statement.rule === "stretch" ? "child-stretch" : "child-spacing"];
     case "child-rule":
       return [`child-${statement.rule}`];
     case "grid":

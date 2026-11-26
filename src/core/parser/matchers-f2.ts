@@ -313,6 +313,10 @@ export function matchFlexRule(tokens: readonly Token[]): Body {
   if (tokens.length === 5 && words(tokens.slice(1), "spaces", "its", "children", "evenly")) {
     return ok({ type: "flex-rule", rule: "even", span });
   }
+  // Children fill the cross axis: full width in a column, full height in a row.
+  if (tokens.length === 4 && words(tokens.slice(1), "stretches", "its", "children")) {
+    return ok({ type: "flex-rule", rule: "stretch", span });
+  }
   return null;
 }
 

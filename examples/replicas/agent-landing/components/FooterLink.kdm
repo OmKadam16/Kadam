@@ -1,0 +1,13 @@
+kadam 0.3
+
+component FooterLink takes a label as text {
+    link1 {
+        a link
+        the text says "{$label}"
+        the text is 14px
+        the text is #111110
+        the text is not underlined
+        when hovered, the text turns #62615D
+        when clicked, go to "banner"
+    }
+}

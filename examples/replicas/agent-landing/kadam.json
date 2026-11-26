@@ -1,0 +1,6 @@
+{
+  "kadam": "0.3",
+  "name": "agent-landing",
+  "components": ["components/AgentRow.kdm", "components/Quote.kdm", "components/ArticleCard.kdm", "components/FooterLink.kdm"],
+  "pages": [{ "source": "pages/home.kdm", "route": "/" }]
+}

@@ -1605,6 +1605,56 @@ state.
 
 ---
 
+### 6.28 Finer typography, words and state styles (*kadam 0.3*)
+
+These came from replicating a polished landing page in Kadam.
+
+```kdm
+heroTitle {
+    a main heading
+    the text says "Ready for review: +25 −4 in Amount"
+    the letter spacing is -1.3px
+    the text weight is 420
+    the words "+25" are #1E7F45
+    the words "−4" are red
+    the words "Amount" are code
+    the words "review" are underlined
+}
+column1 {
+    a container
+    it stretches its children
+}
+tabTerminal {
+    a button
+    the text says "Terminal-Bench"
+    when suite is "terminal", has a #FFFFFF background
+    when suite is "terminal", has a 1px #111110 border
+    when clicked, set suite to "terminal"
+}
+```
+
+- **Negative letter spacing.** `the letter spacing is -1.3px` may be negative.
+  Any other negative value is `KDM3005`; sentences that move things say the
+  direction instead (`it moves by 4px to the left`). A hyphen inside a word or
+  quoted text is not a minus sign.
+- **Numeric weights.** `the text weight is 420` takes a whole number from 100
+  to 900, besides `light`, `regular`, `medium`, `semibold` and `bold`.
+- **More inline spans.** Besides `are bold`, `are italic` and links, words can
+  be `are code`, `are underlined`, or `are <color>` (hex, named, or a theme
+  color). Colored words get one class per color in the page CSS, never an
+  inline style.
+- **`it stretches its children`** makes a container's children fill its cross
+  axis: full width in a column, full height in a row. Without it, children in
+  a column keep their own width.
+- **Styles that follow state.** `when <state> [of <element>] is <value>,` before
+  any statement allowed after `on phones,` applies it while the state has that
+  value. The state must exist and the value must have its type (`KDM3012`,
+  `KDM3005`). The element carries a `data-kdm-when-...` attribute from the
+  start when the state's starting value matches, so it looks right before the
+  page script runs and without JavaScript; the runtime keeps it in step.
+
+---
+
 ## 7. Events and interactions
 
 Events are declarative. There are no handlers, expressions, or user-written

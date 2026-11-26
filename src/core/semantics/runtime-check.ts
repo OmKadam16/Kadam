@@ -66,6 +66,7 @@ export function usesRuntime(elements: readonly ElementNode[]): boolean {
       (element) =>
         kindOf(element) === "dialog" ||
         element.statements.some((statement) => {
+          if (statement.type === "scoped" && statement.scope.kind === "state") return true;
           const type = inner(statement).type;
           return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden" || type === "data-load" || type === "form-state";
         }) ||
@@ -240,6 +241,10 @@ export function checkRuntime(
   const visit = (list: readonly ElementNode[]): void => {
     for (const element of list) {
       for (const scoped of element.statements) {
+        // kadam 0.3: a style that follows a state names a real state, with a value of its type.
+        if (scoped.type === "scoped" && scoped.scope.kind === "state") {
+          literal(state(scoped.scope.state, element, null, "a style that follows state"), scoped.scope.value);
+        }
         const statement = inner(scoped);
         if (statement.type === "event") {
           for (const item of statement.effects) effect(item, element);

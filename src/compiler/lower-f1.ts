@@ -163,8 +163,12 @@ export function lowerTextSegments(
     pushPlain(text.value.slice(cursor, start));
     const words = span.target;
     const effect = span.effect;
-    if (effect.type === "bold" || effect.type === "italic" || effect.type === "code") {
+    if (effect.type === "bold" || effect.type === "italic" || effect.type === "code" || effect.type === "underline") {
       segments.push({ type: effect.type, text: words });
+    } else if (effect.type === "color") {
+      const css = effect.color.kind === "token" ? `var(--kdm-color-${effect.color.value})` : effect.color.value;
+      const key = (effect.color.kind === "token" ? effect.color.value : effect.color.value.replace(/^#/, "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      segments.push({ type: "color", text: words, color: css, className: `kdm-words-${key}` });
     } else if (effect.type === "external") {
       segments.push({ type: "link", text: words, href: effect.url, external: true });
     } else {

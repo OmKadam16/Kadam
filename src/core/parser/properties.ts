@@ -126,7 +126,7 @@ export const PROPERTIES: readonly PropertyDefinition[] = [
     build: (value, span) => ({
       type: "typography",
       property: "weight",
-      value: choice(value) as FontWeight,
+      value: /^\d+$/.test(choice(value)) ? Number(choice(value)) : (choice(value) as FontWeight),
       span,
     }),
   },
@@ -408,6 +408,13 @@ function readChoice(
   diagnostics: DiagnosticSpec[],
 ): PropertyValue | null {
   const choices = definition.choices ?? {};
+  // kadam 0.3: a numeric weight, `the text weight is 420`.
+  if (definition.name === "text weight" && tokens.length === 1 && tokens[0]!.kind === "number") {
+    const weight = Number(tokens[0]!.value);
+    if (Number.isInteger(weight) && weight >= 100 && weight <= 900) return { type: "choice", value: String(weight) };
+    diagnostics.push(invalid(definition, `text weight ${tokens[0]!.text} must be a whole number from 100 to 900`, tokens[0]!.span));
+    return null;
+  }
   const words = normalizeWords(tokens);
   const stored = choices[words];
   if (stored !== undefined) return { type: "choice", value: stored };

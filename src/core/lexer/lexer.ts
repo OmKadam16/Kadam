@@ -92,6 +92,16 @@ export function lex(source: SourceFile): LexResult {
       continue;
     }
 
+    // kadam 0.3: a negative length, `-1.3px`, directly before a digit. Only
+    // `the letter spacing is ...` accepts one; the parser rejects the rest.
+    if (character === "-" && isDigit(text[index + 1] ?? "") && (index === 0 || !isAsciiAlphaNumeric(text[index - 1]!))) {
+      const result = scanNumber(source, text, index + 1, diagnostics);
+      const value = -result.value;
+      push(result.kind, start, result.end, result.unit === undefined ? { value } : { value, unit: result.unit });
+      index = result.end;
+      continue;
+    }
+
     if (isDigit(character)) {
       const result = scanNumber(source, text, index, diagnostics);
       const extra =

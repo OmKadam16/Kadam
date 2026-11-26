@@ -240,6 +240,7 @@ export interface BaseCssUsage {
   /** Any text uses an inline link span. */
   readonly inlineLinks: boolean;
   readonly inlineCode?: boolean;
+  readonly inlineUnderline?: boolean;
   /** kadam 0.3 (F4): a field has an error message. */
   readonly fieldErrors?: boolean;
   /** kadam 0.3 (F4): a card or container is a link. */
@@ -253,12 +254,14 @@ export function baseCssUsage(pages: readonly PageIR[]): BaseCssUsage {
   const kinds = new Set<BuiltinKindName>();
   let inlineLinks = false;
   let inlineCode = false;
+  let inlineUnderline = false;
   let fieldErrors = false;
   let clickableBoxes = false;
   const visit = (element: IrElement): void => {
     kinds.add(element.kind);
     if (element.text?.segments?.some((segment) => segment.type === "link") === true) inlineLinks = true;
     if (element.text?.segments?.some((segment) => segment.type === "code") === true) inlineCode = true;
+    if (element.text?.segments?.some((segment) => segment.type === "underline") === true) inlineUnderline = true;
     if (element.field?.error !== undefined) fieldErrors = true;
     if ((element.kind === "card" || element.kind === "container") && element.action !== null) clickableBoxes = true;
     element.children.forEach(visit);
@@ -268,6 +271,7 @@ export function baseCssUsage(pages: readonly PageIR[]): BaseCssUsage {
     kinds,
     inlineLinks,
     ...(inlineCode ? { inlineCode } : {}),
+    ...(inlineUnderline ? { inlineUnderline } : {}),
     ...(fieldErrors ? { fieldErrors } : {}),
     ...(clickableBoxes ? { clickableBoxes } : {}),
   };
@@ -378,6 +382,9 @@ function f1BaseRules(usage: BaseCssUsage): string[] {
   if (usage.inlineLinks) {
     out.push(cssRule(".kdm-inline-link", [["color", GLOBAL_TOKENS.accent], ["text-decoration", "underline"]]));
   }
+  if (usage.inlineUnderline === true) {
+    out.push(cssRule(".kdm-inline-underline", [["text-decoration", "underline"]]));
+  }
   if (usage.inlineCode === true) {
     out.push(cssRule(".kdm-inline-code", [
       ["font-family", "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"],
@@ -415,6 +422,16 @@ export function emitPageCss(page: PageIR): string {
   ];
 
   const elements = uniqueByClassName(flatten(page.elements));
+  // kadam 0.3: one rule per color that inline words use.
+  const wordColors = new Map<string, string>();
+  for (const element of flatten(page.elements)) {
+    for (const segment of element.text?.segments ?? []) {
+      if (segment.type === "color" && !wordColors.has(segment.className)) wordColors.set(segment.className, segment.color);
+    }
+  }
+  for (const [className, value] of [...wordColors].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    blocks.push(cssRule(`.${className}`, [["color", value]]));
+  }
   for (const element of elements) {
     blocks.push(...baseRules(element));
     for (const rule of element.rules ?? []) {
@@ -441,7 +458,9 @@ export function emitPageCss(page: PageIR): string {
   for (const element of elements) {
     for (const scope of element.scopes ?? []) {
       const entry = scoped.get(scope.query) ?? { order: scope.order, rules: [] };
-      entry.rules.push(...responsiveRules(element, scope.authored, scope.style));
+      const rules = responsiveRules(element, scope.authored, scope.style);
+      // kadam 0.3: a state style is the element's own selector plus the attribute the runtime sets.
+      entry.rules.push(...(scope.query.startsWith("[") ? rules.map((rule) => rule.split(`.${element.className}`).join(`.${element.className}${scope.query}`)) : rules));
       scoped.set(scope.query, entry);
     }
   }
@@ -449,6 +468,10 @@ export function emitPageCss(page: PageIR): string {
     .filter(([, entry]) => entry.rules.length > 0)
     .sort(([a, x], [b, y]) => x.order - y.order || (a < b ? -1 : a > b ? 1 : 0));
   for (const [query, entry] of scopedBlocks) {
+    if (query.startsWith("[")) {
+      blocks.push(...entry.rules);
+      continue;
+    }
     const body = entry.rules.map((rule) => indent(rule)).join("\n\n");
     blocks.push(`${query} {\n${body}\n}`);
   }

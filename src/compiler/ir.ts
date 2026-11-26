@@ -80,7 +80,7 @@ export interface IrLayout {
 export interface IrTypography {
   readonly fontFamily: FontFamily;
   readonly fontSize: IrLength;
-  readonly fontWeight: 300 | 400 | 500 | 600 | 700;
+  readonly fontWeight: number;
   readonly fontStyle: "normal" | "italic";
   readonly textAlign: TextAlign;
   readonly color: IrColor;
@@ -263,7 +263,9 @@ export interface IrTextContent {
 export type IrTextSegment =
   | { readonly type: "text"; readonly text: string }
   | { readonly type: "break" }
-  | { readonly type: "bold" | "italic" | "code"; readonly text: string }
+  | { readonly type: "bold" | "italic" | "code" | "underline"; readonly text: string }
+  /** kadam 0.3: colored words; `className` names the page CSS rule that colors them. */
+  | { readonly type: "color"; readonly text: string; readonly color: string; readonly className: string }
   | { readonly type: "link"; readonly text: string; readonly href: string; readonly external: boolean };
 
 /** kadam 0.3 content for kinds that need more than text, image, or field. */

@@ -1,0 +1,62 @@
+kadam 0.3
+
+component Quote takes a person as text, a handle as text, a body as text {
+    quote1 {
+        a card
+        it is full width
+        has a white background
+        has a 1px #ECEBE7 border
+        has 4px rounded corners
+        has no shadow
+        it has 12px padding
+        it has 8px gap between children
+        it stretches its children
+        top1 {
+            a container
+            it arranges its children in a row
+            it centers its children vertically
+            it has 8px gap between children
+            face1 {
+                a container
+                it is 26px wide
+                it is 26px tall
+                it does not shrink
+                has fully rounded corners
+                has a #D9D8D3 and #9A9993 gradient
+                the gradient goes at 135deg
+            }
+            who1 {
+                a container
+                it grows to fill the space
+                person1 {
+                    a paragraph
+                    the text says "{$person}"
+                    the text is 13px
+                    the text is #111110
+                    the line height is 1.3
+                }
+                handle1 {
+                    a paragraph
+                    the text says "{$handle}"
+                    the text is 12px
+                    the text is #8D8C87
+                    the line height is 1.3
+                }
+            }
+            mark1 {
+                a paragraph
+                the text says "X"
+                the text is 12px
+                the text is bold
+                the text is #111110
+            }
+        }
+        body1 {
+            a paragraph
+            the text says "{$body}"
+            the text is 13px
+            the text is #1C1C1C
+            the line height is 1.45
+        }
+    }
+}

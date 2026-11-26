@@ -14,6 +14,7 @@ import {
   isKeyword,
   isString,
   normalizeWords,
+  readColor,
   spanFromTokens,
 } from "./values.js";
 
@@ -207,6 +208,12 @@ export function matchTextSpan(tokens: readonly Token[]): Body {
   if ((isAnyWord(rest[0], "are") || isKeyword(rest[0], "is")) && rest.length === 2) {
     if (isKeyword(rest[1], "bold")) effect = { type: "bold" };
     else if (isKeyword(rest[1], "italic")) effect = { type: "italic" };
+    else if (isAnyWord(rest[1], "code")) effect = { type: "code" };
+    else if (isAnyWord(rest[1], "underlined")) effect = { type: "underline" };
+    else {
+      const color = readColor(rest[1]!);
+      if (color !== null) effect = { type: "color", color };
+    }
   } else if (
     (isKeyword(rest[0], "go") || isKeyword(rest[0], "goes")) &&
     isKeyword(rest[1], "to") &&
@@ -232,7 +239,7 @@ export function matchTextSpan(tokens: readonly Token[]): Body {
     return fail(
       `invalid inline span ${JSON.stringify(describeTokens(rest))}`,
       rest.length > 0 ? rest : tokens,
-      'use: are bold, are italic, go to page "Title", or open "https://..." in a new tab',
+      'use: are bold, are italic, are code, are underlined, are <color>, go to page "Title", or open "https://..." in a new tab',
     );
   }
   return ok({ type: "text-span", target: target.value, targetSpan: target.span, effect, span });

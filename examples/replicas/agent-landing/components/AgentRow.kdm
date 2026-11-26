@@ -1,0 +1,42 @@
+kadam 0.3
+
+component AgentRow takes a title as text, a note as text, a tint as color {
+    row1 {
+        a container
+        it arranges its children in a row
+        it centers its children vertically
+        it has 10px gap between children
+        it has 5px padding on the top and bottom
+        it has 8px padding on the left and right
+        mark1 {
+            a container
+            it is 20px wide
+            it is 20px tall
+            it does not shrink
+            has a "{$tint}" background
+            the css "clip-path" is "polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%)"
+        }
+        words1 {
+            a container
+            it stretches its children
+            it hides overflow
+            it grows to fill the space
+            it has 1px gap between children
+            title1 {
+                a paragraph
+                the text says "{$title}"
+                the text is 13px
+                the text is #111110
+                the line height is 1.3
+            }
+            note1 {
+                a paragraph
+                the text says "{$note}"
+                the text is 11px
+                the text is #8D8C87
+                the line height is 1.3
+                it shows at most 1 line
+            }
+        }
+    }
+}

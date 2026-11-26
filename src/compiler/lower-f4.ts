@@ -1,3 +1,4 @@
+import { stateAttribute } from "./lower-f2.js";
 import type { Breakpoint, Effect, ElementNode, StateLiteral } from "../core/ast/nodes.js";
 import {
   indexPage,
@@ -89,6 +90,8 @@ export interface IrRuntime {
   readonly addressed: readonly (readonly [string, string])[];
   /** F6 (D-42): addresses of the external modules calls import. */
   readonly externals: readonly string[];
+  /** kadam 0.3: elements styled while a state has a value; the attribute is present then. */
+  readonly whenBindings: readonly { readonly nodeId: string; readonly key: string; readonly value: IrStateValue; readonly attribute: string }[];
   /** D-44: forms that send to a server function, as [form id, sent id, failed id, function]. */
   readonly forms: readonly (readonly [string, string, string, string])[];
 }
@@ -143,6 +146,7 @@ export function lowerRuntime(
   const handlers: IrRuntime["handlers"][number][] = [];
   const textBindings: IrRuntime["textBindings"][number][] = [];
   const visibilityBindings: IrRuntime["visibilityBindings"][number][] = [];
+  const whenBindings: IrRuntime["visibilityBindings"][number][] = [];
   const controllers: IrRuntime["controllers"][number][] = [];
   const scopes = new Set<Breakpoint>();
 
@@ -192,6 +196,17 @@ export function lowerRuntime(
   };
   visit(elements, (element) => {
     for (const scoped of element.statements) {
+      // kadam 0.3: `when suite is "terminal", ...` styles follow a state through an attribute.
+      if (scoped.type === "scoped" && scoped.scope.kind === "state") {
+        const scope = scoped.scope;
+        const attribute = stateAttribute(scope);
+        const state = stateFor(scope.state, element);
+        if (!whenBindings.some((binding) => binding.nodeId === nodeIdOf(element) && binding.attribute === attribute)) {
+          whenBindings.push({ nodeId: nodeIdOf(element), key: keyOf(state), value: value(scope.value), attribute });
+          if (state.initial.value === scope.value.value) addAttribute(element, attribute);
+        }
+        continue;
+      }
       const statement = inner(scoped);
       if (statement.type === "starts-hidden") addAttribute(element, "data-kdm-hidden");
       if (statement.type === "visibility-binding") {
@@ -339,6 +354,7 @@ export function lowerRuntime(
         .map((declared) => [keyOf(declared), declared.name] as const),
       externals: modules,
       forms,
+      whenBindings,
     },
     attributes,
     texts,

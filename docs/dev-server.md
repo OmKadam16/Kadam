@@ -351,6 +351,13 @@ logged with a `[server]` prefix.
 - Without a server module, `/_kadam/` answers `503`. The generated server's
   own files are never served as site files.
 
+### 5.4b Error overlay
+
+The overlay opens only when a build fails with errors, and lists only the
+errors. Warnings (such as contrast) never open it: the terminal prints them and
+the browser console gets a one-line summary. The overlay loads its own
+stylesheet, so it is styled on every page.
+
 ### 5.5 Port selection
 
 - Default `3000`; `--port <n>` sets it explicitly; `--port 0` is allowed and

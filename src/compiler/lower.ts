@@ -1336,7 +1336,8 @@ function kindClass(kind: BuiltinKindName): string {
   return `kdm-kind-${kind.replaceAll(" ", "-")}`;
 }
 
-function weightNumber(weight: TypographyStatementValue): 300 | 400 | 500 | 600 | 700 {
+function weightNumber(weight: TypographyStatementValue): number {
+  if (typeof weight === "number") return weight;
   switch (weight) {
     case "light":
       return 300;
@@ -1356,7 +1357,8 @@ type TypographyStatementValue =
   | "regular"
   | "medium"
   | "semibold"
-  | "bold";
+  | "bold"
+  | number;
 
 function hoverDuration(duration: DurationValue | undefined): IrDuration {
   return duration === undefined

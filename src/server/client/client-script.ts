@@ -19,6 +19,13 @@ export const CLIENT_SCRIPT = String.raw`(function () {
 
   function ensureOverlay() {
     if (overlay !== null) return;
+    // Pages link only their own stylesheets; the overlay brings its own.
+    if (document.querySelector('link[href="/__kadam/client.css"]') === null) {
+      var style = document.createElement("link");
+      style.rel = "stylesheet";
+      style.href = "/__kadam/client.css";
+      document.head.appendChild(style);
+    }
     overlay = document.createElement("div");
     overlay.id = "kadam-overlay";
     overlay.setAttribute("role", "alert");
@@ -131,10 +138,17 @@ export const CLIENT_SCRIPT = String.raw`(function () {
     }
   }
 
+  function errorsOf(status) {
+    return (status.diagnostics || []).filter(function (diagnostic) {
+      return diagnostic.severity === "error";
+    });
+  }
+
   function showOverlay(status) {
     ensureOverlay();
-    renderList(status.diagnostics);
-    var count = status.diagnostics.length;
+    var errors = errorsOf(status);
+    renderList(errors);
+    var count = errors.length;
     subtitle.textContent =
       count +
       (count === 1 ? " error" : " errors") +
@@ -154,14 +168,24 @@ export const CLIENT_SCRIPT = String.raw`(function () {
     if (overlay !== null) overlay.hidden = true;
   }
 
+  var warnedBuild = -1;
+
   function applyStatus(status) {
     currentBuild = status.buildId;
-    if (status.diagnostics && status.diagnostics.length > 0) {
+    // Only errors stop a build; warnings go to the console and the terminal.
+    if (status.phase === "failure" && errorsOf(status).length > 0) {
       document.title = "\u25cf " + originalTitle;
       if (dismissedBuild !== status.buildId) showOverlay(status);
     } else {
       document.title = originalTitle;
       hideOverlay();
+      var warnings = (status.diagnostics || []).filter(function (diagnostic) {
+        return diagnostic.severity !== "error";
+      });
+      if (warnings.length > 0 && warnedBuild !== status.buildId) {
+        warnedBuild = status.buildId;
+        console.warn("Kadam: " + warnings.length + (warnings.length === 1 ? " warning" : " warnings") + " (see the terminal)");
+      }
     }
   }
 

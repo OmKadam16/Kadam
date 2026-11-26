@@ -3,7 +3,8 @@ import type { Span } from "../source/source-file.js";
 
 export type Breakpoint = "phones" | "tablets" | "desktops";
 export type FontFamily = "sans serif" | "serif" | "monospace";
-export type FontWeight = "light" | "regular" | "medium" | "semibold" | "bold";
+/** A named weight, or (kadam 0.3) a number from 100 to 900: `the text weight is 420`. */
+export type FontWeight = "light" | "regular" | "medium" | "semibold" | "bold" | number;
 export type TextAlign = "left" | "center" | "right";
 export type Side = "top" | "right" | "bottom" | "left";
 export type GradientDirection =
@@ -482,7 +483,7 @@ export type F2Statement =
   // kadam 0.3: `it is centered` centers the box itself in its parent.
   | (NodeBase & { readonly type: "self-center" })
   | (NodeBase & { readonly type: "fluid-text"; readonly min: LengthValue; readonly max: LengthValue })
-  | (NodeBase & { readonly type: "flex-rule"; readonly rule: "wrap" | "spread" | "even" })
+  | (NodeBase & { readonly type: "flex-rule"; readonly rule: "wrap" | "spread" | "even" | "stretch" })
   | (NodeBase & { readonly type: "child-rule"; readonly rule: "grow" | "no-shrink" | "end" })
   | (NodeBase & {
       readonly type: "grid";
@@ -705,6 +706,8 @@ export interface ScopedStatement extends NodeBase {
 
 export type StatementScope =
   | { readonly kind: "dark" }
+  /** kadam 0.3: `when suite is "terminal", has a #FFFFFF background`. */
+  | { readonly kind: "state"; readonly state: StateReference; readonly value: StateLiteral }
   | { readonly kind: "breakpoint"; readonly name: string; readonly minWidth: number }
   | {
       readonly kind: "container";
@@ -715,8 +718,12 @@ export type StatementScope =
 export type TextSpanEffect =
   | { readonly type: "bold" }
   | { readonly type: "italic" }
-  /** Inline code; only Markdown documents make it. */
+  /** Inline code: `the words "Amount" are code`, or Markdown backticks. */
   | { readonly type: "code" }
+  /** kadam 0.3: `the words "terms" are underlined`. */
+  | { readonly type: "underline" }
+  /** kadam 0.3: `the words "+25" are #1E7F45` (any color value, including theme colors). */
+  | { readonly type: "color"; readonly color: ColorValue }
   | { readonly type: "navigate"; readonly pageTitle: string; readonly pageSpan: Span }
   | { readonly type: "external"; readonly url: string; readonly urlSpan: Span };
 

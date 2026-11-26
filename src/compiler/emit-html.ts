@@ -328,6 +328,10 @@ function renderSegment(segment: IrTextSegment): string {
       return `<em>${escapeText(segment.text)}</em>`;
     case "code":
       return `<code class="kdm-inline-code">${escapeText(segment.text)}</code>`;
+    case "underline":
+      return `<span class="kdm-inline-underline">${escapeText(segment.text)}</span>`;
+    case "color":
+      return `<span class="${segment.className}">${escapeText(segment.text)}</span>`;
     case "link": {
       const external = segment.external ? ' target="_blank" rel="noopener noreferrer"' : "";
       return `<a class="kdm-inline-link" href="${escapeAttribute(segment.href)}"${external}>${escapeText(segment.text)}</a>`;

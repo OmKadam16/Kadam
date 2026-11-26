@@ -162,6 +162,7 @@ function statementDeclarations(statement: StatementNode, parent: F2ParentInfo): 
       return [d("font-size", fluidFontSize(statement.min, statement.max))];
     case "flex-rule":
       if (statement.rule === "wrap") return [d("flex-wrap", "wrap")];
+      if (statement.rule === "stretch") return [d("align-items", "stretch")];
       return [d("justify-content", statement.rule === "spread" ? "space-between" : "space-evenly")];
     case "child-rule":
       if (statement.rule === "grow") return [d("flex-grow", "1")];
@@ -316,6 +317,13 @@ export function arrangementOf(
  * later in the stylesheet: breakpoints by ascending min-width, then
  * `wider than` by ascending width, then `narrower than` by descending width.
  */
+/** `when suite is "terminal",` -> `data-kdm-when-suite-terminal`. */
+export function stateAttribute(scope: Extract<StatementScope, { kind: "state" }>): string {
+  const slug = (text: string): string => text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+  const owner = scope.state.owner === null ? "" : `-${slug(scope.state.owner)}`;
+  return `data-kdm-when-${slug(scope.state.name)}${owner}-${slug(String(scope.value.value))}`;
+}
+
 export function groupScopes(
   element: ElementNode,
 ): readonly { readonly scope: StatementScope; readonly statements: StatementNode[]; readonly order: number; readonly query: string }[] {
@@ -337,6 +345,8 @@ function describeScope(statement: ScopedStatement): { query: string; order: numb
   }
   // Dark mode comes last, so it overrides every other scope (D-38).
   if (scope.kind === "dark") return { query: "@media (prefers-color-scheme: dark)", order: 5_000_000 };
+  // A state style is an attribute selector, not an at-rule; the runtime sets the attribute.
+  if (scope.kind === "state") return { query: `[${stateAttribute(scope)}]`, order: 4_000_000 };
   const width = px(scope.width);
   const operator = scope.comparison === "narrower" ? "<" : ">";
   return {

@@ -101,6 +101,8 @@ import {
   matchTextBinding,
   matchVisibilityBinding,
 } from "./matchers-f4.js";
+import { readStateLiteral, readStateReference } from "./matchers-f4.js";
+import type { StateLiteral, StateReference } from "../ast/nodes.js";
 import { PROPERTIES, matchPropertySentence, propertyNamed } from "./properties.js";
 import { closestMatches } from "./suggest.js";
 import type {
@@ -198,7 +200,7 @@ const F2_TEMPLATES: readonly StatementTemplate[] = [
     examples: ["the text is between 1rem and 2.5rem", "the text size is between 16px and 24px"],
     match: (tokens) => matchFluidText(tokens) },
   { id: "flex-rule", description: "Child wrapping and spacing", since: "0.3",
-    examples: ["it wraps its children", "it spreads its children apart", "it spaces its children evenly"],
+    examples: ["it wraps its children", "it spreads its children apart", "it spaces its children evenly", "it stretches its children"],
     match: (tokens) => matchFlexRule(tokens) },
   { id: "child-rule", description: "Rule for a child in a row or column", since: "0.3",
     examples: ["it grows to fill the space", "it does not shrink", "it sits at the end"],
@@ -688,6 +690,8 @@ export function matchLine(
   context: TemplateContext = DEFAULT_CONTEXT,
   templates: readonly StatementTemplate[] = STATEMENT_TEMPLATES,
 ): MatchLineResult {
+  const negative = negativeValueDiagnostic(tokens);
+  if (negative !== null) return { matches: [], diagnostics: [negative], selected: null };
   const resolved = resolveColorTokens(tokens, context);
   const result = matchLineStatements(resolved, context, templates);
   const unitErrors = newUnitDiagnostics(tokens, context);
@@ -707,6 +711,9 @@ function matchLineStatements(
 
   if (context.allowResponsive && isDarkModeLine(tokens)) {
     return matchDarkLine(tokens, context, templates);
+  }
+  if (context.allowResponsive && stateLineHead(tokens) !== null) {
+    return matchStateLine(tokens, context, templates);
   }
   if (context.allowResponsive && (isCustomBreakpointLine(tokens) || isContainerLine(tokens))) {
     return matchScopedLine(tokens, context, templates);
@@ -1018,6 +1025,49 @@ function matchDarkLine(
   const scoped: ScopedStatement = { type: "scoped", scope: { kind: "dark" }, statement, span };
   const selected = { template: SCOPED_TEMPLATE, body: { statement: scoped, diagnostics } };
   return { matches: [selected], diagnostics, selected };
+}
+
+/** Words after `when` that start other sentences, never a state name. */
+const NOT_STATES: ReadonlySet<string> = new Set(["it", "its", "the", "sending", "clicked", "hovered", "pressed", "focused", "disabled", "checked", "invalid"]);
+
+/** `when <state> [of <element>] is <value>,`: the state, the value, and where the comma is. */
+function stateLineHead(tokens: readonly Token[]): { state: StateReference; value: StateLiteral; comma: number } | null {
+  if (!isAnyWord(tokens[0], "when") || NOT_STATES.has(tokens[1]?.text.toLowerCase() ?? "")) return null;
+  const comma = tokens.findIndex((token) => token.kind === "comma");
+  if (comma < 4) return null;
+  const is = tokens.slice(0, comma).findIndex((token, index) => index > 1 && isKeyword(token, "is"));
+  if (is === -1) return null;
+  const state = readStateReference(tokens.slice(1, is));
+  const value = readStateLiteral(tokens.slice(is + 1, comma));
+  return state === null || value === null ? null : { state, value, comma };
+}
+
+/** kadam 0.3: one style statement that applies while a state has a value. */
+function matchStateLine(tokens: readonly Token[], context: TemplateContext, templates: readonly StatementTemplate[]): MatchLineResult {
+  const head = stateLineHead(tokens)!;
+  const diagnostics: DiagnosticSpec[] = [];
+  const version = context.languageVersion ?? LATEST_UI_LANGUAGE_VERSION;
+  const statement = matchScopedInner(tokens.slice(head.comma + 1), "when a state has a value", tokens[head.comma]!.span, context, templates, diagnostics);
+  if (statement === null) return { matches: [], diagnostics, selected: null };
+  if (!uiVersionAtLeast(version, "0.3")) diagnostics.push(requiresVersion(tokens, "a style that follows state", "0.3", version));
+  const scoped: ScopedStatement = { type: "scoped", scope: { kind: "state", state: head.state, value: head.value }, statement, span: spanFromTokens(tokens) };
+  const selected = { template: SCOPED_TEMPLATE, body: { statement: scoped, diagnostics } };
+  return { matches: [selected], diagnostics, selected };
+}
+
+/** A negative number is allowed only as a letter spacing (`the letter spacing is -1px`). */
+function negativeValueDiagnostic(tokens: readonly Token[]): DiagnosticSpec | null {
+  const at = tokens.findIndex((token) => typeof token.value === "number" && token.value < 0 && token.text.startsWith("-"));
+  if (at === -1) return null;
+  const words = tokens.slice(0, at).map((token) => token.text.toLowerCase());
+  const spacing = words.at(-1) === "is" && words.at(-2) === "spacing" && words.at(-3) === "letter";
+  if (spacing && tokens[at]!.kind === "length" && at === tokens.length - 1) return null;
+  return {
+    code: "KDM3005",
+    message: `${tokens[at]!.text} is negative; only the letter spacing can be negative`,
+    span: tokens[at]!.span,
+    hint: "use a positive value, or a sentence that says the direction, such as it moves by 4px to the left",
+  };
 }
 
 const NEW_UNITS: ReadonlySet<string> = new Set(["em", "vw", "vh", "dvh"]);
