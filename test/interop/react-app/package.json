@@ -1,0 +1,19 @@
+{
+  "name": "kadam-interop-react-app",
+  "private": true,
+  "description": "F6 exit test: Kadam web components inside a Vite + React TypeScript app. Not part of the Kadam package (D-15).",
+  "type": "module",
+  "scripts": {
+    "kadam": "node ../../../dist/cli/main.js build ../../fixtures/web-components --target web-components -o src/kadam-panel && node ../../../dist/cli/main.js build ../../../examples/reference/shop --target web-components -o src/kadam-shop",
+    "typecheck": "tsc -p tsconfig.json",
+    "build": "npm run kadam && npm run typecheck && vite build"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8"
+  }
+}

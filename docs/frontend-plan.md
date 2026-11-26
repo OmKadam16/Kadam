@@ -357,8 +357,25 @@ reference site still writes its pages by hand.
   attributes, variants, slots with fallback, and the new `tell the page
   "select"` event. A browser test checks isolation from host CSS, slots,
   variants, re-rendering, dropped `javascript:` URLs and events.
-- **Step 4, next: TypeScript declarations** (`kadam-elements.d.ts`), then the
-  Vite + React exit test.
+- **Step 4, shipped: TypeScript declarations.** `kadam-elements.d.ts` (tag
+  map, attribute and event types) and `kadam-elements.react.d.ts` (React 19
+  JSX). Unit tests run `tsc --strict` on a TypeScript and a TSX consumer,
+  including expected errors for misuse; the React check uses a small stand-in
+  for React's types.
+- **F6 exit, met (2026-11-25).** `test/interop/react-app` is a Vite + React 19
+  TypeScript app with its own packages (not package dependencies, D-15). Its
+  build makes the elements with the Kadam CLI, type-checks under `tsc --strict`
+  with the real `@types/react` (a misspelled attribute is a type error), and
+  bundles with Vite. `test/browser/interop-react.spec.mjs` drives it under a
+  strict CSP: React state sets attributes and the variant, `onpick` brings the
+  element's event back into React, React renders a list of product cards from
+  data, and the shadow-root button works from the keyboard. The plan named the
+  dashboard reference, but it has no components, so the test uses the shop's
+  ProductCard and the Panel fixture.
+- **Deferred to later steps:** the native React target (`--target react`),
+  importing design tokens from a CSS file, and the Web Components gaps below.
+
+**Next:** back to the backend (section 6), or F9's library, as decided.
 
 **Web Components known gaps:** image, length, color and page parameters;
 components with their own state, dialogs or other events; custom fonts and

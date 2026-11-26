@@ -238,6 +238,14 @@ component in `components` as a custom element, all defined in one module,
   normal build the same sentence dispatches it from the component's element.
 - Every component variant is checked like a page (types, accessibility,
   contrast) before anything is written.
+- **TypeScript:** the build also writes `kadam-elements.d.ts`, which adds each
+  tag to `HTMLElementTagNameMap` and types its attributes
+  (`KadamPanelAttributes`) and events (`addEventListener("pick", ...)` gets a
+  `CustomEvent<null>`), and `kadam-elements.react.d.ts`, which types the tags
+  in React 19 JSX, with `onpick` for events. Import the second one only in a
+  React app (`import type {} from "./kadam-elements.react.js"`). Under
+  `tsc --strict`, a missing required attribute, a misspelled attribute, or an
+  unknown variant is a type error.
 
 Not yet: `image`, `length`, `color` and `page` parameters (`KDM3054`),
 components with their own state or other events (`KDM3055`), custom fonts
