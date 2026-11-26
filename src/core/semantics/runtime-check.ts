@@ -3,6 +3,7 @@ import type {
   Effect,
   ElementNode,
   ElementReference,
+  ExternalDeclaration,
   StateLiteral,
   StateReference,
   StateType,
@@ -104,7 +105,11 @@ export function resolveElement(reference: ElementReference, from: ElementNode, i
   return element;
 }
 
-export function checkRuntime(elements: readonly ElementNode[], diagnostics: DiagnosticBag): void {
+export function checkRuntime(
+  elements: readonly ElementNode[],
+  diagnostics: DiagnosticBag,
+  externals: readonly ExternalDeclaration[] = [],
+): void {
   const index = indexPage(elements);
   const visibilityTargets = new Map<ElementNode, true>();
   const bound = new Set<ElementNode>();
@@ -129,7 +134,8 @@ export function checkRuntime(elements: readonly ElementNode[], diagnostics: Diag
     }
     if (expected !== null && resolved.type !== expected) {
       diagnostics.error("KDM3005", `${what} needs a ${expected} state, but ${resolved.name} is a ${resolved.type}`, reference.span,
-        expected === "boolean" ? "flip and true/false conditions need a boolean" : "add and subtract need a number");
+        what.startsWith("value ") ? `the external declares this value as ${expected === "text" ? "text" : `a ${expected}`}`
+          : expected === "boolean" ? "flip and true/false conditions need a boolean" : "add and subtract need a number");
       return null;
     }
     return resolved;
@@ -195,6 +201,33 @@ export function checkRuntime(elements: readonly ElementNode[], diagnostics: Diag
           diagnostics.error("KDM3012", `nothing on this page loads "${value.source}"`, value.span, "reload names the data an element loads with it loads <name> from \"...\"");
         }
         return;
+      case "call": {
+        // F6 (D-42): the call matches the external's declared types.
+        const external = externals.find((candidate) => candidate.name === value.name);
+        if (external === undefined) {
+          diagnostics.error("KDM3012", `no external named ${value.name} on this page`, value.nameSpan,
+            `declare it in the page body: external ${value.name} from "${value.name}.js" takes text and returns nothing`);
+          return;
+        }
+        if (value.args.length !== external.parameters.length) {
+          const count = (n: number): string => (n === 0 ? "nothing" : n === 1 ? "1 value" : `${n} values`);
+          diagnostics.error("KDM3005", `${value.name} takes ${count(external.parameters.length)}, but this call passes ${count(value.args.length)}`, value.span,
+            external.parameters.length === 0 ? `write: call ${value.name}` : `pass ${external.parameters.map((p) => (p === "text" ? "text" : `a ${p}`)).join(" and ")}`);
+          return;
+        }
+        value.args.forEach((arg, position) => {
+          const expected = external.parameters[position]!;
+          if (arg.kind === "literal") {
+            if (arg.value.kind !== expected) {
+              diagnostics.error("KDM3005", `value ${position + 1} of ${value.name} must be ${expected === "text" ? "text" : `a ${expected}`}`, arg.value.span,
+                `the external declares: takes ${external.parameters.map((p) => (p === "text" ? "text" : `a ${p}`)).join(" and ")}`);
+            }
+          } else {
+            state(arg.state, from, expected, `value ${position + 1} of ${value.name}`);
+          }
+        });
+        return;
+      }
     }
   };
 

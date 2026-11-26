@@ -23,6 +23,8 @@ export function emitHtml(page: PageIR): string {
     ...(meta === undefined ? [] : metaLines(page.title, meta)),
     // kadam 0.3 (D-38): native controls and scrollbars follow the system theme.
     ...(page.pageStyle.autoDark === true ? ['  <meta name="color-scheme" content="light dark">'] : []),
+    // kadam 0.3 (F6): existing stylesheets come first, so Kadam's styles win.
+    ...(page.stylesheets ?? []).map((href) => `  <link rel="stylesheet" href="${escapeAttribute(href)}">`),
     `  <link rel="stylesheet" href="${escapeAttribute(baseCssHref(page.basePath))}">`,
     `  <link rel="stylesheet" href="${escapeAttribute(pageCssHref(page.routeSlug, page.basePath))}">`,
     ...runtimeHeadLines(page),

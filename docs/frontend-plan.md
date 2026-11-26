@@ -334,6 +334,24 @@ reference site still writes its pages by hand.
 
 **Next:** F6, interop with HTML, CSS, TypeScript and frameworks.
 
+**F6 status (2026-11-25).** D-42 and D-43 are approved.
+
+- **Step 1, shipped: escape hatches (D-42).** `the css "<property>" is
+  "<value>"` (one checked declaration, in any scope except interaction
+  states), `it also uses the class "x" from "styles/legacy.css"` (listed in
+  `kadam.json` as `stylesheets`, checked against the file, linked first), and
+  typed `external` functions called with `call <name> with ...` (copied
+  module, loaded with `import()`, failures logged). `kadam check` lists every
+  hatch; `--strict` or `"strict": true` bans them (`KDM3053`). Raw HTML stays
+  out. Spec section 6.25.
+- **Step 2, next: fragments** (`kadam build --fragment`).
+- **Step 3: Web Components** (`--target web-components`, D-43).
+- **Step 4: TypeScript declarations**, then the Vite + React exit test.
+
+**F6 known gaps:** raw css is not allowed after `when hovered,` and the other
+interaction states yet; externals cannot return a value into state; a
+component cannot declare an external of its own (its calls use the page's).
+
 
 - **Build-time data:** `kadam.json` declares typed data files (JSON/CSV in the
   project), used for lists and for **generated pages**: one page per record
@@ -517,8 +535,8 @@ anchor:
 | D-38 | Theme colors and dark mode (open question 5; approved, implemented) | F3 |
 | D-36 | Client runtime for `kadam 0.3` (replaces D-18 for 0.3), state, events and security model (approved 2026-11-25) | F4 step 2 |
 | D-40 | Build-time data files and data lists (implemented); runtime data and the network model still open | F5 |
-| — | Escape-hatch policy (open question 12) | F6 |
-| — | Web Components as primary interop target | F6 |
+| D-42 | Escape-hatch policy (open question 12; approved) | F6 |
+| D-43 | Web Components as primary interop target, fragments, `.d.ts` (approved) | F6 |
 | D-39 | Contrast check is a warning in 0.3 (open question 14; approved, implemented) | F3 |
 | — | 3D model viewer and shader backgrounds: self-hosted module, size budget | F8 |
 | — | Build-time image processing (srcset, AVIF) vs zero dependencies (D-15) | F8 |

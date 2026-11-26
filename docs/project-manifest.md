@@ -55,6 +55,8 @@ MyWebsite/
 | `theme` | string | no | — | *kadam 0.3.* A `.kdm` file with a `theme { ... }` block of theme colors (`the brand color is #4F46E5`, `in dark mode, the brand color is #818CF8`), shared by every page and component (D-38). |
 | `data` | object | no | — | *kadam 0.3.* Data names to project-relative `.json` files, e.g. `{ "projects": "data/projects.json" }`, used as `a ProjectCard for each project in projects` (D-40). Each file is an array of at most 1000 flat records (text, number, or true/false fields). At most 32 entries. |
 | `connect` | array | no | — | *kadam 0.3.* Origins pages may load data from at run time, e.g. `["https://api.example.com"]` (D-41). Each is an `https` origin with no path (`http` only for localhost); at most 16. `kadam dev` sends them as `connect-src`. |
+| `stylesheets` | array | no | — | *kadam 0.3.* Existing `.css` files whose classes elements may use with `it also uses the class "x" from "styles/legacy.css"` (D-42). Project-relative; at most 16. Only used files are copied and linked, before Kadam's CSS. |
+| `strict` | boolean | no | `false` | *kadam 0.3.* Ban every escape hatch: raw css, stylesheet classes and externals (`KDM3053`), as `kadam check --strict` does. |
 
 Unknown top-level keys and unknown page keys are errors, so a typo is never
 silently ignored.

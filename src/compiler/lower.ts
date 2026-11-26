@@ -101,6 +101,7 @@ import type {
   IrTypography,
   PageIR,
 } from "./ir.js";
+import { usedStylesheets } from "../core/semantics/escape-hatches.js";
 import {
   assetUrl,
   normalizeBasePath,
@@ -167,7 +168,12 @@ export function lowerDocument(
   const runtime =
     document.languageVersion === "0.1"
       ? null
-      : lowerRuntime(pageNode.elements, slug, (element) => identityFor(element, slug).nodeId);
+      : lowerRuntime(
+          pageNode.elements,
+          slug,
+          (element) => identityFor(element, slug).nodeId,
+          (pageNode.externals ?? []).map((external) => ({ name: external.name, href: assetUrl(external.file, basePath) })),
+        );
   const context: LowerContext = {
     runtime,
     pageStyle,
@@ -203,7 +209,13 @@ export function lowerDocument(
     ...fontFaces(pageNode.elements, options.fonts ?? {}, basePath),
     ...colorTokens(options.themeColors ?? [], pageNode.settings),
     ...(runtime === null ? {} : { runtime: runtime.runtime }),
+    ...stylesheetLinks(pageNode.elements, basePath),
   };
+}
+
+function stylesheetLinks(elements: readonly ElementNode[], basePath: string): { stylesheets?: readonly string[] } {
+  const files = usedStylesheets(elements);
+  return files.length === 0 ? {} : { stylesheets: files.map((file) => assetUrl(file, basePath)) };
 }
 
 interface LowerContext {
@@ -382,7 +394,7 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     type: "element",
     nodeId: identity.nodeId,
     className: identity.className,
-    kindClass: kindClass(kind),
+    kindClass: [kindClass(kind), ...extraClasses(element)].join(" "),
     name: element.name,
     kind,
     span: element.span,
@@ -1303,6 +1315,11 @@ function elementKind(element: ElementNode): BuiltinKindName {
     );
   }
   return element.kind.reference.name;
+}
+
+/** kadam 0.3 (F6, D-42): classes from existing stylesheets. */
+function extraClasses(element: ElementNode): string[] {
+  return element.statements.flatMap((statement) => (statement.type === "stylesheet-class" ? [statement.className] : []));
 }
 
 function kindClass(kind: BuiltinKindName): string {

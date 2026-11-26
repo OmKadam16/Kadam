@@ -66,7 +66,7 @@ export function analyzeDocument(
     analyzeF1Page(page, routes, diagnostics);
     checkCustomFonts(page.elements, options.fonts ?? new Set(), diagnostics);
     // F4 step 2 (D-36): events and bindings name real elements and typed state.
-    checkRuntime(page.elements, diagnostics);
+    checkRuntime(page.elements, diagnostics, page.externals ?? []);
     for (const setting of page.settings) {
       if (setting.property === "share image" && options.hasSiteUrl !== true) {
         diagnostics.error(

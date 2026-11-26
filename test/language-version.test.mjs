@@ -71,11 +71,11 @@ test("every 0.1 template stays 0.1; only frontend-track templates are 0.3", () =
   assert.deepEqual(newer.sort(), [
     "aspect-ratio", "auto-dark", "backdrop-blur", "background-image", "background-image-rule",
     "caption", "captions", "child-rule", "click-effects", "color-token", "column-span", "content-width", "corner-radius",
-    "custom-font", "custom-shadow", "data-load", "data-shape", "data-state", "document-source", "effect", "f1-field-type", "f1-state", "f4-click", "field-error", "flex-rule",
+    "custom-font", "custom-shadow", "data-load", "data-shape", "data-state", "document-source", "effect", "external", "f1-field-type", "f1-state", "f4-click", "field-error", "flex-rule",
     "fluid-text", "form-action", "gradient-angle", "gradient-stops", "grid", "image-fit",
     "image-focus", "key-event", "line-clamp", "loading", "loop", "media-source", "no-speech", "options",
-    "outline", "overflow", "page-metadata", "percent-size", "position", "poster", "property", "remember",
-    "scroll-entrance", "self-center", "size-limit", "stagger", "starts-hidden", "starts-open", "state", "sticky", "styled-border", "submit",
+    "outline", "overflow", "page-metadata", "percent-size", "position", "poster", "property", "raw-css", "remember",
+    "scroll-entrance", "self-center", "size-limit", "stagger", "starts-hidden", "starts-open", "state", "sticky", "styled-border", "stylesheet-class", "submit",
     "summary", "text-binding", "text-span", "text-style", "visibility-binding",
   ]);
 });

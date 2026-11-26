@@ -4,6 +4,7 @@ import { compileProject } from "../compiler/project.js";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
 import { SourceFile } from "../core/source/source-file.js";
 import type { Diagnostic } from "../core/diagnostics/diagnostic.js";
+import { describeEscapeHatches, type EscapeHatch } from "../core/semantics/escape-hatches.js";
 import { compileV02Text, type CompileV02Result } from "../v02/compile.js";
 import { isV02Source } from "../v02/parser.js";
 import {
@@ -17,6 +18,7 @@ interface CheckArguments {
   readonly target: TargetId | undefined;
   readonly projectDir: string | undefined;
   readonly basePath: string | undefined;
+  readonly strict: boolean;
 }
 
 /**
@@ -46,12 +48,14 @@ export function runCheckCommand(rawArgs: readonly string[]): void {
     const result = compileProject({
       projectRoot: sourcePath,
       basePath: parsed.basePath,
+      strict: parsed.strict,
     });
     report(
       result.diagnostics,
       result.sources,
       result.pages.length,
       sourcePath,
+      result.escapeHatches ?? [],
     );
     return;
   }
@@ -92,9 +96,10 @@ export function runCheckCommand(rawArgs: readonly string[]): void {
 
   const result = compileText(sourcePath, text, {
     basePath: parsed.basePath,
+    strict: parsed.strict,
   });
   const source = new SourceFile(sourcePath, text);
-  report(result.diagnostics, [source], result.page === null ? 0 : 1, sourcePath);
+  report(result.diagnostics, [source], result.page === null ? 0 : 1, sourcePath, result.escapeHatches ?? []);
 }
 
 function report(
@@ -102,6 +107,7 @@ function report(
   sources: readonly SourceFile[],
   pages: number,
   target: string,
+  hatches: readonly EscapeHatch[],
 ): void {
   if (diagnostics.length > 0) {
     console.error(formatDiagnostics(diagnostics, sources));
@@ -122,6 +128,13 @@ function report(
       pages === 1 ? "" : "s"
     }). No files were written.`,
   );
+  // F6 (D-42): escape hatches are allowed, but never hidden.
+  if (hatches.length > 0) {
+    console.log(`kadam check: ${describeEscapeHatches(hatches)}; --strict bans them:`);
+    for (const hatch of hatches) {
+      console.log(`  ${hatch.span.file}:${hatch.span.start.line}  ${hatch.kind} ${hatch.detail}`);
+    }
+  }
 }
 
 function reportV02(
@@ -156,6 +169,7 @@ function parseCheckArguments(
   let target: TargetId | undefined;
   let projectDir: string | undefined;
   let basePath: string | undefined;
+  let strict = false;
 
   for (let index = 0; index < rawArgs.length; index += 1) {
     const argument = rawArgs[index]!;
@@ -230,6 +244,10 @@ function parseCheckArguments(
       basePath = value;
       continue;
     }
+    if (argument === "--strict") {
+      strict = true;
+      continue;
+    }
     if (argument.startsWith("-")) {
       console.error(
         `kadam check: unexpected argument ${JSON.stringify(argument)}`,
@@ -245,7 +263,7 @@ function parseCheckArguments(
     source = argument;
   }
 
-  return { source, target, projectDir, basePath };
+  return { source, target, projectDir, basePath, strict };
 }
 
 function isDirectory(path: string): boolean {

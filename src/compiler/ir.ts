@@ -450,6 +450,8 @@ export interface PageIR {
   readonly colorTokens?: readonly IrColorToken[];
   /** kadam 0.3 (F4 step 2, D-36): present only when the page needs JavaScript. */
   readonly runtime?: IrRuntime;
+  /** kadam 0.3 (F6, D-42): existing stylesheets, linked before Kadam's CSS. */
+  readonly stylesheets?: readonly string[];
 }
 
 export interface IrPageMeta {

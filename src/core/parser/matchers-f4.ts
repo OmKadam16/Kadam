@@ -1,4 +1,4 @@
-import type { ClickStatement, Effect, ElementReference, F4Statement, StateLiteral, StateReference, StateType } from "../ast/nodes.js";
+import type { CallArgument, ClickStatement, Effect, ElementReference, F4Statement, StateLiteral, StateReference, StateType } from "../ast/nodes.js";
 import type { Token } from "../lexer/token.js";
 import type { StatementMatchBody } from "./statement-types.js";
 import { isAnyWord, isKeyword, isString, spanFromTokens } from "./values.js";
@@ -22,7 +22,9 @@ function ok(statement: F4Statement | ClickStatement): StatementMatchBody {
 export function isF4ClickAction(rest: readonly Token[]): boolean {
   if (isKeyword(rest[0], "go") && isKeyword(rest[1], "to") && isString(rest[2])) return true;
   const verb = rest[0]?.text.toLowerCase();
-  return verb === "send" || verb === "call" || verb === "download";
+  // `call "+1 555 0100"` is a phone link; `call trackEvent` is an F6 effect.
+  if (verb === "call") return isString(rest[1]);
+  return verb === "send" || verb === "download";
 }
 
 const EMAIL = /^[^\s@"<>]+@[^\s@"<>]+\.[^\s@"<>]+$/;
@@ -154,17 +156,19 @@ function splitAnd(tokens: readonly Token[]): Token[][] {
   return parts;
 }
 
-const EFFECT_VERBS: ReadonlySet<string> = new Set(["show", "hide", "flip", "open", "close", "focus", "set", "add", "subtract", "reload"]);
+const EFFECT_VERBS: ReadonlySet<string> = new Set(["show", "hide", "flip", "open", "close", "focus", "set", "add", "subtract", "reload", "call"]);
 
 /** The click effects added in step 2. `matchClick` (0.1) steps aside for them. */
 export function isEffectList(rest: readonly Token[]): boolean {
   const verb = rest[0]?.text.toLowerCase() ?? "";
   if (verb === "open") return isAnyWord(rest[1], "dialog");
+  // `call "+1 555 0100"` is a phone link; `call trackEvent` runs an external (F6).
+  if (verb === "call") return rest[1] !== undefined && rest[1].kind !== "string";
   return EFFECT_VERBS.has(verb) || (isKeyword(rest[0], "it") && isKeyword(rest[1], "is"));
 }
 
 const EFFECT_HINT =
-  'use show "name", hide "name", flip "name", open dialog "name", close the dialog, focus "name", set count of cart1 to 0, flip isOpen of menu1, add 1 to count of cart1, or it is hidden';
+  'use show "name", hide "name", flip "name", open dialog "name", close the dialog, focus "name", set count of cart1 to 0, flip isOpen of menu1, add 1 to count of cart1, reload products, call trackEvent with "hero", or it is hidden';
 
 function readEffect(tokens: readonly Token[]): Effect | string {
   const verb = tokens[0]?.text.toLowerCase() ?? "";
@@ -204,6 +208,32 @@ function readEffect(tokens: readonly Token[]): Effect | string {
       return { type: "reload", source: name.text, span: spanFromTokens(tokens) };
     }
     return "reload names the data an element loads, e.g. reload products";
+  }
+  if (verb === "call") {
+    // F6 (D-42): call trackEvent, or call trackEvent with "hero", count
+    const name = tokens[1];
+    if (name === undefined || !isWordToken(name) || !STATE_NAME.test(name.text)) return 'call names an external function, e.g. call trackEvent with "hero"';
+    const args: CallArgument[] = [];
+    if (tokens.length > 2) {
+      if (!isAnyWord(tokens[2], "with") || tokens.length === 3) return "write call <name> with <value>, <value>";
+      let part: Token[] = [];
+      const parts: Token[][] = [part];
+      for (const token of tokens.slice(3)) {
+        if (token.kind === "comma") parts.push((part = []));
+        else part.push(token);
+      }
+      for (const words of parts) {
+        const literal = readStateLiteral(words);
+        if (literal !== null) {
+          args.push({ kind: "literal", value: literal });
+          continue;
+        }
+        const state = readStateReference(words);
+        if (state === null) return "each value is quoted text, a number, true, false, or a state";
+        args.push({ kind: "state", state });
+      }
+    }
+    return { type: "call", name: name.text, nameSpan: name.span, args, span: spanFromTokens(tokens) };
   }
   if (verb === "focus") {
     const target = readTarget(rest);

@@ -1372,6 +1372,159 @@ pagination. Pagination needs URL state (`?page=2`), the next F5 step.
 4. A framework data layer (React Query, htmx): contradicts D-15 and the
    runtime budget.
 
+### D-42 — Escape hatches for `kadam 0.3` (F6, open question 12)
+
+**Status:** Approved by the user on 2026-11-25.
+
+**Problem.** The grammar will never cover every CSS property or every piece
+of existing code a team already has. Without a way out, one missing feature
+blocks a whole page, and people leave the language. With an uncontrolled way
+out (raw `<style>` or `<script>`), Kadam loses its guarantees: one meaning
+per sentence, accessibility checks, a strict CSP and deterministic output.
+
+**Proposal.** Four escape hatches, each one sentence, each visible in the
+source and reported by tooling. No others.
+
+```kdm
+hero {
+    a section
+    the css "mask-image" is "url(assets/fade.svg)"
+    it also uses the class "legacy-hero" from "styles/legacy.css"
+    when clicked, call trackEvent with "hero"
+}
+external trackEvent from "./analytics.js" takes text and returns nothing
+```
+
+1. **One raw CSS declaration per sentence:** `the css "<property>" is
+   "<value>"`, optionally after `on phones,`, `when hovered,` or `in dark
+   mode,`. The property must be a known CSS property name, lowercase, and not
+   a custom property. The value is checked by a small tokenizer: no `;`, `{`,
+   `}`, `<`, `@`, `\`, `expression(`, or `url()` outside the project's own
+   assets (`KDM3050`). A property Kadam already has a sentence for is an
+   error that names the sentence (`KDM3051`), so the hatch never becomes a
+   second way to say the same thing. The declaration lands in the element's
+   own class, after Kadam's declarations, and never leaks to other elements.
+2. **Existing stylesheet classes:** `it also uses the class "x" from
+   "styles/legacy.css"`. The stylesheet must be a local file listed under
+   `"stylesheets"` in `kadam.json`. It is copied to the output and linked
+   once, before Kadam's CSS, so Kadam's own styles still win. The compiler
+   checks that the class name appears in the file as a selector (a plain
+   text search, not a CSS parser), so a typo is a compile error (`KDM3052`).
+3. **Typed external functions** (from D-31): `external <name> from
+   "<local .js file>" takes <types> and returns nothing`, then `when
+   clicked, call <name> with <values>`. Arguments are type-checked against the
+   declaration. The file is copied and loaded as an ES module with
+   `script-src 'self'`, so it needs no CSP change. Kadam never reads, parses
+   or bundles it. In 0.3 externals return nothing; reading a return value into
+   state is a later step. A throwing function is caught and logged, so it
+   cannot break Kadam's own handlers.
+4. **Raw HTML is not included.** A sanitised raw HTML block would need an HTML
+   parser and an allowlist the compiler maintains forever, and almost every
+   real use (an embed, a widget) is better served by a custom element through
+   D-43 or an external. Raw HTML stays out of 0.3. We revisit it only with a
+   concrete case the other three hatches cannot cover.
+
+**Visibility and control.**
+
+- `kadam check` lists every escape hatch with its file and line in a
+  summary ("3 escape hatches: 2 css, 1 external").
+- `kadam check --strict` and `"strict": true` in `kadam.json` turn every hatch
+  into an error (`KDM3053`), so a team can ban them.
+- The accessibility and contrast checks still run. A raw `color` or
+  `background` is not allowed through the hatch (rule 1 rejects them, because
+  Kadam has sentences for both), so contrast checking keeps working.
+- Output stays deterministic: hatches are copied text, never evaluated at
+  build time.
+
+**Tests.** Unit tests for each sentence, each rejection and the strict
+mode; byte-identity for every existing example; a Playwright test that an
+external is called with the right arguments under the strict CSP, and that a
+throwing external leaves the page working.
+
+**Alternatives considered.**
+
+1. A raw `<style>` block: one sentence could restyle the whole page, which
+   breaks "no cascade" (D-07) and makes checks meaningless.
+2. Inline `<script>`: breaks the CSP from D-36.
+3. No escape hatches: purest, but the first unsupported property blocks real
+   work, and nobody adopts a language with a hard ceiling (F9 goal).
+
+**Implementation notes (F6 step 1).** The `external` line sits directly inside
+`page { }`, since a source file holds exactly one page. Raw css works after
+breakpoints, custom scopes and `in dark mode,`; interaction states
+(`when hovered,`) come later. `call "<phone number>"` stays a phone link; only
+`call <name>` is an external.
+
+---
+
+### D-43 — Interop targets: fragments, Web Components and TypeScript declarations (F6)
+
+**Status:** Approved by the user on 2026-11-25.
+
+**Problem.** Today Kadam only builds whole sites. A team with an existing
+React, Vue or plain HTML app cannot use one Kadam component without rewriting
+everything, so the language can only win greenfield projects.
+
+**Proposal.** Three outputs, built in this order. All of them reuse the
+existing lowering; they differ only in how the result is wrapped.
+
+1. **Fragments:** `kadam build --fragment pages/pricing.kdm` writes
+   `pricing.html` (the page body only, no `<html>` or `<head>`), its scoped
+   CSS and, if needed, its runtime. Class names are already prefixed per page
+   (`kdm-pricing-…`), so they do not clash with the host page. The output
+   lists the `<link>` and `<script type="module">` tags to add.
+2. **Web Components (the primary interop target):** `kadam build --target
+   web-components` turns every component in the catalog into a custom element.
+   - **Names:** `ProductCard` becomes `<kadam-product-card>`. A
+     `"elementPrefix"` in `kadam.json` can replace `kadam`.
+   - **Attributes:** each parameter becomes an attribute (`name="Desk"
+     price="120"`). Types are checked at run time the same way as runtime data
+     (D-41): a bad `url` is replaced with nothing, and a missing required
+     attribute shows nothing for that value. Changing an attribute re-renders
+     the element.
+   - **Slots:** Kadam's unnamed and named slots (D-23) become shadow DOM
+     `<slot>` and `<slot name="…">`, with the same fallback content.
+   - **Styles:** the component's CSS is placed in the shadow root through a
+     constructed stylesheet, so host styles do not leak in and Kadam styles do
+     not leak out. Theme tokens are CSS custom properties on `:host`, so the
+     host page can override them.
+   - **Events:** a component sentence `when clicked, tell the page "select"`
+     (new, components only) dispatches `new CustomEvent("select", { bubbles:
+     true, composed: true })`. That is the only way out of the component.
+   - **Runtime:** one shared ES module, `kadam-elements.js`, defines all the
+     elements. No framework, no innerHTML from attributes (values are set with
+     `textContent` and checked `setAttribute`, as in D-41). Budget: about 3 KB
+     minified for the element base, plus the D-36 runtime only if a component
+     uses state.
+   - **Accessibility:** the compiler's checks run on each component as today.
+     Focus and labels work across the shadow boundary because only native
+     elements are used inside.
+3. **TypeScript declarations:** the same build writes `kadam-elements.d.ts`
+   with `HTMLElementTagNameMap` entries, typed attributes and event maps, plus
+   a `JSX.IntrinsicElements` block for React, so `tsc --strict` flags a
+   misspelled attribute or a wrong event name.
+
+**Not in this decision.** The native React target (`--target react`, `.tsx`
+output) waits until Web Components pass the exit test; it may turn out to be
+unnecessary. Importing design tokens from an existing CSS file is a small
+follow-up after D-42 item 2.
+
+**Exit (from the F6 plan).** The dashboard reference runs inside a minimal
+Vite + React TypeScript app using the Web Components output, type-checks
+under `tsc --strict`, and passes its interaction tests. The test app lives
+under `test/interop/` and is not a dependency of the package (D-15 stays
+intact).
+
+**Alternatives considered.**
+
+1. React first: covers one framework; Web Components work in all of them,
+   including plain HTML and CMS pages.
+2. Light DOM custom elements (no shadow root): simpler, but host CSS would
+   restyle Kadam output, and Kadam's checks would no longer describe what
+   users see.
+3. One custom element per page instead of per component: too coarse to reuse
+   inside an existing app.
+
 ---
 
 ## Approval checklist
@@ -1419,6 +1572,8 @@ pagination. Pagination needs URL state (`?page=2`), the next F5 step.
 | D-39 | Contrast check is a warning in 0.3 | F3 | Approve | Approved — implemented |
 | D-40 | Build-time data files and data lists | F5 step 1 | Review | Implemented under the user's go-ahead |
 | D-41 | Runtime data: declared origins, typed shapes, required loading/empty/error states | F5 step 6 | Approve | Approved |
+| D-42 | Escape hatches: raw CSS declaration, existing classes, typed externals; no raw HTML; `--strict` bans them | F6 | Approve | Approved |
+| D-43 | Interop: fragments, Web Components (primary), TypeScript declarations | F6 | Approve | Approved |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

@@ -64,6 +64,10 @@ export interface KadamManifest {
   readonly theme?: string | undefined;
   /** kadam 0.3 (D-41): origins pages may load data from at run time. */
   readonly connect?: readonly string[] | undefined;
+  /** kadam 0.3 (F6, D-42): existing stylesheets whose classes elements may use. */
+  readonly stylesheets?: readonly string[] | undefined;
+  /** kadam 0.3 (F6, D-42): ban every escape hatch. */
+  readonly strict?: boolean | undefined;
   /** kadam 0.3 (F5): data names to project-relative JSON files, e.g. { "projects": "data/projects.json" }. */
   readonly data?: Readonly<Record<string, string>> | undefined;
 }
@@ -99,6 +103,8 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "theme",
   "data",
   "connect",
+  "stylesheets",
+  "strict",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -441,6 +447,27 @@ export function loadManifest(
         if (!valid) diagnostics.error("KDM4001", `connect origin ${JSON.stringify(origin)} must be an https origin with no path, such as "https://api.example.com"`, rootSpan, hint);
       }
     }
+  }
+
+  // Validate existing stylesheets (kadam 0.3, F6, D-42)
+  if ("stylesheets" in raw) {
+    const value = raw.stylesheets;
+    const hint = 'use "stylesheets": ["styles/legacy.css"]';
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'stylesheets' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove stylesheets');
+    } else if (!Array.isArray(value) || value.length > 16) {
+      diagnostics.error("KDM4001", "'stylesheets' in kadam.json must be a list of at most 16 .css paths", rootSpan, hint);
+    } else {
+      for (const path of value) {
+        if (typeof path !== "string" || !path.endsWith(".css") || path.startsWith("/") || path.split("/").includes("..")) {
+          diagnostics.error("KDM4001", `stylesheet ${JSON.stringify(path)} must be a project-relative .css path`, rootSpan, hint);
+        }
+      }
+    }
+  }
+
+  if ("strict" in raw && typeof raw.strict !== "boolean") {
+    diagnostics.error("KDM4001", "'strict' in kadam.json must be true or false", rootSpan, 'use "strict": true');
   }
 
   // Validate data files (kadam 0.3, F5)
@@ -811,6 +838,8 @@ export function loadManifest(
     fonts: readFonts(raw.fonts),
     theme: typeof raw.theme === "string" ? raw.theme : undefined,
     connect: Array.isArray(raw.connect) ? (raw.connect as string[]) : undefined,
+    stylesheets: Array.isArray(raw.stylesheets) ? (raw.stylesheets as string[]) : undefined,
+    strict: raw.strict === true ? true : undefined,
     data:
       typeof raw.data === "object" && raw.data !== null && !Array.isArray(raw.data)
         ? (raw.data as Record<string, string>)

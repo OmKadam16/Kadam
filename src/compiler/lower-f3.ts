@@ -83,6 +83,14 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
 
   for (const statement of statements) {
     switch (statement.type) {
+      case "raw-css":
+        // F6 (D-42): url() paths become the copied asset's address.
+        d(
+          statement.property,
+          statement.value.replace(/url\(\s*([^)]*)\)/gi, (_, path: string) =>
+            `url("${assetUrl(path.trim().replace(/^'(.*)'$/, "$1"), context.basePath)}")`),
+        );
+        break;
       case "border":
         if (statement.mode === "solid" && statement.line !== undefined) d("border-style", statement.line);
         break;

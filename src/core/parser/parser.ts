@@ -1,6 +1,7 @@
 import type {
   DocumentNode,
   ElementNode,
+  ExternalDeclaration,
   PageNode,
   PageSettingNode,
   PropertyBindingNode,
@@ -66,6 +67,7 @@ interface PageBuilder {
   readonly settings: PageSettingNode[];
   readonly elements: ElementNode[];
   readonly repeat?: RepeatClause | undefined;
+  readonly externals: ExternalDeclaration[];
   endSpan: Span;
 }
 
@@ -431,6 +433,7 @@ class Parser {
       headerSpan: line.span,
       settings: [],
       elements: [],
+      externals: [],
       endSpan: line.span,
     };
   }
@@ -627,6 +630,16 @@ class Parser {
         if (node.property === "color token") this.#colorTokens.add(node.name);
         return;
       }
+      if (node.type === "external") {
+        const page = this.#page!;
+        const previous = page.externals.find((external) => external.name === node.name);
+        if (previous !== undefined) {
+          this.#error("KDM3002", `external ${node.name} is declared twice`, node.nameSpan, "remove one declaration", previous.nameSpan);
+          return;
+        }
+        page.externals.push(node);
+        return;
+      }
       this.#error(
         "KDM3003",
         node.type === "kind"
@@ -635,6 +648,11 @@ class Parser {
         node.span,
         "wrap element statements in a named element block",
       );
+      return;
+    }
+
+    if (node.type === "external") {
+      this.#error("KDM3003", "external declarations are only allowed in the page body", node.span, "move this line out of the element, directly inside page { }");
       return;
     }
 
@@ -739,6 +757,7 @@ class Parser {
       settings: builder.settings,
       elements: builder.elements,
       ...(builder.repeat === undefined ? {} : { repeat: builder.repeat }),
+      ...(builder.externals.length === 0 ? {} : { externals: builder.externals }),
       span: mergeSpans(builder.headerSpan, builder.endSpan),
     };
   }

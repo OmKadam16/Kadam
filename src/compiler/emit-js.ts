@@ -99,6 +99,18 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   if (effects.has("flip")) cases.push('      case "toggle": state.set(effect[1], !state.get(effect[1])); break;');
   if (effects.has("add")) cases.push('      case "add": state.set(effect[1], state.get(effect[1]) + effect[2]); break;');
   if (effects.has("reload")) cases.push('      case "reload": load(loaders.find((entry) => entry[0] === effect[1])); break;');
+  if (effects.has("call")) {
+    // F6 (D-42): externals load on first use; an error stays in the console.
+    lines.push(
+      `const externals = ${json(runtime.externals)};`,
+      "function callExternal(effect) {",
+      "  const args = effect[3].map((arg) => (arg[0] === 1 ? state.get(arg[1]) : arg[1]));",
+      '  import(externals[effect[1]]).then((module) => module[effect[2]](...args)).catch((error) => console.error("kadam: " + effect[2] + " failed", error));',
+      "}",
+      "",
+    );
+    cases.push('      case "call": callExternal(effect); break;');
+  }
   lines.push(
     "function run(effects) {",
     "  for (const effect of effects) {",
@@ -153,6 +165,8 @@ function compactEffect(effect: IrEffect): readonly unknown[] {
       return ["add", effect.key, effect.amount];
     case "reload":
       return ["reload", effect.source];
+    case "call":
+      return ["call", effect.module, effect.name, effect.args];
   }
 }
 

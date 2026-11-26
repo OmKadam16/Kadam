@@ -21,6 +21,13 @@ import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
 import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
+import {
+  banEscapeHatches,
+  checkStylesheetClasses,
+  collectEscapeHatches,
+  usedStylesheets,
+  type EscapeHatch,
+} from "../core/semantics/escape-hatches.js";
 import { checkLoadOrigins, expandData, generatePages, parseDataFile, readsRecordFields, type DataSet } from "../core/data/data.js";
 import { expandDocuments } from "../core/data/markdown.js";
 import {
@@ -90,6 +97,8 @@ export interface ProjectCompileOptions {
   readonly manifestText?: string | undefined;
   /** In-memory file content overrides (path -> content). */
   readonly sourceOverrides?: ReadonlyMap<string, string | Uint8Array> | undefined;
+  /** kadam 0.3 (F6, D-42): ban escape hatches, as "strict": true in kadam.json does. */
+  readonly strict?: boolean | undefined;
 }
 
 export interface ProjectCompileResult {
@@ -101,6 +110,8 @@ export interface ProjectCompileResult {
   /** Absolute path of the output directory. */
   readonly outDir: string;
   readonly sources: readonly SourceFile[];
+  /** kadam 0.3 (F6, D-42): every escape hatch the project uses. */
+  readonly escapeHatches?: readonly EscapeHatch[];
 }
 
 interface LoadedPage {
@@ -475,7 +486,40 @@ export function compileProject(
     }
   }
 
+  // kadam 0.3 (F6, D-42): existing stylesheets, read once; classes are checked against them.
+  const sheets = new Map<string, string | null>();
+  const sheetAssets = new Map<string, ResolvedAsset>();
+  for (const path of manifest.stylesheets ?? []) {
+    const asset = resolveAsset({
+      projectRoot, realProjectRoot, outDir, rawPath: path, span: manifestSpan,
+      overrides: options.sourceOverrides, diagnostics, stylesheet: true,
+    });
+    sheets.set(path, asset === null ? null : new TextDecoder().decode(readAssetContents(asset, options.sourceOverrides)));
+    if (asset !== null) sheetAssets.set(path, asset);
+  }
+  // F6 (D-42): external modules are copied as they are; Kadam never reads them.
+  for (const loaded of expandedPages) {
+    for (const external of loaded.document.page!.externals ?? []) {
+      const asset = resolveAsset({
+        projectRoot, realProjectRoot, outDir, rawPath: external.file, span: external.fileSpan,
+        overrides: options.sourceOverrides, diagnostics, script: true,
+      });
+      if (asset !== null) sheetAssets.set(asset.sourcePath, asset);
+    }
+  }
+  const escapeHatches: EscapeHatch[] = [];
+  for (const loaded of expandedPages) collectEscapeHatches(loaded.document.page!, escapeHatches);
+  if (options.strict === true || manifest.strict === true) banEscapeHatches(escapeHatches, diagnostics);
+  const usedSheets = new Set<string>();
+  for (const loaded of expandedPages) {
+    checkStylesheetClasses(loaded.document.page!.elements, sheets, diagnostics);
+    for (const file of usedStylesheets(loaded.document.page!.elements)) usedSheets.add(file);
+  }
+
   const assets = new Map<string, ResolvedAsset>();
+  for (const [file, asset] of sheetAssets) {
+    if (usedSheets.has(file) || asset.sourcePath.endsWith("js")) assets.set(asset.sourcePath, asset);
+  }
   for (const [rawPath, span] of references) {
     const asset = resolveAsset({
       projectRoot,
@@ -574,6 +618,7 @@ export function compileProject(
       files,
       outDir,
       sources,
+      escapeHatches,
     };
   } catch (error) {
     diagnostics.error(
@@ -706,6 +751,10 @@ function findComponentKindSpan(elements: readonly ElementNode[]): Span | null {
 interface ResolveAssetArguments {
   /** kadam 0.3 (F4): a download link may also copy pdf, zip, csv, and txt files. */
   readonly download?: boolean;
+  /** kadam 0.3 (F6): an existing stylesheet listed in kadam.json. */
+  readonly stylesheet?: boolean;
+  /** kadam 0.3 (F6): an external function's JavaScript module. */
+  readonly script?: boolean;
   readonly projectRoot: string;
   readonly realProjectRoot: string;
   readonly outDir: string;
@@ -741,7 +790,12 @@ function resolveAsset(args: ResolveAssetArguments): ResolvedAsset | null {
 
   const dot = normalized.lastIndexOf(".");
   const extension = dot === -1 ? "" : normalized.slice(dot + 1).toLowerCase();
-  if (!SUPPORTED_ASSET_EXTENSIONS.has(extension) && !(args.download === true && DOWNLOAD_EXTENSIONS.has(extension))) {
+  if (
+    !SUPPORTED_ASSET_EXTENSIONS.has(extension) &&
+    !(args.download === true && DOWNLOAD_EXTENSIONS.has(extension)) &&
+    !(args.stylesheet === true && extension === "css") &&
+    !(args.script === true && (extension === "js" || extension === "mjs"))
+  ) {
     diagnostics.error(
       "KDM4003",
       `unsupported asset extension '.${extension}' in '${args.rawPath}'`,
@@ -817,6 +871,10 @@ function collectAssetReferences(
       const statement = scoped.type === "responsive" || scoped.type === "scoped" ? scoped.statement : scoped;
       if (statement.type === "background-image" && !out.has(statement.value)) {
         out.set(statement.value, statement.valueSpan);
+      }
+      // F6: files named by url() in a raw css value.
+      if (statement.type === "raw-css") {
+        for (const asset of statement.assets) if (!out.has(asset.path)) out.set(asset.path, asset.span);
       }
       // F4: download links copy their file.
       if (statement.type === "click" && statement.action.type === "download") {

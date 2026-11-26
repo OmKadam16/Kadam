@@ -7,6 +7,12 @@ import {
 import { parseSource } from "../core/parser/parser.js";
 import { expandDocuments } from "../core/data/markdown.js";
 import { checkLoadOrigins } from "../core/data/data.js";
+import {
+  banEscapeHatches,
+  checkStylesheetClasses,
+  collectEscapeHatches,
+  type EscapeHatch,
+} from "../core/semantics/escape-hatches.js";
 import { analyzeDocument, type SemanticPage } from "../core/semantics/analyze.js";
 import {
   createSourceFile,
@@ -40,6 +46,8 @@ export interface CompileOptions {
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
   /** kadam 0.3 custom fonts (normally from kadam.json). */
   readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
+  /** kadam 0.3 (F6, D-42): ban escape hatches. */
+  readonly strict?: boolean | undefined;
 }
 
 export interface CompileResult {
@@ -47,6 +55,8 @@ export interface CompileResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly page: PageIR | null;
   readonly files: readonly OutputFile[];
+  /** kadam 0.3 (F6, D-42): every escape hatch the page uses. */
+  readonly escapeHatches?: readonly EscapeHatch[];
 }
 
 /** Compile an already-created source buffer. */
@@ -91,6 +101,10 @@ function compileWithSource(
   diagnostics.addAll(parsed.diagnostics);
   // A single file has no manifest, so it may only load from its own site.
   if (document.page !== null) checkLoadOrigins(document.page.elements, [], documentDiagnostics);
+  // ... and has no stylesheets to take classes from.
+  if (document.page !== null) checkStylesheetClasses(document.page.elements, null, documentDiagnostics);
+  const escapeHatches = document.page === null ? [] : collectEscapeHatches(document.page);
+  if (options.strict === true) banEscapeHatches(escapeHatches, documentDiagnostics);
   diagnostics.addAll(documentDiagnostics.sorted());
   if (document.page !== null) {
     diagnostics.addAll(analyzeDocument(document, { pages, fonts: new Set(Object.keys(options.fonts ?? {})) }));
@@ -133,10 +147,10 @@ function compileWithSource(
         const bag = new DiagnosticBag();
         bag.addAll(checked);
         for (const warning of warnings) bag.warning(warning.code, warning.message, warning.span, warning.hint);
-        return { ok: true, diagnostics: bag.sorted(), page, files };
+        return { ok: true, diagnostics: bag.sorted(), page, files, escapeHatches };
       }
     }
-    return { ok: true, diagnostics: checked, page, files };
+    return { ok: true, diagnostics: checked, page, files, escapeHatches };
   } catch (error) {
     const span =
       error instanceof InternalCompilerError

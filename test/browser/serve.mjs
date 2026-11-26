@@ -15,7 +15,8 @@ const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascrip
  */
 export async function serve(name, { csp = false, api = null, port = 0 } = {}) {
   let requests = 0;
-  const result = compileProject({ projectRoot: `${root}examples/reference/${name}` });
+  // An absolute path serves that project instead of a reference one.
+  const result = compileProject({ projectRoot: name.startsWith("/") ? name : `${root}examples/reference/${name}` });
   const errors = result.diagnostics.filter((d) => d.severity === "error");
   if (errors.length > 0) throw new Error(errors.map((d) => d.message).join("\n"));
   const files = new Map(result.files.map((file) => [`/${file.path}`, file.contents]));

@@ -228,6 +228,8 @@ export interface PageNode extends NodeBase {
   readonly elements: ElementNode[];
   /** kadam 0.3 (F5 step 3): `page "{the title of post}" for each post in posts {`. */
   readonly repeat?: RepeatClause | undefined;
+  /** kadam 0.3 (F6, D-42): external functions the page's events may call. */
+  readonly externals?: readonly ExternalDeclaration[] | undefined;
 }
 
 export type ComponentParameterType =
@@ -355,7 +357,48 @@ export type PageSettingNode =
       readonly valueSpan: Span;
     });
 
+/** kadam 0.3 (F6, D-42): a project file named by url() in a raw css value. */
+export interface RawCssAsset {
+  readonly path: string;
+  readonly span: Span;
+}
+
+/** kadam 0.3 (F6, D-42) escape hatches; matched in `src/core/parser/matchers-f6.ts`. */
+export type F6Statement =
+  | (NodeBase & {
+      readonly type: "raw-css";
+      readonly property: string;
+      readonly value: string;
+      readonly assets: readonly RawCssAsset[];
+    })
+  // `it also uses the class "legacy-hero" from "styles/legacy.css"`
+  | (NodeBase & {
+      readonly type: "stylesheet-class";
+      readonly className: string;
+      readonly classSpan: Span;
+      readonly file: string;
+      readonly fileSpan: Span;
+    })
+  // `external trackEvent from "analytics.js" takes text and returns nothing`
+  | ExternalDeclaration;
+
+/** kadam 0.3 (F6, D-42): a typed function from a local JavaScript module. */
+export interface ExternalDeclaration extends NodeBase {
+  readonly type: "external";
+  readonly name: string;
+  readonly nameSpan: Span;
+  readonly file: string;
+  readonly fileSpan: Span;
+  readonly parameters: readonly StateType[];
+}
+
+/** A value passed to an external: a literal or a state. */
+export type CallArgument =
+  | { readonly kind: "literal"; readonly value: StateLiteral }
+  | { readonly kind: "state"; readonly state: StateReference };
+
 export type StatementNode =
+  | F6Statement
   | SizeStatement
   | BackgroundStatement
   | GradientDirectionStatement
@@ -526,7 +569,9 @@ export type Effect =
   | { readonly type: "flip-state"; readonly state: StateReference }
   | { readonly type: "add-state"; readonly state: StateReference; readonly amount: number; readonly amountSpan: Span }
   /** kadam 0.3 (D-41): `reload products` loads a runtime data source again. */
-  | { readonly type: "reload"; readonly source: string; readonly span: Span };
+  | { readonly type: "reload"; readonly source: string; readonly span: Span }
+  /** kadam 0.3 (F6, D-42): `call trackEvent with "hero"` runs a declared external. */
+  | { readonly type: "call"; readonly name: string; readonly nameSpan: Span; readonly args: readonly CallArgument[]; readonly span: Span };
 
 export type ShapeFieldType = "text" | "number" | "yes/no" | "url";
 

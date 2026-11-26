@@ -25,7 +25,14 @@ export type IrEffect =
   | { readonly type: "set"; readonly key: string; readonly value: IrStateValue }
   | { readonly type: "flip"; readonly key: string }
   | { readonly type: "add"; readonly key: string; readonly amount: number }
-  | { readonly type: "reload"; readonly source: string };
+  | { readonly type: "reload"; readonly source: string }
+  /** F6 (D-42): an external, by its index in `externals`; each argument is [0, value] or [1, state key]. */
+  | {
+      readonly type: "call";
+      readonly module: number;
+      readonly name: string;
+      readonly args: readonly (readonly [0, IrStateValue] | readonly [1, string])[];
+    };
 
 /** kadam 0.3 (D-41): one element that loads data, and the lists that show it. */
 export interface IrLoader {
@@ -78,6 +85,8 @@ export interface IrRuntime {
   readonly loaders: readonly IrLoader[];
   /** F5 step 7: states kept in the address, as [state key, query name]. */
   readonly addressed: readonly (readonly [string, string])[];
+  /** F6 (D-42): addresses of the external modules calls import. */
+  readonly externals: readonly string[];
 }
 
 export interface RuntimeLowering {
@@ -102,6 +111,7 @@ export function lowerRuntime(
   elements: readonly ElementNode[],
   slug: string,
   nodeIdOf: (element: ElementNode) => string,
+  externals: readonly { readonly name: string; readonly href: string }[] = [],
 ): RuntimeLowering | null {
   if (!usesRuntime(elements)) return null;
   const index = indexPage(elements);
@@ -131,6 +141,7 @@ export function lowerRuntime(
   const controllers: IrRuntime["controllers"][number][] = [];
   const scopes = new Set<Breakpoint>();
 
+  const modules: string[] = [];
   const lowerEffect = (effect: Effect, from: ElementNode): IrEffect => {
     switch (effect.type) {
       case "visibility":
@@ -149,6 +160,18 @@ export function lowerRuntime(
         return { type: "add", key: keyOf(stateFor(effect.state, from)), amount: effect.amount };
       case "reload":
         return { type: "reload", source: effect.source };
+      case "call": {
+        const external = externals.find((candidate) => candidate.name === effect.name);
+        if (external === undefined) throw new InternalCompilerError(`external ${effect.name} reached lowering undeclared`, effect.nameSpan);
+        if (!modules.includes(external.href)) modules.push(external.href);
+        return {
+          type: "call",
+          module: modules.indexOf(external.href),
+          name: effect.name,
+          args: effect.args.map((arg) =>
+            arg.kind === "literal" ? ([0, value(arg.value)] as const) : ([1, keyOf(stateFor(arg.state, from))] as const)),
+        };
+      }
     }
   };
 
@@ -288,6 +311,7 @@ export function lowerRuntime(
       addressed: index.states
         .filter((declared) => declared.owner.statements.some((s) => s.type === "remember" && s.name === declared.name && s.inAddress === true))
         .map((declared) => [keyOf(declared), declared.name] as const),
+      externals: modules,
     },
     attributes,
     texts,

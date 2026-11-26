@@ -109,6 +109,7 @@ import type {
   TemplateContext,
 } from "./statement-types.js";
 import { describeTokens, isAnyWord, isKeyword, readLength, spanFromTokens } from "./values.js";
+import { matchExternal, matchRawCss, matchStylesheetClass } from "./matchers-f6.js";
 import {
   LATEST_UI_LANGUAGE_VERSION,
   uiVersionAtLeast,
@@ -161,6 +162,19 @@ const F1_TEMPLATES: readonly StatementTemplate[] = [
 ];
 
 /** kadam 0.3 (F2) layout and sizing templates. */
+/** kadam 0.3 (F6, D-42) escape hatches. */
+const F6_TEMPLATES: readonly StatementTemplate[] = [
+  { id: "raw-css", description: "Raw CSS declaration (escape hatch)", since: "0.3",
+    examples: ['the css "mask-image" is "url(assets/fade.svg)"', 'the css "clip-path" is "circle(40%)"'],
+    match: (tokens) => matchRawCss(tokens) },
+  { id: "stylesheet-class", description: "Class from an existing stylesheet (escape hatch)", since: "0.3",
+    examples: ['it also uses the class "legacy-hero" from "styles/legacy.css"'],
+    match: (tokens) => matchStylesheetClass(tokens) },
+  { id: "external", description: "External function (escape hatch)", since: "0.3",
+    examples: ['external trackEvent from "analytics.js" takes text and returns nothing'],
+    match: (tokens) => matchExternal(tokens) },
+];
+
 const F2_TEMPLATES: readonly StatementTemplate[] = [
   { id: "percent-size", description: "Percentage size", since: "0.3",
     examples: ["it is 50% wide", "it is 100% tall", "it is 50% by 300px"],
@@ -565,6 +579,7 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
   },
   ...F1_TEMPLATES,
   ...F2_TEMPLATES,
+  ...F6_TEMPLATES,
   ...F3_TEMPLATES,
   ...F4_TEMPLATES,
   {
@@ -637,6 +652,8 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "scale",
   // kadam 0.3 (F4): a menu that is open only on phones
   "visibility-binding",
+  // kadam 0.3 (F6): the raw css escape hatch
+  "raw-css",
 ]);
 
 const BREAKPOINTS: ReadonlySet<string> = new Set([

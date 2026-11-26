@@ -980,6 +980,12 @@ function describeStatement(statement: StatementNode): string {
       return "a width statement";
     case "self-center":
       return "an it is centered statement";
+    case "raw-css":
+      return `a css ${statement.property} statement`;
+    case "stylesheet-class":
+      return `a class ${statement.className} statement`;
+    case "external":
+      return `an external ${statement.name} statement`;
     case "fluid-text":
       return "a fluid text statement";
     case "flex-rule":
@@ -1188,6 +1194,12 @@ function propertyKeys(statement: StatementNode): string[] {
       return ["aspect-ratio"];
     case "content-width":
       return ["width"];
+    case "raw-css":
+      return [`css-${statement.property}`];
+    case "stylesheet-class":
+      return [`class-${statement.className}`];
+    case "external":
+      return [`external-${statement.name}`];
     case "self-center":
       // It sets both side margins.
       return ["margin-left", "margin-right"];

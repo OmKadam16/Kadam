@@ -1395,6 +1395,89 @@ tile {
 
 ---
 
+### 6.25 Escape hatches (*kadam 0.3*, F6, D-42)
+
+Three sentences reach past the grammar. Each one is visible in the source,
+listed by `kadam check`, and banned in strict mode.
+
+**Raw CSS: one declaration.**
+
+```kdm
+the css "mask-image" is "url(assets/fade.svg)"
+on phones, the css "clip-path" is "none"
+in dark mode, the css "mix-blend-mode" is "screen"
+```
+
+- The property is a lowercase CSS name. Custom properties (`--x`) are not
+  allowed; use theme colors (`KDM3050`).
+- A property Kadam has a sentence for (color, background, padding, width,
+  borders, shadows, position and so on, with their longhands such as
+  `padding-top`) is an error whose hint is that sentence (`KDM3051`). This
+  keeps one way to say each thing and keeps the contrast check meaningful.
+- The value cannot contain `; { } < > @ \ !`, quotes, `expression(` or
+  `javascript:`. A `url()` must name a file inside the project, which is
+  checked and copied like any asset and written as its site address
+  (`KDM3050`).
+- The declaration goes in the element's own class, so it never reaches other
+  elements. It works after a breakpoint, a custom scope and `in dark mode,`,
+  not yet in interaction states (`when hovered,`).
+
+**A class from an existing stylesheet.**
+
+```kdm
+it also uses the class "legacy-hero" from "styles/legacy.css"
+```
+
+- The stylesheet is listed in `kadam.json` as `"stylesheets":
+  ["styles/legacy.css"]`. The class must appear in it as a selector (outside
+  comments). A typo, an unlisted file, a `kdm-` class, or a single file with no
+  project is `KDM3052`.
+- A page that uses a stylesheet links it once, before Kadam's CSS, so Kadam's
+  own styles win. Only used stylesheets are copied to the output, as they are.
+
+**External functions.**
+
+```kdm
+page "Home" {
+    external trackEvent from "analytics.js" takes text and a number and returns nothing
+
+    signUp {
+        a button
+        the text says "Sign up"
+        it remembers clicks, a number that starts as 0
+        when clicked, add 1 to clicks and call trackEvent with "sign-up", clicks
+    }
+}
+```
+
+- An `external` line sits directly in the page body (`KDM3003` elsewhere,
+  `KDM3002` when a name is declared twice). The file is a `.js` or `.mjs` file
+  inside the project; it is copied as it is and never read by the compiler.
+  The function is the module's export with the same name.
+- Parameters are `text`, `a number` and `a boolean`, separated by commas or
+  `and`, or `nothing`. In 0.3 every external `returns nothing`.
+- `call <name>` and `call <name> with <value>, <value>` is an effect like
+  `show` or `add`. Each value is quoted text, a number, `true`, `false`, or a
+  state. The count and every type are checked against the declaration
+  (`KDM3005`); an unknown external or state is `KDM3012`.
+- `call "+1 555 0100"` (a quoted number) is still a phone link.
+- The page script loads the module the first time it is called, with
+  `import()`, so it needs no CSP change. If loading fails or the function
+  throws, the error is logged and the page keeps working.
+
+**Visibility and strict mode.** `kadam check` ends with a list:
+
+```text
+kadam check: 2 escape hatches (1 css, 1 external); --strict bans them:
+  pages/home.kdm:4  external trackEvent
+  pages/home.kdm:9  css mask-image
+```
+
+`kadam check --strict`, or `"strict": true` in `kadam.json`, makes every
+escape hatch an error (`KDM3053`). Raw HTML is not an escape hatch in 0.3.
+
+---
+
 ## 7. Events and interactions
 
 Events are declarative. There are no handlers, expressions, or user-written
@@ -1996,6 +2079,10 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3044 | A data list makes an element name that is already used (*kadam 0.3*) |
 | KDM3045 | Loaded data is missing its shape or a loading, empty, or error state, is loaded twice, or is never shown (*kadam 0.3*, D-41) |
 | KDM3046 | A loaded URL is not https, not same-site, or its origin is not in `connect` (*kadam 0.3*, D-41) |
+| KDM3050 | A raw css property or value is not allowed: unknown name, custom property, forbidden characters, or a url() outside the project (*kadam 0.3*, D-42) |
+| KDM3051 | Raw css sets a property Kadam has a sentence for (*kadam 0.3*, D-42) |
+| KDM3052 | A stylesheet class is malformed, unlisted in `kadam.json`, or not in the stylesheet (*kadam 0.3*, D-42) |
+| KDM3053 | Strict mode bans an escape hatch (*kadam 0.3*, D-42) |
 
 **Project (`KDM4xxx`)**
 
