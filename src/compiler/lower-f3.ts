@@ -40,7 +40,13 @@ export const LOOP_KEYFRAMES: Readonly<Record<string, { readonly timing: string; 
 export const SCROLL_KEYFRAMES: Readonly<Record<string, readonly (readonly [string, readonly (readonly [string, string])[]])[]>> = {
   "kdm-parallax": [["from", [["translate", "0 -40px"]]], ["to", [["translate", "0 40px"]]]],
   "kdm-scroll-progress": [["from", [["scale", "0 1"]]], ["to", [["scale", "1 1"]]]],
+  // F8: the aurora background drifts slowly; it is not scroll-driven, but is emitted the same way.
+  "kdm-aurora": [["from", [["background-position", "0% 0%"]]], ["to", [["background-position", "100% 100%"]]]],
 };
+
+/** F8: a grayscale noise tile, inlined so it needs no file and no request. */
+const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E")`;
+const MESH_SPOTS = ["15% 20%", "85% 25%", "50% 90%"];
 
 /** F8 shapes: clip paths, or rounded corners for the soft shapes. */
 const SHAPES: Readonly<Record<string, readonly [string, string]>> = {
@@ -107,6 +113,8 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
     filters.push(fn);
   };
   let overlay: string | null = null;
+  // F8: generated background layers, top first, each with its size.
+  const layers: { image: string; size: string; order: number }[] = [];
   const has = <T extends StatementNode["type"]>(type: T): Extract<StatementNode, { type: T }> | undefined =>
     statements.find((statement) => statement.type === type) as Extract<StatementNode, { type: T }> | undefined;
   let transformBox = false;
@@ -229,6 +237,35 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
       case "image-filter":
         addFilter(`${statement.fn}(${number(statement.percent)}%)`);
         break;
+      case "generative-background": {
+        // F8: soft colour spots over the first colour; an aurora is larger and drifts.
+        const [first, ...rest] = statement.colors;
+        d("background-color", color(first!));
+        const aurora = statement.style === "aurora";
+        rest.forEach((value, index) => layers.push({ image: `radial-gradient(at ${MESH_SPOTS[index]}, ${color(value)} 0px, transparent ${aurora ? 50 : 55}%)`, size: aurora ? "200% 200%" : "auto", order: 2 }));
+        break;
+      }
+      case "pattern": {
+        const ink = statement.color === null ? "color-mix(in srgb, currentColor 24%, transparent)" : color(statement.color);
+        if (statement.pattern === "dotted") layers.push({ image: `radial-gradient(${ink} 1px, transparent 1.5px)`, size: "16px 16px", order: 1 });
+        else if (statement.pattern === "lined") layers.push({ image: `linear-gradient(${ink} 1px, transparent 1px)`, size: "100% 24px", order: 1 });
+        else {
+          layers.push({ image: `linear-gradient(${ink} 1px, transparent 1px)`, size: "24px 24px", order: 1 });
+          layers.push({ image: `linear-gradient(90deg, ${ink} 1px, transparent 1px)`, size: "24px 24px", order: 1 });
+        }
+        break;
+      }
+      case "grain":
+        layers.push({ image: GRAIN, size: "160px 160px", order: 0 });
+        break;
+      case "embed":
+        // F8: an embed keeps a video shape unless the author gives one.
+        if (!statements.some((other) => other.type === "aspect-ratio")) d("aspect-ratio", "16 / 9");
+        break;
+      case "typography":
+        // F8: a built-in icon strokes in currentColor, so its colour is the text colour.
+        if (context.kind === "icon" && statement.property === "color") d("color", color(statement.value));
+        break;
       case "overlay":
         overlay = `color-mix(in srgb, ${color(statement.color)} ${number(statement.percent)}%, transparent)`;
         break;
@@ -266,12 +303,20 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
     }
   }
   if (filterAt !== -1) out[filterAt] = { property: "filter", value: filters.join(" ") };
+  // F8: grain over a pattern over a mesh; sizes are listed per layer.
+  if (layers.length > 0) {
+    const ordered = [...layers].sort((a, b) => a.order - b.order);
+    out.push({ property: "background-image", value: ordered.map((layer) => layer.image).join(", ") });
+    if (ordered.some((layer) => layer.size !== "auto")) out.push({ property: "background-size", value: ordered.map((layer) => layer.size).join(", ") });
+  }
   // F8: an overlay is the top background layer, over any image or gradient.
   if (overlay !== null) {
     const layer = `linear-gradient(${overlay}, ${overlay})`;
     const image = out.findIndex((declaration) => declaration.property === "background-image");
     if (image === -1) out.push({ property: "background-image", value: layer });
     else out[image] = { property: "background-image", value: `${layer}, ${out[image]!.value}` };
+    const size = layers.length === 0 ? -1 : out.findIndex((declaration) => declaration.property === "background-size");
+    if (size !== -1) out[size] = { property: "background-size", value: `auto, ${out[size]!.value}` };
   }
   // Inline links cannot be transformed; give them a transformable box.
   if (transformBox && context.kind === "link") d("display", "inline-block");
@@ -372,6 +417,13 @@ export function lowerExtraRules(element: ElementNode, context: F3Context): IrRul
           { property: "animation-timeline", value: "view()" },
           { property: "animation-range", value: "entry 0% entry 100%" },
         ],
+        reducedMotion: true,
+      });
+    } else if (statement.type === "generative-background" && statement.style === "aurora") {
+      rules.push({
+        at: null,
+        selector: base,
+        declarations: [{ property: "animation", value: "kdm-aurora 20s ease-in-out infinite alternate" }],
         reducedMotion: true,
       });
     } else if (statement.type === "masonry") {

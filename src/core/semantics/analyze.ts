@@ -136,7 +136,14 @@ function analyzeElement(
         analyzeField(element, diagnostics);
         break;
       case "card":
-      case "container":
+      case "container": {
+        // F8: an embed fills its container, so the container holds nothing else.
+        const embed = findStatement(element, "embed");
+        if (embed !== null && element.children.length > 0) {
+          diagnostics.error("KDM3005", "a container with an embed cannot have children", embed.span, "put the embed in a container of its own");
+        }
+        break;
+      }
       case "navigation bar":
       case "divider":
         break;
@@ -501,7 +508,11 @@ function analyzeF1Element(
     }
     case "icon": {
       const source = findStatement(element, "image-source");
-      require(element, source !== null, "a source", 'add it shows "assets/check.svg"', diagnostics);
+      require(element, source !== null || has("named-icon"), "a source", 'add it shows the icon "check" or it shows "assets/check.svg"', diagnostics);
+      const tint = element.statements.find((statement) => statement.type === "typography");
+      if (tint !== undefined && source !== null) {
+        diagnostics.error("KDM3003", "an icon from a file keeps its own colours", tint.span, 'use a built-in icon (it shows the icon "check") to colour it, or colour the SVG file');
+      }
       if (source !== null) checkAssetPath(source.value, source.valueSpan, ASSET_EXTENSIONS.icon, "icon source", diagnostics);
       require(
         element,

@@ -295,6 +295,8 @@ export interface IrImageContent {
   readonly loading?: "lazy";
   /** F8: `it opens larger when clicked`. */
   readonly lightbox?: true;
+  /** F8: a built-in icon, inlined as SVG; `url` is then empty. */
+  readonly icon?: string;
 }
 
 export interface IrFieldContent {
@@ -396,6 +398,8 @@ export interface IrElement {
   readonly rules?: readonly IrRule[];
   /** Looping animation names used by this element (`spin`, `pulse`, ...). */
   readonly loops?: readonly string[];
+  /** F8: a third-party page shown in this container once the reader clicks. */
+  readonly embed?: { readonly url: string; readonly title: string; readonly host: string };
 }
 
 export interface IrPageStyle {
@@ -468,4 +472,6 @@ export interface IrPageMeta {
   readonly shareImageUrl: string | null;
   /** Absolute canonical URL of this page, when the manifest has a siteUrl. */
   readonly canonicalUrl: string | null;
+  /** kadam 0.3 (F8): the page's writing direction, when the page says it. */
+  readonly direction?: "rtl" | "ltr";
 }

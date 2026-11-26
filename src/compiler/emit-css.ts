@@ -217,6 +217,9 @@ export function emitBaseCss(usage: BaseCssUsage = EMPTY_USAGE): string {
     ...f1BaseRules(usage),
   ];
 
+  // F8: Kadam's own defaults align to the start, so they follow a right-to-left page.
+  // In a left-to-right page `start` is `left`; it is only written when a page needs it.
+  if (usage.rightToLeft === true) return `${blocks.join("\n\n").replaceAll("text-align: left;", "text-align: start;")}\n`;
   return `${blocks.join("\n\n")}\n`;
 }
 
@@ -245,6 +248,8 @@ export interface BaseCssUsage {
   readonly fieldErrors?: boolean;
   /** kadam 0.3 (F4): a card or container is a link. */
   readonly clickableBoxes?: boolean;
+  /** kadam 0.3 (F8): a page is right to left, so default alignment is `start`. */
+  readonly rightToLeft?: boolean;
 }
 
 const EMPTY_USAGE: BaseCssUsage = { kinds: new Set(), inlineLinks: false };
@@ -274,6 +279,7 @@ export function baseCssUsage(pages: readonly PageIR[]): BaseCssUsage {
     ...(inlineUnderline ? { inlineUnderline } : {}),
     ...(fieldErrors ? { fieldErrors } : {}),
     ...(clickableBoxes ? { clickableBoxes } : {}),
+    ...(pages.some((page) => page.meta?.direction === "rtl") ? { rightToLeft: true } : {}),
   };
 }
 

@@ -1,3 +1,4 @@
+import { iconSvg } from "../core/icons/icons.js";
 import { InternalCompilerError } from "./internal-error.js";
 import type { IrElement, IrFieldContent, IrPageMeta, IrSize, IrTextSegment, PageIR } from "./ir.js";
 import { baseCssHref, pageCssHref } from "./routes.js";
@@ -15,7 +16,7 @@ export function emitHtml(page: PageIR): string {
   const meta = page.meta;
   const lines: string[] = [
     "<!doctype html>",
-    `<html lang="${escapeAttribute(meta?.language ?? "en")}">`,
+    `<html lang="${escapeAttribute(meta?.language ?? "en")}"${meta?.direction === undefined ? "" : ` dir="${meta.direction}"`}>`,
     "<head>",
     '  <meta charset="utf-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1">',
@@ -210,6 +211,15 @@ function renderElementTag(element: IrElement, depth: number): string {
           `${indent}</a>`,
         ].join("\n");
       }
+      if (element.embed !== undefined) {
+        // F8: nothing from the other site loads until the reader asks. Without JavaScript the link opens it.
+        const { url, title, host } = element.embed;
+        return [
+          `${indent}<div class="${classAttribute}" data-kdm-id="${element.nodeId}">`,
+          `${indent}  <a class="kdm-embed-load" href="${escapeAttribute(url)}" target="_blank" rel="noopener noreferrer" data-kdm-embed="${element.nodeId}">Load ${escapeText(title)} from ${escapeText(host)}</a>`,
+          `${indent}</div>`,
+        ].join("\n");
+      }
       return renderContainer(element, "div", indent, classAttribute);
     case "expandable section": {
       const content = element.content;
@@ -257,6 +267,10 @@ function renderImage(
     );
   }
 
+  if (image.icon !== undefined) {
+    // F8: a built-in icon is inline SVG that strokes in the surrounding text colour.
+    return `${indent}${iconSvg(image.icon, classAttribute, element.nodeId, image.decorative ? null : escapeAttribute(image.alt ?? ""))}`;
+  }
   const attributes = [
     `class="${classAttribute}"`,
     `data-kdm-id="${element.nodeId}"`,

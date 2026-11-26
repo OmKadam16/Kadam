@@ -702,6 +702,8 @@ export function matchImageSource(tokens: readonly Token[]): StatementMatchBody |
   if (tokens[2]?.text.toLowerCase() === "how") return null;
   // kadam 0.3: `it shows the document "content/intro.md"`.
   if (tokens[2]?.text.toLowerCase() === "the" && tokens[3]?.text.toLowerCase() === "document") return null;
+  // kadam 0.3 (F8): `it shows the icon "arrow right"`.
+  if (tokens[2]?.text.toLowerCase() === "the" && tokens[3]?.text.toLowerCase() === "icon") return null;
   const span = spanFromTokens(tokens);
   const value = tokens[2];
   if (tokens.length !== 3 || !isString(value)) {

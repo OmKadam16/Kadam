@@ -1,0 +1,33 @@
+{
+  "kadam": "0.3",
+  "name": "library-site",
+  "components": [
+    {
+      "library": "kadam",
+      "use": [
+        "Banner",
+        "Card",
+        "Feature",
+        "FeatureGrid",
+        "Hero",
+        "NavBar",
+        "PageFooter",
+        "PricingPlan",
+        "PricingTable",
+        "Testimonial",
+        "Question",
+        "Questions"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "source": "pages/home.kdm",
+      "route": "/"
+    },
+    {
+      "source": "pages/pricing.kdm",
+      "route": "/pricing"
+    }
+  ]
+}

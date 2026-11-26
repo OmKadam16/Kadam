@@ -1,0 +1,17 @@
+kadam 0.3
+
+// A one-line notice across the page, such as an announcement.
+component Banner takes a message as text, an accent as color defaulting to "#4F46E5" {
+    banner1 {
+        a container
+        it has 12px padding
+        has a "{$accent}" background
+        message1 {
+            a paragraph
+            the text says "{$message}"
+            the text is white
+            the text is centered
+            the text is 14px
+        }
+    }
+}

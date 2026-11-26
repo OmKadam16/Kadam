@@ -273,6 +273,13 @@ const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
  */
 export function matchPageMetadata(tokens: readonly Token[]): Body {
   if (!isKeyword(tokens[0], "the") || !isKeyword(tokens[1], "page")) return null;
+  // F8: `the page direction is right to left` (or left to right).
+  if (words(tokens.slice(2), "direction", "is")) {
+    const rest = normalizeWords(tokens.slice(4));
+    const value = rest === "right to left" ? "rtl" : rest === "left to right" ? "ltr" : null;
+    if (value === null) return fail("the page direction is right to left or left to right", tokens, "for example: the page direction is right to left");
+    return ok({ type: "page-setting", property: "direction", value, valueSpan: spanFromTokens(tokens.slice(4)), span: spanFromTokens(tokens) });
+  }
   let property: "description" | "language" | "icon" | "share image";
   let valueIndex: number;
   if (words(tokens.slice(2), "description", "says")) {

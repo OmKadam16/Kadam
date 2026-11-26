@@ -1,0 +1,28 @@
+kadam 0.3
+
+// A quote from a customer, with who said it.
+component Testimonial takes a quote as text, a name as text, a role as text {
+    quote1 {
+        a card
+        it has 24px padding
+        it has 12px gap between children
+        has a 1px #6B728040 border
+        has rounded corners
+        words1 {
+            a paragraph
+            the text says "{$quote}"
+            the text is 18px
+            the text is italic
+        }
+        name1 {
+            a paragraph
+            the text says "{$name}"
+            the text is bold
+        }
+        role1 {
+            a paragraph
+            the text says "{$role}"
+            the text is 14px
+        }
+    }
+}

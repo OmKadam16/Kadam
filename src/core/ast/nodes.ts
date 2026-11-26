@@ -353,7 +353,7 @@ export type PageSettingNode =
   // kadam 0.3 page metadata
   | (NodeBase & {
       readonly type: "page-setting";
-      readonly property: "description" | "language" | "icon" | "share image";
+      readonly property: "description" | "language" | "icon" | "share image" | "direction";
       readonly value: string;
       readonly valueSpan: Span;
     });
@@ -417,7 +417,17 @@ export type F8Statement =
   // its children snap into place
   | (NodeBase & { readonly type: "snap" })
   // it opens larger when clicked (an image)
-  | (NodeBase & { readonly type: "lightbox" });
+  | (NodeBase & { readonly type: "lightbox" })
+  // it shows the icon "arrow right" (an icon)
+  | (NodeBase & { readonly type: "named-icon"; readonly name: string; readonly nameSpan: Span })
+  // it embeds "https://..." titled "Product tour" (loads only when clicked)
+  | (NodeBase & { readonly type: "embed"; readonly url: string; readonly title: string; readonly urlSpan: Span })
+  // it has a mesh background of teal, violet and pink | it has an aurora background of ...
+  | (NodeBase & { readonly type: "generative-background"; readonly style: "mesh" | "aurora"; readonly colors: readonly ColorValue[] })
+  // it has a dotted pattern | it has a grid pattern in #CBD5E1
+  | (NodeBase & { readonly type: "pattern"; readonly pattern: "dotted" | "grid" | "lined"; readonly color: ColorValue | null })
+  // it has a grain texture
+  | (NodeBase & { readonly type: "grain" });
 
 export type ShapeName = "circle" | "ellipse" | "hexagon" | "diamond" | "triangle" | "blob" | "arch";
 

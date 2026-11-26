@@ -23,6 +23,7 @@ import { startLanguageServer } from "../lsp/server.js";
 import { runFormatCommand } from "./format-command.js";
 import { runNewCommand } from "./new-command.js";
 import { runExplainCommand } from "./explain-command.js";
+import { runEjectCommand } from "./library-command.js";
 import { compileWebComponents } from "../compiler/web-components.js";
 import { compileProject } from "../compiler/project.js";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
@@ -101,6 +102,10 @@ if (first === "keywords") {
 
 if (first === "explain") {
   process.exit(runExplainCommand(args.slice(1)));
+}
+
+if (first === "eject") {
+  process.exit(runEjectCommand(args.slice(1)));
 }
 
 if (first === "new") {
@@ -278,7 +283,7 @@ if (first === "build") {
 
 console.error(
   `kadam: '${args.join(" ")}' is not available.\n` +
-    "The CLI provides build, check, dev, explain, format, keywords, lsp, new, and parse. Run kadam --help for usage.\n" +
+    "The CLI provides build, check, dev, eject, explain, format, keywords, lsp, new, and parse. Run kadam --help for usage.\n" +
     "See docs/roadmap.md for the implementation plan.",
 );
 process.exit(1);
@@ -608,7 +613,9 @@ Commands:
   keywords [--colors|--core|          Print reserved words or property names
            --properties|--all]        (add --json for JSON)
   explain [code...] [--json]          Explain a diagnostic code, such as KDM3005,
-                                       or list every code
+                                       a library component, such as Card, or list
+                                       every code (--library lists the components)
+  eject <Component...> [-p <dir>]     Copy a library component into the project to change it
   new <dir> [--template <name>]       Start a project from a template (--list shows them)
   format [paths...] [--check]         Rewrite .kdm files in the canonical layout;
                                        --check only reports, for CI

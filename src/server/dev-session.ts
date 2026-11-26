@@ -101,6 +101,7 @@ export class DevSession {
   #latestFiles: readonly OutputFile[] = [];
   /** Markdown documents the last build read; they are inputs too. */
   #latestDocuments: readonly string[] = [];
+  #frameOrigins: readonly string[] = [];
   #routes: readonly RouteSummary[] = [];
   #sources: Readonly<Record<string, SourceLocation>> = {};
   #sourceOverrides: ReadonlyMap<string, string | Uint8Array> = new Map();
@@ -158,6 +159,11 @@ export class DevSession {
     return this.#manifest?.connect ?? [];
   }
 
+  /** F8: origins of the embeds in the latest build. */
+  get frameOrigins(): readonly string[] {
+    return this.#frameOrigins;
+  }
+
   /** Project-relative paths the watcher must observe. Empty means fallback. */
   get watchPaths(): readonly string[] {
     if (this.#manifest === null) return [];
@@ -166,6 +172,8 @@ export class DevSession {
     // Component files are compile inputs for every page that uses them, so a
     // component edit must rebuild even though it is never emitted as a route.
     for (const component of this.#manifest.components ?? []) {
+      // D-46: library components ship with the compiler; they are not project files.
+      if (component.library === "kadam") continue;
       paths.add(component.source);
     }
     // The theme and data files feed every page too (kadam 0.3).
@@ -197,6 +205,7 @@ export class DevSession {
 
     this.#manifest = result.manifest;
     this.#outDir = result.outDir;
+    if (result.ok) this.#frameOrigins = result.frameOrigins ?? [];
     this.#basePath = normalizeBasePath(
       this.#basePathOption ?? result.manifest?.basePath ?? "",
     );

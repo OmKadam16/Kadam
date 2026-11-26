@@ -427,6 +427,7 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     ...(loops.length === 0 ? {} : { loops }),
     ...(runtimeAttributes === undefined ? {} : { attributes: runtimeAttributes }),
     ...(element.runtimeList === undefined ? {} : { template: true as const }),
+    ...embedOf(element),
   };
 }
 
@@ -864,6 +865,8 @@ function applyTypography(
     style.field = { ...field, input };
   } else {
     const typography = style.typography;
+    // F8: a built-in icon's colour is written by the F3 declarations instead.
+    if (typography === null && statement.property === "color") return;
     if (typography === null) {
       throw new InternalCompilerError(
         "typography required a text-bearing element",
@@ -1040,6 +1043,11 @@ function lowerImage(
   basePath: string = "",
 ): IrImageContent | null {
   if (kind !== "image" && kind !== "icon") return null;
+  const named = element.statements.find((statement) => statement.type === "named-icon");
+  if (named !== undefined && named.type === "named-icon") {
+    const description = findStatement(element, "image-description") as ImageDescriptionStatement | null;
+    return { sourcePath: "", url: "", alt: description?.value ?? null, decorative: findStatement(element, "decorative") !== null, icon: named.name };
+  }
   const source = findStatement(element, "image-source") as ImageSourceStatement | null;
   if (source === null) {
     throw new InternalCompilerError(
@@ -1480,4 +1488,11 @@ function collectAssets(elements: readonly IrElement[]): readonly IrAsset[] {
 function usesMotion(element: IrElement): boolean {
   if (element.motion !== null) return true;
   return element.children.some(usesMotion);
+}
+
+/** F8: `it embeds "..." titled "..."` on a container. */
+function embedOf(element: ElementNode): { embed?: { url: string; title: string; host: string } } {
+  const statement = element.statements.find((candidate) => candidate.type === "embed");
+  if (statement === undefined || statement.type !== "embed") return {};
+  return { embed: { url: statement.url, title: statement.title, host: new URL(statement.url).host } };
 }

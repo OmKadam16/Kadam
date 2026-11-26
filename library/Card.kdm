@@ -1,0 +1,20 @@
+kadam 0.3
+
+// A card with a title; its content goes in the slot.
+component Card takes a title as text {
+    frame1 {
+        a card
+        it has 24px padding
+        it has 12px gap between children
+        has a 1px #6B728040 border
+        has rounded corners
+        has a soft shadow
+        title1 {
+            a minor heading
+            the text says "{$title}"
+        }
+        body1 {
+            a slot
+        }
+    }
+}

@@ -1,0 +1,73 @@
+kadam 0.3
+
+// One plan in a pricing table. Put a list of what it includes in the slot.
+component PricingPlan takes a name as text, a price as text, a period as text defaulting to "per month", an action as text defaulting to "Choose plan", a target as page, an accent as color defaulting to "#4F46E5" {
+    plan1 {
+        a card
+        it has 32px padding
+        it has 16px gap between children
+        has a 1px #6B728040 border
+        has rounded corners
+        name1 {
+            a minor heading
+            the text says "{$name}"
+        }
+        price1 {
+            a paragraph
+            the text says "{$price}"
+            the text is 40px
+            the text is bold
+        }
+        period1 {
+            a paragraph
+            the text says "{$period}"
+            the text is 14px
+        }
+        includes1 {
+            a slot
+        }
+        action1 {
+            a button
+            the text says "{$action}"
+            has a "{$accent}" background
+            has rounded corners
+            when clicked, go to page "{$target}"
+        }
+    }
+
+    variant featured {
+        plan1 {
+            a card
+            it has 32px padding
+            it has 16px gap between children
+            has a 2px "{$accent}" border
+            has rounded corners
+            has a medium shadow
+            name1 {
+                a minor heading
+                the text says "{$name}"
+            }
+            price1 {
+                a paragraph
+                the text says "{$price}"
+                the text is 40px
+                the text is bold
+            }
+            period1 {
+                a paragraph
+                the text says "{$period}"
+                the text is 14px
+            }
+            includes1 {
+                a slot
+            }
+            action1 {
+                a button
+                the text says "{$action}"
+                has a "{$accent}" background
+                has rounded corners
+                when clicked, go to page "{$target}"
+            }
+        }
+    }
+}

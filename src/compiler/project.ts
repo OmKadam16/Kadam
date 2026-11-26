@@ -3,8 +3,9 @@ import {
   isUiLanguageVersion,
   type UiLanguageVersion,
 } from "../version.js";
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DocumentNode, ElementNode } from "../core/ast/nodes.js";
 import {
   DiagnosticBag,
@@ -118,6 +119,8 @@ export interface ProjectCompileResult {
   readonly sources: readonly SourceFile[];
   /** kadam 0.3 (F6, D-42): every escape hatch the project uses. */
   readonly escapeHatches?: readonly EscapeHatch[];
+  /** F8: origins of embeds, which a server's policy must allow as frames. */
+  readonly frameOrigins?: readonly string[];
 }
 
 interface LoadedPage {
@@ -346,7 +349,7 @@ export function compileProject(
   const componentFiles: ComponentFile[] = [];
   for (const entry of manifest.components) {
     const sourcePath = entry.source;
-    const source = loadProjectSource({
+    const source = entry.library === "kadam" ? loadLibrarySource(sourcePath, diagnostics, sources) : loadProjectSource({
       projectRoot,
       realProjectRoot,
       outDir,
@@ -632,11 +635,13 @@ export function compileProject(
       });
     }
 
+    // F8: embeds load in frames from these origins once clicked.
+    const frameOrigins = [...new Set(loweredPages.flatMap((page) => (page.runtime?.embeds ?? []).map(([, url]) => new URL(url).origin)))].sort(compareText);
     // D-44: the generated server and the module it calls.
     if (server !== null) {
       const forms = loweredPages.flatMap((page) =>
         (page.runtime?.forms ?? []).map(([form, sent, failed]) => ({ form, html: page.outputPath, sent, failed })));
-      files.push(...serverFiles(server, calledFunctions(expandedPages.map((loaded) => loaded.document.page!)), forms, manifest.connect ?? [], basePath));
+      files.push(...serverFiles(server, calledFunctions(expandedPages.map((loaded) => loaded.document.page!)), forms, manifest.connect ?? [], basePath, frameOrigins));
     }
     files.sort((a, b) => compareText(a.path, b.path));
     const output = options.fragment === true ? fragmentFiles(loweredPages, files.filter((file) => file.kind === "asset")) : files;
@@ -650,6 +655,7 @@ export function compileProject(
       outDir,
       sources,
       escapeHatches,
+      ...(frameOrigins.length === 0 ? {} : { frameOrigins }),
     };
   } catch (error) {
     diagnostics.error(
@@ -1017,4 +1023,30 @@ function reportVersionMismatch(
     document.versionSpan ?? document.span,
     `change the directive to kadam ${projectVersion}, or remove it to inherit the project version`,
   );
+}
+
+/** D-46: the standard component library ships in the package, next to `dist`. */
+export const LIBRARY_ROOT = fileURLToPath(new URL("../../library/", import.meta.url));
+
+/** The names of the standard library's components. */
+export function libraryComponentNames(): string[] {
+  try {
+    return readdirSync(LIBRARY_ROOT).filter((name) => name.endsWith(".kdm")).map((name) => name.slice(0, -4)).sort(compareText);
+  } catch {
+    return [];
+  }
+}
+
+function loadLibrarySource(sourcePath: string, diagnostics: DiagnosticBag, sources: SourceFile[]): SourceFile | null {
+  const name = sourcePath.slice("kadam/".length, -".kdm".length);
+  const file = join(LIBRARY_ROOT, `${name}.kdm`);
+  if (!existsSync(file)) {
+    diagnostics.error("KDM4009", `the kadam library has no component named ${name}`, rootSpan("kadam.json"),
+      `library components: ${libraryComponentNames().join(", ")}`);
+    return null;
+  }
+  const created = createSourceFile(sourcePath, readFileSync(file, "utf8"));
+  diagnostics.addAll(created.diagnostics);
+  sources.push(created.source);
+  return created.source;
 }

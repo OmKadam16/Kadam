@@ -1,0 +1,52 @@
+kadam 0.3
+page "Pricing" {
+    head1 {
+        a main heading
+        the text says "Pricing"
+    }
+    table1 {
+        a PricingTable from kadam
+        with a title of "Plans"
+        basic1 {
+            a PricingPlan from kadam
+            with a name of "Basic"
+            with a price of "$0"
+            with a target of "Home"
+            includes1 {
+                a list
+                i1 {
+                    a list item
+                    the text says "One site"
+                }
+            }
+        }
+        pro1 {
+            a PricingPlan from kadam in the featured variant
+            with a name of "Pro"
+            with a price of "$12"
+            with a target of "Home"
+        }
+    }
+    faq1 {
+        a Questions from kadam
+        with a title of "Questions"
+        q1 {
+            a Question from kadam in the open variant
+            with a question of "Can I change plans?"
+            with an answer of "Yes, at any time."
+        }
+        q2 {
+            a Question from kadam
+            with a question of "Is there a free trial?"
+            with an answer of "The Basic plan is free."
+        }
+    }
+    card1 {
+        a Card from kadam
+        with a title of "Questions?"
+        body1 {
+            a paragraph
+            the text says "Write to us."
+        }
+    }
+}

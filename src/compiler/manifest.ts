@@ -24,6 +24,8 @@ export interface ManifestComponentEntry {
   readonly source: string;
   /** Optional library namespace; null means the project namespace. */
   readonly namespace: string | null;
+  /** D-46: a component from the standard library shipped with the compiler; `source` is then `kadam/<Name>.kdm`. */
+  readonly library?: "kadam";
 }
 
 export interface KadamManifest {
@@ -746,6 +748,33 @@ export function loadManifest(
 
         if (typeof item === "string") {
           sourceValue = item;
+        } else if (typeof item === "object" && item !== null && !Array.isArray(item) && "library" in item) {
+          // D-46: { "library": "kadam", "use": ["Card", "Hero"] }
+          const entry = item as Record<string, unknown>;
+          const unknown = Object.keys(entry).filter((key) => key !== "library" && key !== "use");
+          if (entry.library !== "kadam" || unknown.length > 0 || !Array.isArray(entry.use) || entry.use.length === 0) {
+            diagnostics.error(
+              "KDM4009",
+              `library entry at index ${i} must be { "library": "kadam", "use": ["Card", ...] }`,
+              rootSpan,
+              'the only library is "kadam"; list the components you use, for example { "library": "kadam", "use": ["Card", "Hero"] }',
+            );
+            continue;
+          }
+          for (const name of entry.use as unknown[]) {
+            if (typeof name !== "string" || !/^[A-Z][A-Za-z0-9]{0,63}$/.test(name)) {
+              diagnostics.error("KDM4009", `invalid library component name ${JSON.stringify(name)} at index ${i}`, rootSpan, 'use a component name such as "Card"');
+              continue;
+            }
+            const source = `kadam/${name}.kdm`;
+            if (seenComponents.has(source)) {
+              diagnostics.error("KDM4008", `the library component ${name} is listed more than once`, rootSpan, "list each library component once");
+              continue;
+            }
+            seenComponents.set(source, rootSpan);
+            components.push({ source, namespace: "kadam", library: "kadam" });
+          }
+          continue;
         } else if (typeof item === "object" && item !== null && !Array.isArray(item)) {
           const entry = item as Record<string, unknown>;
           for (const key of Object.keys(entry)) {
@@ -760,6 +789,11 @@ export function loadManifest(
           }
           sourceValue = entry.source;
           namespaceValue = entry.namespace;
+          if (namespaceValue === "kadam") {
+            diagnostics.error("KDM4009", `the namespace "kadam" is reserved for the standard library (index ${i})`, rootSpan,
+              'choose another namespace, or use { "library": "kadam", "use": [...] } for library components');
+            continue;
+          }
           if (
             namespaceValue !== undefined &&
             (typeof namespaceValue !== "string" ||

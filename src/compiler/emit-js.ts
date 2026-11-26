@@ -137,6 +137,27 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
       "",
     );
   }
+  if (runtime.embeds.length > 0) {
+    // F8: the iframe is made only when the reader clicks, so the other site sees nothing before.
+    lines.push(
+      `const embeds = ${json(runtime.embeds)};`,
+      "for (const [id, url, title] of embeds) {",
+      "  const link = document.querySelector(`[data-kdm-embed=\"${id}\"]`);",
+      '  link.addEventListener("click", (event) => {',
+      "    event.preventDefault();",
+      '    const frame = document.createElement("iframe");',
+      '    frame.className = "kdm-embed-frame";',
+      "    frame.src = url;",
+      "    frame.title = title;",
+      '    frame.allow = "fullscreen; picture-in-picture; encrypted-media";',
+      '    frame.referrerPolicy = "strict-origin-when-cross-origin";',
+      "    link.replaceWith(frame);",
+      "    frame.focus();",
+      "  });",
+      "}",
+      "",
+    );
+  }
   if (runtime.forms.length > 0) {
     // D-44: send the form to its server function and show the sent or failed state.
     lines.push(
@@ -295,6 +316,29 @@ export function runtimeCssBlocks(page: PageIR, breakpointQuery: (breakpoint: "ph
   const runtime = page.runtime;
   if (runtime === undefined) return [];
   const blocks = ["[data-kdm-hidden] {\n  display: none !important;\n}"];
+  if (runtime.embeds.length > 0) {
+    blocks.push([
+      ".kdm-embed-load {",
+      "  display: flex;",
+      "  align-items: center;",
+      "  justify-content: center;",
+      "  width: 100%;",
+      "  height: 100%;",
+      "  padding: 16px;",
+      "  background-color: #1F2937;",
+      "  color: #FFFFFF;",
+      "  text-align: center;",
+      "  text-decoration: underline;",
+      "}",
+      "",
+      ".kdm-embed-frame {",
+      "  display: block;",
+      "  width: 100%;",
+      "  height: 100%;",
+      "  border: 0;",
+      "}",
+    ].join("\n"));
+  }
   if (runtime.lightboxes.length > 0) {
     blocks.push([
       "[data-kdm-lightbox-open] {",

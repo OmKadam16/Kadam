@@ -24,10 +24,10 @@ const HEARTBEAT_MS = 15_000;
 const PORT_ATTEMPTS = 10;
 
 /** kadam 0.3 (D-41): pages may load data from the origins kadam.json declares. */
-function securityPolicy(connect: readonly string[]): string {
+function securityPolicy(connect: readonly string[], frames: readonly string[] = []): string {
   return (
     "default-src 'self'; img-src 'self' data:; style-src 'self'; " +
-    `script-src 'self'; connect-src ${["'self'", ...connect].join(" ")}; object-src 'none'; base-uri 'none'`
+    `script-src 'self'; connect-src ${["'self'", ...connect].join(" ")}; ${frames.length === 0 ? "" : `frame-src ${frames.join(" ")}; `}object-src 'none'; base-uri 'none'`
   );
 }
 
@@ -112,7 +112,7 @@ export async function createDevServer(
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "no-referrer");
-    res.setHeader("Content-Security-Policy", securityPolicy(session.connectOrigins));
+    res.setHeader("Content-Security-Policy", securityPolicy(session.connectOrigins, session.frameOrigins));
 
     if (!hostAllowed(req.headers.host, host)) {
       sendText(res, 403, "Forbidden");

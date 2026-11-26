@@ -1,0 +1,29 @@
+kadam 0.3
+
+// One question that opens to show its answer. Works without JavaScript.
+component Question takes a question as text, an answer as text {
+    item1 {
+        an expandable section
+        the title says "{$question}"
+        it has 16px padding on the top and bottom
+        has a 1px #6B728040 border on the bottom
+        answer1 {
+            a paragraph
+            the text says "{$answer}"
+        }
+    }
+
+    variant open {
+        item1 {
+            an expandable section
+            the title says "{$question}"
+            it starts open
+            it has 16px padding on the top and bottom
+            has a 1px #6B728040 border on the bottom
+            answer1 {
+                a paragraph
+                the text says "{$answer}"
+            }
+        }
+    }
+}

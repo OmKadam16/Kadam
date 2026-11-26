@@ -1738,6 +1738,102 @@ progressBar {
   effect (`KDM3004`).
 - Flip cards were left out: they need two faces and a state, which the
   dialog and state sentences already cover.
+
+### 6.30 Icons, embeds, and right-to-left pages (*kadam 0.3*, F8)
+
+```kdm
+page "مرحبا" {
+    the page language is "ar"
+    the page direction is right to left
+    contact1 {
+        a container
+        it arranges its children in a row
+        mailIcon {
+            an icon
+            it shows the icon "mail"
+            the description says "Email"
+            the text color is #0F766E
+        }
+        address1 {
+            a paragraph
+            the text says "hello@example.com"
+        }
+    }
+    tour1 {
+        a container
+        it embeds "https://www.youtube-nocookie.com/embed/abc" titled "Product tour"
+    }
+}
+```
+
+- **Page direction.** `the page direction is right to left` (or `left to
+  right`) writes `dir` on `<html>`. Rows, grids and logical spacing follow
+  it. In a project with a right-to-left page, Kadam's own default alignment is
+  `start` instead of `left`, which is the same on left-to-right pages.
+  Sentences that name a side (`it is aligned left`, `it moves by 4px to the
+  left`) keep meaning that side.
+- **Built-in icons.** `it shows the icon "<name>"` on an icon draws Kadam's
+  own icon as inline SVG, stroked in `currentColor`. Only the icons a page
+  uses are written into it. It needs `the description says` (`role="img"`
+  with that label) or `it is decorative` (`aria-hidden`). `the text color is`
+  colours a built-in icon; an icon from a file keeps its own colours
+  (`KDM3003`). Names are not case sensitive. An unknown name is `KDM3005`
+  and suggests close names. The icons are: `arrow down`, `arrow left`, `arrow right`, `arrow up`, `bell`, `calendar`, `check`, `chevron down`, `chevron left`, `chevron right`, `chevron up`, `clock`, `close`, `copy`, `download`, `external link`, `file`, `filter`, `globe`, `heart`, `home`, `image`, `info`, `link`, `lock`, `mail`, `map pin`, `menu`, `message`, `minus`, `moon`, `pause`, `pencil`, `phone`, `play`, `plus`, `search`, `settings`, `share`, `star`, `sun`, `trash`, `upload`, `user`, `warning`.
+- **Embeds.** `it embeds "<https address>" titled "<what it is>"` on a
+  container or card shows a link, "Load <title> from <host>", in place of the
+  other site. Nothing is requested from that site until the reader clicks;
+  then the runtime puts in an iframe with that title and focuses it. Without
+  JavaScript the link opens the address in a new tab. The container keeps a
+  16 by 9 shape unless it says another, and cannot have children
+  (`KDM3005`). Only `https` addresses are allowed. The generated servers and
+  `kadam dev` add each embed's origin to the page's `frame-src` policy.
+
+### 6.31 Generated backgrounds (*kadam 0.3*, F8)
+
+```kdm
+page "Launch" {
+    hero1 {
+        a section
+        it is 60vh tall
+        it has an aurora background of #022C22, #10B981 and #A7F3D0
+        it has a grain texture
+        title1 {
+            a main heading
+            the text says "Launch week"
+            the text color is white
+        }
+    }
+    notes1 {
+        a section
+        it has a dotted pattern
+        it has 48px padding
+        notesTitle {
+            a section heading
+            the text says "Notes"
+        }
+        body1 {
+            a paragraph
+            the text says "Plans, dates and links."
+        }
+    }
+}
+```
+
+- **Mesh.** `it has a mesh background of <2 to 4 colors>` paints the first
+  colour and soft radial spots of the others over it. Colours are separated
+  by commas and `and`, and may be theme colours.
+- **Aurora.** `it has an aurora background of <2 to 4 colors>` is a larger
+  mesh that drifts over 20 seconds and back. It stops with reduced motion.
+- **Patterns.** `it has a dotted pattern`, `a grid pattern` or `a lined
+  pattern`, optionally `in <color>`; the default is the text colour at 24%.
+- **Grain.** `it has a grain texture` lays a fine grayscale noise over the
+  background. The noise is an inline SVG, so it needs no file or request.
+- Layers stack grain, then pattern, then mesh, with an overlay (6.29) on top.
+  A mesh or aurora is the element's background, so it conflicts with another
+  background (`KDM3004`). None of these share an element with a background
+  image or gradient (`KDM3005`), and none go on an image, video, icon or
+  divider (`KDM3003`).
+
 ---
 
 ## 7. Events and interactions

@@ -36,5 +36,5 @@ test("kadam explain prints one or more codes, lists them all, and rejects unknow
   assert.deepEqual(json.map((entry) => entry.code), ["KDM5008"]);
   const bad = cli("explain", "KDM3005", "nope");
   assert.equal(bad.status, 2);
-  assert.match(bad.stderr, /unknown code "nope"/);
+  assert.match(bad.stderr, /unknown code or library component "nope"/);
 });

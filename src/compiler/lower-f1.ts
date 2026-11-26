@@ -252,9 +252,10 @@ export function lowerPageMeta(
   const language = value("language");
   const icon = value("icon");
   const shareImage = value("share image");
+  const direction = value("direction") as "rtl" | "ltr" | null;
   const site = siteUrl?.replace(/\/$/, "");
   const canonicalUrl = site === undefined ? null : `${site}${routeUrl(route, basePath)}`;
-  if (description === null && language === null && icon === null && shareImage === null && canonicalUrl === null) {
+  if (description === null && language === null && icon === null && shareImage === null && canonicalUrl === null && direction === null) {
     return undefined;
   }
   return {
@@ -263,5 +264,6 @@ export function lowerPageMeta(
     iconUrl: icon === null ? null : assetUrl(icon, basePath),
     shareImageUrl: shareImage === null || site === undefined ? null : `${site}${assetUrl(shareImage, basePath)}`,
     canonicalUrl,
+    ...(direction === null ? {} : { direction }),
   };
 }

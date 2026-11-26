@@ -174,3 +174,15 @@ test("server routes live under the base path on the page and in both servers", (
   }
   assert.match(file(build(), "server/server.ts"), /^const BASE = "";$/m);
 });
+
+test("F8: embed origins are allowed as frames in the generated servers' policy", () => {
+  const embed = '    tour1 {\n        a container\n        it embeds "https://www.youtube-nocookie.com/embed/abc" titled "Tour"\n    }\n';
+  const result = build({ page: PAGE.replace(/\n}\s*$/, `\n${embed}}\n`) });
+  assert.deepEqual(codes(result), []);
+  assert.deepEqual(result.frameOrigins, ["https://www.youtube-nocookie.com"]);
+  assert.match(file(result, "server/server.ts"), /connect-src 'self'; frame-src https:\/\/www\.youtube-nocookie\.com; object-src 'none'/);
+  const python = build({ page: PAGE.replace(/\n}\s*$/, `\n${embed}}\n`), manifest: { ...MANIFEST, server: { module: "server/shop.kdm", target: "python" } } });
+  assert.match(file(python, "server/server.py"), /frame-src https:\/\/www\.youtube-nocookie\.com;/);
+  // Without embeds the policy is unchanged.
+  assert.doesNotMatch(file(build(), "server/server.ts"), /frame-src/);
+});

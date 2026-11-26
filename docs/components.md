@@ -31,16 +31,68 @@ Shipped:
   IDs, and `componentOrigin` on IR elements and source-map entries;
 - page CSS deduplicated by component class;
 - component sources in `kadam dev` watch paths;
-- `examples/components/` as the acceptance fixture.
+- `examples/components/` as the acceptance fixture;
+- the standard library (D-46), described below.
 
 Not implemented yet:
 
-- a packaged component library beyond the example project;
 - component-aware incremental re-emission (`kadam dev` rebuilds the project);
 - a visual component browser or other GUI tooling.
 
 Single-file builds (`kadam build page.kdm`) have no catalog, so a component
 instance there is still an unknown component (`KDM3022`).
+
+
+## The standard library (D-46)
+
+The compiler ships components written in Kadam, in `library/` in the
+package. A project lists the ones it uses, and pages use them with
+`from kadam`:
+
+```json
+{ "kadam": "0.3", "components": [{ "library": "kadam", "use": ["Hero", "FeatureGrid", "Feature"] }] }
+```
+
+```kdm
+hero1 {
+    a Hero from kadam in the centered variant
+    with a title of "Ship pages you can read"
+    with a lead of "Write your site in plain, exact English."
+    with an action of "See pricing"
+    with a target of "Pricing"
+}
+```
+
+| Component | What it is | Slots | Variants |
+| --- | --- | --- | --- |
+| `NavBar` | the site header: brand link plus links | links | |
+| `Banner` | a one-line notice in the accent colour | | |
+| `Hero` | main heading, lead and one action | extra content | `centered` |
+| `FeatureGrid` | a section of `Feature`s in 3, 2 or 1 columns | features | |
+| `Feature` | a short title and a sentence | | |
+| `PricingTable` | a section of `PricingPlan`s side by side | plans | |
+| `PricingPlan` | name, price, period, what it includes, action | includes | `featured` |
+| `Testimonial` | a quote with who said it | | |
+| `Card` | a titled card | content | |
+| `Questions` | a section of `Question`s | questions | |
+| `Question` | a question that opens to its answer, no script | | `open` |
+| `PageFooter` | a note and links | links | |
+
+- Library components are `kadam 0.3` and need a `kadam 0.3` project.
+- Colours are neutral and follow dark mode; components that have an action
+  take `an accent as color` (default `#4F46E5`).
+- `kadam explain Card` prints a component's parameters, variants, slots and an
+  example; `kadam explain --library` lists them all.
+- `kadam eject Card` copies `Card.kdm` into `components/`, lists it in
+  `kadam.json` in place of the library entry, and drops `from kadam` from its
+  uses, so the project can change it. An existing copy is never overwritten.
+- The namespace `kadam` is reserved; a project library cannot use it
+  (`KDM4009`). An unknown library component is `KDM4009` and lists the others.
+- Every component is built by `test/fixtures/library-site`, which the browser
+  suite checks with axe in light and dark mode at 360px and 1280px, for
+  sideways overflow, and by keyboard.
+- Not yet: `Tabs` and `Modal` need state inside a component, which is not
+  designed yet; `Breadcrumbs` is not written yet.
 
 ---
 

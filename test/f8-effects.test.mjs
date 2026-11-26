@@ -9,6 +9,7 @@ const codes = (result) => result.diagnostics.filter((d) => d.severity === "error
 const css = (result) => String(result.files?.find((f) => f.path === "assets/kadam.home.css")?.contents ?? "");
 const page = (lines, version = "0.3") => compileText("a.kdm", [`kadam ${version}`, 'page "A" {', ...lines.map((l) => `    ${l}`), "}", ""].join("\n"));
 const image = (...lines) => ["photo {", "    an image", '    it shows "assets/a.jpg"', '    the description says "A desk"', ...lines.map((l) => `    ${l}`), "}"];
+const html = (result) => String(result.files?.find((f) => f.path === "index.html")?.contents ?? "");
 const box = (...lines) => ["box1 {", "    a container", ...lines.map((l) => `    ${l}`), "}"];
 
 test("filters combine into one filter declaration, in the order written", () => {
@@ -69,7 +70,6 @@ test("the effects work in scopes and are kadam 0.3", () => {
 });
 
 // F8 step 2: background video.
-const html = (result) => String(result.files?.find((f) => f.path === "index.html")?.contents ?? "");
 const video = (...lines) => ["hero1 {", "    a section", "    backdrop {", "        a video", '        it plays "assets/loop.mp4"', ...lines.map((l) => `        ${l}`), "    }", "    t1 {", "        a main heading", '        the text says "Hello"', "    }", "}"];
 
 test("a background video is muted, looping, decorative, and has a hidden pause button", () => {
@@ -136,4 +136,82 @@ test("an image can open larger in a dialog; it needs a description", () => {
   assert.match(String(result.files.find((f) => f.path === "assets/kadam.home.js").contents), /const lightboxes = \["home-photo"\];/);
   assert.ok(codes(page(["p1 {", "    an image", '    it shows "assets/a.jpg"', "    it is decorative", "    it opens larger when clicked", "}"])).includes("KDM3005"));
   assert.ok(codes(page(box("it opens larger when clicked"))).length > 0);
+});
+
+// F8: right-to-left pages, built-in icons, and embeds that load when clicked.
+
+const baseCss = (result) => String(result.files?.find((f) => f.path === "assets/kadam.css")?.contents ?? "");
+
+test("a right-to-left page sets dir and aligns Kadam's defaults to the start", () => {
+  const heading = ["t1 {", "    a main heading", '    the text says "مرحبا"', "}"];
+  const result = page(['the page language is "ar"', "the page direction is right to left", ...heading]);
+  assert.deepEqual(codes(result), []);
+  assert.match(html(result), /<html lang="ar" dir="rtl">/);
+  assert.match(baseCss(result), /text-align: start;/);
+  assert.doesNotMatch(baseCss(result), /text-align: left;/);
+  // Left to right is said, so dir is written, and nothing else changes.
+  const ltr = page(["the page direction is left to right", ...heading]);
+  assert.match(html(ltr), /<html lang="en" dir="ltr">/);
+  assert.match(baseCss(ltr), /text-align: left;/);
+  assert.doesNotMatch(html(page(heading)), /dir=/);
+  assert.equal(codes(page(["the page direction is upside down", ...heading]))[0], "KDM3005");
+  assert.ok(codes(page(["the page direction is right to left", "the page direction is left to right", ...heading])).includes("KDM3004"));
+});
+
+test("a built-in icon is inline SVG in the text colour, labelled or hidden", () => {
+  const icon = (...lines) => ["i1 {", "    an icon", ...lines.map((l) => `    ${l}`), "}"];
+  const decorative = page(icon('it shows the icon "Arrow  Right"', "it is decorative", "the text color is red"));
+  assert.deepEqual(codes(decorative), []);
+  assert.match(html(decorative), /<svg class="kdm-home-i1 kdm-kind-icon" data-kdm-id="home-i1" viewBox="0 0 24 24" fill="none" stroke="currentColor" [^>]*aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"\/><\/svg>/);
+  assert.match(css(decorative), /\.kdm-home-i1 \{\n {2}color: red;\n\}/);
+  const labelled = page(icon('it shows the icon "mail"', 'the description says "Email us"'));
+  assert.match(html(labelled), /role="img" aria-label="Email us"><rect /);
+  // Only the icons a page uses are in it.
+  assert.doesNotMatch(html(labelled), /M5 12h14/);
+  const unknown = page(icon('it shows the icon "arow"', "it is decorative")).diagnostics.find((d) => d.message.includes("no built-in icon"));
+  assert.ok(unknown !== undefined);
+  assert.ok(codes(page(icon('it shows the icon "check"', "it is decorative"))).length === 0);
+  assert.ok(codes(page(icon('it shows the icon "check"'))).includes("KDM3009"), "needs a description or decorative");
+  assert.ok(codes(page(icon('it shows the icon "check"', 'it shows "assets/check.svg"', "it is decorative"))).includes("KDM3004"));
+  assert.ok(codes(page(icon('it shows "assets/check.svg"', "it is decorative", "the text color is red"))).includes("KDM3003"), "a file icon keeps its colours");
+  assert.ok(codes(page(image('it shows the icon "check"'))).includes("KDM3003"));
+  // An icon from a file is unchanged.
+  assert.match(html(page(icon('it shows "assets/check.svg"', "it is decorative"))), /<img class="kdm-home-i1 kdm-kind-icon" [^>]*src="\/assets\/check\.svg" alt="">/);
+});
+
+test("an embed is a link until clicked, then the runtime puts the frame in", () => {
+  const result = page(box('it embeds "https://www.youtube-nocookie.com/embed/abc" titled "Product tour"'));
+  assert.deepEqual(codes(result), []);
+  assert.match(html(result), /<a class="kdm-embed-load" href="https:\/\/www\.youtube-nocookie\.com\/embed\/abc" target="_blank" rel="noopener noreferrer" data-kdm-embed="home-box1">Load Product tour from www\.youtube-nocookie\.com<\/a>/);
+  assert.doesNotMatch(html(result), /<iframe/);
+  assert.match(css(result), /\.kdm-home-box1 \{\n {2}aspect-ratio: 16 \/ 9;/);
+  assert.match(String(result.files.find((f) => f.path === "assets/kadam.home.js").contents), /const embeds = \[\["home-box1","https:\/\/www\.youtube-nocookie\.com\/embed\/abc","Product tour"\]\];/);
+  assert.doesNotMatch(css(page(box('it embeds "https://maps.example.com/m" titled "Map"', "it keeps a square shape"))), /16 \/ 9/);
+  assert.equal(codes(page(box('it embeds "http://example.com" titled "X"')))[0], "KDM3005");
+  assert.equal(codes(page(box('it embeds "https://example.com" titled ""')))[0], "KDM3005");
+  assert.ok(codes(page(["b1 {", "    a button", '    the text says "Go"', '    it embeds "https://example.com" titled "X"', "}"])).includes("KDM3003"));
+  assert.ok(codes(page(["c1 {", "    a container", '    it embeds "https://example.com" titled "X"', "    p1 {", "        a paragraph", '        the text says "hi"', "    }", "}"])).includes("KDM3005"));
+});
+
+test("mesh and aurora backgrounds, patterns and grain are layered CSS backgrounds", () => {
+  const mesh = page(box("it has a mesh background of #0F172A, #7C3AED and #0EA5E9"));
+  assert.deepEqual(codes(mesh), []);
+  assert.match(css(mesh), /background-color: #0f172a;\n {2}background-image: radial-gradient\(at 15% 20%, #7c3aed 0px, transparent 55%\), radial-gradient\(at 85% 25%, #0ea5e9 0px, transparent 55%\);\n\}/);
+  const aurora = page(box("it has an aurora background of teal and violet", "it has a grain texture"));
+  assert.deepEqual(codes(aurora), []);
+  assert.match(css(aurora), /background-image: url\("data:image\/svg\+xml,[^"]+"\), radial-gradient\(at 15% 20%, violet 0px, transparent 50%\);\n {2}background-size: 160px 160px, 200% 200%;/);
+  assert.match(css(aurora), /animation: kdm-aurora 20s ease-in-out infinite alternate;/);
+  assert.match(css(aurora), /@keyframes kdm-aurora \{/);
+  assert.match(css(aurora).slice(css(aurora).indexOf("prefers-reduced-motion")), /kdm-home-box1 \{\n {4}animation: none;/);
+  // An overlay sits on top and gets its own size entry.
+  const lined = page(box("it has a lined pattern", "it has a dark overlay at 10%"));
+  assert.match(css(lined), /background-size: auto, 100% 24px;/);
+  assert.match(css(page(box("it has a grid pattern in #CBD5E1"))), /linear-gradient\(#CBD5E1 1px, transparent 1px\), linear-gradient\(90deg, #CBD5E1 1px, transparent 1px\);\n {2}background-size: 24px 24px, 24px 24px;/i);
+  assert.match(css(page(box("it has a dotted pattern"))), /radial-gradient\(color-mix\(in srgb, currentColor 24%, transparent\) 1px, transparent 1.5px\)/);
+  for (const bad of ["it has a mesh background of teal", "it has a mesh background of a, b, c, d, e", "it has a mesh background of teal,", "it has a wavy pattern", "it has a dotted pattern in"]) {
+    assert.equal(codes(page(box(bad)))[0], "KDM3005", bad);
+  }
+  assert.ok(codes(page(box("it has a mesh background of teal and violet", "has a red background"))).includes("KDM3004"));
+  assert.ok(codes(page(box("it has a dotted pattern", 'has a "assets/b.jpg" background image'))).includes("KDM3005"));
+  assert.ok(codes(page(image("it has a grain texture"))).includes("KDM3003"));
 });

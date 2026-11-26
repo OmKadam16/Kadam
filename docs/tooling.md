@@ -40,6 +40,14 @@ kadam explain                # every code, by area
 kadam explain KDM3005 --json
 ```
 
+## `kadam eject`
+
+`kadam eject Card` copies a standard library component (D-46) into the
+project's `components/` folder, lists the copy in `kadam.json`, and removes
+`from kadam` from its uses, so the project owns it from then on. `kadam explain
+Card` describes a library component first; `kadam explain --library` lists
+them. See `docs/components.md`.
+
 ## `kadam lsp`
 
 A Language Server Protocol server over stdio, with no dependencies:

@@ -94,6 +94,8 @@ export interface IrRuntime {
   readonly backgroundVideos: readonly string[];
   /** F8: images that open larger in a dialog. */
   readonly lightboxes: readonly string[];
+  /** F8: embeds that load when clicked: node id, address, title. */
+  readonly embeds: readonly (readonly [string, string, string])[];
   /** kadam 0.3: elements styled while a state has a value; the attribute is present then. */
   readonly whenBindings: readonly { readonly nodeId: string; readonly key: string; readonly value: IrStateValue; readonly attribute: string }[];
   /** D-44: forms that send to a server function, as [form id, sent id, failed id, function]. */
@@ -284,7 +286,9 @@ export function lowerRuntime(
   // F8: background videos.
   const backgroundVideos: string[] = [];
   const lightboxes: string[] = [];
+  const embeds: (readonly [string, string, string])[] = [];
   visit(elements, (element) => {
+    for (const s of element.statements) if (s.type === "embed") embeds.push([nodeIdOf(element), s.url, s.title]);
     if (element.statements.some((s) => s.type === "background-play")) backgroundVideos.push(nodeIdOf(element));
     if (element.statements.some((s) => s.type === "lightbox")) lightboxes.push(nodeIdOf(element));
   });
@@ -368,6 +372,7 @@ export function lowerRuntime(
       whenBindings,
       backgroundVideos,
       lightboxes,
+      embeds,
     },
     attributes,
     texts,

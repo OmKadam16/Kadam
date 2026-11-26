@@ -20,6 +20,11 @@
     "examples": "the background image covers its box   ·   the background image fits inside its box   ·   the background image repeats"
   },
   {
+    "name": "Background pattern",
+    "version": "0.3",
+    "examples": "it has a dotted pattern   ·   it has a grid pattern in #CBD5E1   ·   it has a lined pattern"
+  },
+  {
     "name": "Background video",
     "version": "0.3",
     "examples": "it plays in the background"
@@ -43,6 +48,11 @@
     "name": "Built-in dark palette",
     "version": "0.3",
     "examples": "the page is dark when the system is dark"
+  },
+  {
+    "name": "Built-in named icon",
+    "version": "0.3",
+    "examples": "it shows the icon \"arrow right\""
   },
   {
     "name": "Center the box in its parent",
@@ -120,6 +130,11 @@
     "examples": "it remembers isOpen, a boolean that starts as false   ·   it remembers count, a number that starts as 0"
   },
   {
+    "name": "Embed that loads when clicked",
+    "version": "0.3",
+    "examples": "it embeds \"https://www.youtube-nocookie.com/embed/abc\" titled \"Product tour\""
+  },
+  {
     "name": "Entrance animation",
     "version": "0.1",
     "examples": "it fades in when the page loads   ·   it fades in over 600ms when the page loads   ·   it slides in from the left when the page loads"
@@ -188,6 +203,11 @@
     "name": "Gradient direction",
     "version": "0.1",
     "examples": "the gradient goes from left to right"
+  },
+  {
+    "name": "Grain texture",
+    "version": "0.3",
+    "examples": "it has a grain texture"
   },
   {
     "name": "Grayscale or sepia",
@@ -293,6 +313,11 @@
     "name": "Masonry columns",
     "version": "0.3",
     "examples": "it arranges its children in 3 masonry columns"
+  },
+  {
+    "name": "Mesh or aurora background",
+    "version": "0.3",
+    "examples": "it has a mesh background of teal, violet and pink   ·   it has an aurora background of #0F766E and #7C3AED"
   },
   {
     "name": "Multi-color or radial gradient",

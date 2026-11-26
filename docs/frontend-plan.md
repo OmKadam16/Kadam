@@ -570,9 +570,15 @@ brightness, contrast and saturation filters merged with blur; `in color` and
 with a required poster, a pause button and no autoplay under reduced motion;
 a keyboard-accessible lightbox on a native dialog; masonry columns; scroll
 snapping; parallax and a scroll progress bar on CSS scroll-driven animations.
-Flip cards were skipped. Still to do: named icons, click-to-load embeds and
-right-to-left pages; 3D models and build-time image processing need decision
-records first.
+Flip cards were skipped. Then (spec 6.30): 45 built-in icons drawn for Kadam
+and inlined as SVG, embeds that request nothing from the other site until
+clicked (with `frame-src` added to the server policies), and right-to-left
+pages. Then (spec 6.31): mesh and aurora backgrounds, dotted, grid and lined
+patterns, and grain, all plain CSS. The rest of F8 waits on decision records
+D-45 to D-49 (approved 2026-11-26): per-language text files, the standard
+component library, the 3D model viewer, build-time image processing, and
+Lottie. D-46 is implemented: twelve library components, `kadam explain
+Card` and `kadam eject Card`.
 
 ### F9 — No ceiling: the Kadam library and escape hatches (later; registry after F6)
 

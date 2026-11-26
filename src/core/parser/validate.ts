@@ -501,6 +501,8 @@ function checkCapability(
       return;
     case "typography":
     case "font-family":
+      // F8: a built-in icon takes a colour (analysis refuses it for an icon from a file).
+      if (kindName === "icon" && statement.type === "typography" && statement.property === "color" && languageVersion !== "0.1") return;
       if (!TEXT_BEARING.has(kindName)) {
         reject(
           "typography applies to text-bearing kinds: button, link, headings, paragraph, and text field",
@@ -699,6 +701,9 @@ function checkCapability(
       if (kindName === "divider") reject("a divider supports margin, color, and spacing only");
       return;
     case "overlay":
+    case "generative-background":
+    case "pattern":
+    case "grain":
       // An overlay is a background layer, so it needs a box behind the content.
       if (kindName === "image" || kindName === "video" || kindName === "icon" || kindName === "divider") {
         reject(`an overlay goes on a box, not ${kindName === "image" ? "an image" : `a ${kindName}`}; darken an image with the brightness is 60%, or use the image as a background image`);
@@ -719,6 +724,12 @@ function checkCapability(
       return;
     case "lightbox":
       if (kindName !== "image") reject("it opens larger when clicked applies only to an image");
+      return;
+    case "named-icon":
+      if (kindName !== "icon") reject('it shows the icon "..." applies only to an icon');
+      return;
+    case "embed":
+      if (kindName !== "container" && kindName !== "card") reject("an embed goes in a container or card");
       return;
     case "custom-font":
       // A font on a container is inherited by the text inside it.
@@ -1060,6 +1071,16 @@ function describeStatement(statement: StatementNode): string {
       return "an its children snap into place statement";
     case "lightbox":
       return "an it opens larger when clicked statement";
+    case "named-icon":
+      return "a named icon statement";
+    case "embed":
+      return "an it embeds statement";
+    case "generative-background":
+      return `${statement.style === "aurora" ? "an aurora" : "a mesh"} background statement`;
+    case "pattern":
+      return "a pattern statement";
+    case "grain":
+      return "a grain texture statement";
     case "gradient-angle":
       return "a gradient angle statement";
     case "background-image":
@@ -1295,6 +1316,16 @@ function propertyKeys(statement: StatementNode): string[] {
       return ["snap"];
     case "lightbox":
       return ["lightbox", "click"];
+    case "named-icon":
+      return ["image-source"];
+    case "embed":
+      return ["embed", "click"];
+    case "generative-background":
+      return ["background"];
+    case "pattern":
+      return ["pattern"];
+    case "grain":
+      return ["grain"];
     case "shape":
       // A blob and an arch are rounded corners, so they conflict with corner sentences.
       return statement.shape === "blob" || statement.shape === "arch" ? ["shape", "corners"] : ["shape"];
@@ -1454,6 +1485,11 @@ function checkValueCombinations(
         element.statements.some((other) => other.type === "gradient" || (other.type === "background" && other.mode === "gradient"))) {
       diagnostics.error("KDM3005", "an element cannot have both a background image and a gradient", statement.span,
         "keep one; a solid background color can sit under an image");
+    }
+    if ((statement.type === "generative-background" || statement.type === "pattern" || statement.type === "grain") &&
+        element.statements.some((other) => other.type === "background-image" || other.type === "gradient" || (other.type === "background" && other.mode === "gradient"))) {
+      diagnostics.error("KDM3005", "a mesh, aurora, pattern or grain cannot share an element with a background image or gradient", statement.span,
+        "put the image or gradient on a parent or a child element");
     }
     if ((statement.type === "background-fit" || statement.type === "background-focus") &&
         !element.statements.some((other) => other.type === "background-image")) {

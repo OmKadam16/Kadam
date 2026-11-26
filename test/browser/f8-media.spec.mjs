@@ -140,3 +140,47 @@ test("masonry makes real columns, and the progress bar grows as the page scrolls
     await close(site);
   }
 });
+
+test("an embed requests nothing from its site until clicked, then shows the frame", async ({ page }) => {
+  const root = mkdtempSync(join(tmpdir(), "kadam-f8-embed-"));
+  mkdirSync(join(root, "pages"));
+  writeFileSync(join(root, "pages", "home.kdm"), [
+    "kadam 0.3", "", 'page "Home" {',
+    "    tour1 {", "        a container", "        it is 480px wide",
+    '        it embeds "https://embed.example.com/tour" titled "Product tour"', "    }",
+    "    next1 {", "        a container", "        it arranges its children in a row",
+    "        label1 {", "            a paragraph", '            the text says "Next"', "        }",
+    "        arrow1 {", "            an icon", '            it shows the icon "arrow right"', "            it is decorative", "            the text color is #B91C1C", "        }", "    }",
+    "}", "",
+  ].join("\n"));
+  writeFileSync(join(root, "kadam.json"), JSON.stringify({ kadam: "0.3", name: "f8-embed", pages: [{ source: "pages/home.kdm", route: "/" }] }));
+  const site = await serve(root, { csp: true });
+  const thirdParty = [];
+  await page.route("https://embed.example.com/**", (route) => {
+    thirdParty.push(route.request().url());
+    return route.fulfill({ status: 200, contentType: "text/html", body: "<p>tour</p>" });
+  });
+  try {
+    await page.goto(`${site.origin}/`);
+    const load = page.getByRole("link", { name: "Load Product tour from embed.example.com" });
+    await expect(load).toBeVisible();
+    await expect(load).toHaveAttribute("href", "https://embed.example.com/tour");
+    const box = await page.locator('[data-kdm-id="home-tour1"]').boundingBox();
+    expect(Math.round(box.height)).toBe(270);
+    expect(thirdParty).toEqual([]);
+    await load.click();
+    const frame = page.locator("iframe.kdm-embed-frame");
+    await expect(frame).toHaveAttribute("title", "Product tour");
+    await expect(frame).toHaveAttribute("src", "https://embed.example.com/tour");
+    await expect.poll(() => thirdParty.length).toBe(1);
+    await expect(page.frameLocator("iframe.kdm-embed-frame").getByText("tour")).toBeVisible();
+    // The icon strokes in its colour and is 24px square.
+    const icon = page.locator("svg.kdm-kind-icon");
+    await expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(await icon.evaluate((node) => getComputedStyle(node).stroke)).toBe("rgb(185, 28, 28)");
+    const size = await icon.boundingBox();
+    expect([Math.round(size.width), Math.round(size.height)]).toEqual([24, 24]);
+  } finally {
+    await close(site);
+  }
+});

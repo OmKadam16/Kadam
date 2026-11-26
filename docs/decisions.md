@@ -1650,6 +1650,218 @@ server), auth and sessions, databases (a server function can use an
 
 ---
 
+### D-45 — Translations: one page source, per-language text files (F8)
+
+**Status:** Approved by the user on 2026-11-26.
+
+**Problem.** A site in two languages today means copying every page file and
+keeping the copies in step. The layout drifts, and a missed sentence is found
+only by a reader.
+
+**Proposal.** The manifest lists languages; each page is built once per
+language, with its quoted text taken from a JSON file per language.
+
+```json
+{ "kadam": "0.3", "languages": { "default": "en", "others": ["fr", "ar"] },
+  "translations": "translations" }
+```
+
+- The default language's text is the text in the `.kdm` files. Nothing new is
+  written there.
+- `kadam translations` writes `translations/fr.json` and `translations/ar.json`
+  with every quoted string keyed by its element path
+  (`"home/hero1/title1": "Ready when you are"`), keeping existing entries.
+- Each other language is built under `/<language>/`, with `lang` set and, for
+  a right-to-left language, `dir="rtl"` (6.30). Every page gets
+  `<link rel="alternate" hreflang>` to its other versions.
+- A missing entry is a warning (a new code), and the default text is used. An entry
+  whose source text changed since it was written is a warning too (the file
+  keeps the source text it translated). An entry for an element that no
+  longer exists is an error.
+- `a language switcher` is a new kind: a list of links to the same page in
+  each language.
+
+**Not included.** Translated routes (`/fr/a-propos`), plural rules and number
+formatting, and translating text loaded at run time.
+
+**Alternatives considered.**
+1. One `.kdm` file per language: simple, but layout and text drift apart,
+   which is the problem.
+2. Keys in the source (`the text says @hero.title`): every sentence loses its
+   readable default, and Kadam's point is that the file reads as the page.
+3. Translating in the browser: needs JavaScript, flashes the wrong language,
+   and search engines see one language.
+
+---
+
+### D-46 — The standard component library, shipped with the compiler (F8)
+
+**Status:** Approved by the user on 2026-11-26.
+
+**Problem.** Every project rebuilds the same cards, navigation bars, tabs,
+accordions, pricing tables and footers. Components (D-19 to D-28) make them
+reusable inside a project, but there is nothing to start from.
+
+**Proposal.** The compiler ships a library of components written in Kadam,
+read like any other component through a reserved `kadam` namespace (D-24).
+
+```json
+{ "components": [{ "library": "kadam", "use": ["Card", "NavBar", "Tabs", "PricingTable"] }] }
+```
+
+```kdm
+plan1 {
+    a PricingPlan from kadam in the featured variant
+    with a name of "Pro"
+    with a price of "$12"
+    with a target of "Signup"
+}
+```
+
+- The library lives in `library/*.kdm` in the package, versioned with the
+  compiler. A project names the components it uses, so nothing is included
+  by accident and nothing unused is built.
+- `kadam explain Card` prints a component's parameters and slots.
+  `kadam eject Card` copies its source into the project, under the project
+  namespace, for anyone who wants to change it.
+- Every library component passes axe, keyboard-only use, reduced motion, dark
+  mode and the contrast check in the test suite.
+- First set: Card, NavBar, Footer, Hero, FeatureGrid, PricingTable, Tabs,
+  Accordion, Modal, Testimonial, Banner, Breadcrumbs.
+
+**Not included.** A registry for third-party libraries (F9), and theming the
+library beyond the D-38 theme colours.
+
+**Implemented 2026-11-26** with twelve components (see `docs/components.md`).
+`Tabs` and `Modal` wait for state inside components; `Breadcrumbs` is not
+written yet. Building the library found and fixed a bug: component
+parameters were not filled into 0.3 statements with quoted text (an
+expandable section's title, a caption, a label).
+
+**Alternatives considered.**
+1. Templates copied by `kadam new`: projects can't receive fixes, and every
+   project carries hundreds of copied lines.
+2. A package registry now: needs hosting, trust and versioning decisions that
+   belong to F9.
+
+---
+
+### D-47 — 3D models: a generated, self-hosted viewer (F8)
+
+**Status:** Approved by the user on 2026-11-26.
+
+**Problem.** Product pages want a model the reader can turn. Today that means
+a third-party viewer script, which D-15 and D-36 rule out.
+
+**Proposal.** A new kind, `a 3d model`, renders with a small WebGL viewer that
+Kadam generates and serves from the site itself, loaded only on pages that use
+it.
+
+```kdm
+shoe1 {
+    a 3d model
+    it shows "assets/shoe.glb"
+    the poster is "assets/shoe.jpg"
+    the description says "Running shoe, white and teal"
+    it turns slowly
+    the lighting is studio
+}
+```
+
+- Only `.glb` (glTF 2.0, binary). The compiler checks the header and the size
+  against the page budget.
+- A poster and a description are required. The poster shows first and is
+  what readers see without WebGL, without JavaScript or with reduced motion.
+  The model loads only when it scrolls into view.
+- Drag or arrow keys turn it, and the wheel or `+`/`-` zoom it. The element is
+  focusable and announces its description.
+- `it turns slowly` (stops with reduced motion), and `the lighting is studio,
+  daylight or soft`.
+- The viewer is written for Kadam (WebGL2, PBR shading of base colour,
+  metal/roughness and normal maps), with no third-party code. The budget is
+  under 30 kB gzipped.
+
+**Not included.** Animations inside models, AR, other formats, and scenes
+with more than one model.
+
+**Alternatives considered.**
+1. Vendoring `<model-viewer>` or three.js: proven, but a large third-party
+   runtime (hundreds of kB) that Kadam would have to track for security.
+2. CSS 3D only: tilt and flip already exist; it cannot show a real model.
+
+---
+
+### D-48 — Build-time image processing: responsive sizes and modern formats (F8)
+
+**Status:** Approved by the user on 2026-11-26.
+
+**Problem.** `it shows "assets/hero.jpg"` serves the file as it is. A 4 MB
+photo is sent to a phone, and there is no AVIF or WebP. D-15 (zero
+dependencies) rules out bundling an image library.
+
+**Proposal.** `kadam build --images` resizes and re-encodes images with a tool
+already installed on the machine, and writes `srcset` and `<picture>`.
+
+- The tools are tried in order: `vips`, then `magick` (ImageMagick), then
+  `sips` on macOS. Which one ran is printed. Without one, the build works as
+  today and says so once.
+- Each raster image gets widths 480, 960, 1440 and 1920 (never larger than
+  the source), as AVIF and WebP with the original format as fallback, and
+  `sizes` worked out from the element's layout width.
+- A blur-up placeholder (a tiny inline WebP) is shown until the image loads,
+  with `it loads with a blurred preview`.
+- Results are cached in `.kadam/images/` by content hash, so a rebuild is
+  fast and output stays deterministic for the same tool version.
+- `kadam check` warns about an image wider than 2560 px or larger than 500 kB
+  when `--images` is not used.
+
+**Not included.** Art direction (different crops per screen), and image CDNs.
+
+**Alternatives considered.**
+1. Bundle `sharp` or a WASM encoder: breaks D-15, and adds 10 to 30 MB.
+2. Leave it to a host's image service: fine for those who have one, but most
+   static hosts do not.
+
+---
+
+### D-49 — Lottie animations (F8)
+
+**Status:** Approved by the user on 2026-11-26.
+
+**Problem.** Designers hand over animations as Lottie JSON. Playing one needs
+a player, and the common one (`lottie-web`) is a 250 kB third-party runtime.
+
+**Proposal.** `an animation` kind plays a Lottie file with a player Kadam
+generates, covering the common subset: shape layers, fills, strokes, gradients,
+transforms, trim paths and masks, rendered to SVG.
+
+```kdm
+loader1 {
+    an animation
+    it plays "assets/loading.json"
+    the poster is "assets/loading.svg"
+    the description says "Loading"
+    it loops
+}
+```
+
+- The compiler reads the file and refuses features outside the subset
+  (expressions, images, text layers, 3D layers, effects) with the layer name,
+  so nothing silently renders wrong.
+- A poster and a description are required, or `it is decorative`. With
+  reduced motion, the poster (or the first frame) shows. It plays once unless
+  `it loops`, and `it plays when visible` starts it on scroll.
+- The player budget is under 15 kB gzipped and loads only on pages that use it.
+
+**Not included.** Interactivity (scrubbing on scroll, hover segments), and dotLottie.
+
+**Alternatives considered.**
+1. Vendoring `lottie-web`: full coverage, but large and third-party.
+2. Converting to CSS keyframes at build time: no runtime, but only the
+   simplest files convert, which surprises people.
+
+---
+
 ## Approval checklist
 
 | ID | Decision | Blocks | Recommendation | Status |
@@ -1698,6 +1910,11 @@ server), auth and sessions, databases (a server function can use an
 | D-42 | Escape hatches: raw CSS declaration, existing classes, typed externals; no raw HTML; `--strict` bans them | F6 | Approve | Approved |
 | D-43 | Interop: fragments, Web Components (primary), TypeScript declarations | F6 | Approve | Approved |
 | D-44 | Server boundary: pages call typed functions in a kadam 0.2 server module; generated server | After F6 | Approve | Approved |
+| D-45 | Translations: per-language text files, one page source, `/<language>/` builds | F8 | Approve | Approved |
+| D-46 | Standard component library shipped with the compiler (`from kadam`) | F8 | Approve | Approved — implemented |
+| D-47 | 3D models with a generated, self-hosted WebGL viewer | F8 | Approve | Approved |
+| D-48 | Build-time images with an installed tool (vips, ImageMagick, sips) | F8 | Approve | Approved |
+| D-49 | Lottie subset with a generated SVG player | F8 | Review scope | Approved |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

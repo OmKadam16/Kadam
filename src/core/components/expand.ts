@@ -870,8 +870,20 @@ function substituteStatement(
         ...statement,
         statement: substituteStatement(statement.statement, bindings, diagnostics),
       };
-    default:
+    case "embed": {
+      const url = substituteString(statement.url, statement.urlSpan, bindings, diagnostics);
+      const title = substituteString(statement.title, statement.span, bindings, diagnostics);
+      return { ...statement, url: url.value, urlSpan: url.span, title: title.value };
+    }
+    default: {
+      // kadam 0.3 statements that carry quoted text (a title, caption, label,
+      // poster, error ...) take parameters the same way as the text statement.
+      const quoted = statement as unknown as { readonly value?: unknown; readonly valueSpan?: unknown };
+      if (typeof quoted.value === "string" && quoted.valueSpan !== undefined && quoted.value.includes("{$")) {
+        return substituteText(statement as StatementNode & { readonly value: string; readonly valueSpan: Span }, bindings, diagnostics);
+      }
       return statement;
+    }
   }
 }
 

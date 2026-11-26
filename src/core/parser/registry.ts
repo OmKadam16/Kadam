@@ -112,7 +112,7 @@ import type {
 } from "./statement-types.js";
 import { describeTokens, isAnyWord, isKeyword, readLength, spanFromTokens } from "./values.js";
 import { matchExternal, matchFormState, matchRawCss, matchStylesheetClass } from "./matchers-f6.js";
-import { matchAdjustment, matchBackgroundPlay, matchColorFilter, matchLightbox, matchMasonry, matchOverlay, matchScrollEffect, matchShape, matchSnap } from "./matchers-f8.js";
+import { matchAdjustment, matchBackgroundPlay, matchColorFilter, matchEmbed, matchGenerativeBackground, matchGrain, matchLightbox, matchPattern, matchMasonry, matchNamedIcon, matchOverlay, matchScrollEffect, matchShape, matchSnap } from "./matchers-f8.js";
 import {
   LATEST_UI_LANGUAGE_VERSION,
   uiVersionAtLeast,
@@ -134,7 +134,8 @@ const DEFAULT_CONTEXT: TemplateContext = { allowResponsive: true };
 const F1_TEMPLATES: readonly StatementTemplate[] = [
   { id: "page-metadata", description: "Page metadata", since: "0.3",
     examples: ['the page description says "Plans and pricing"', 'the page language is "fr"',
-      'the page icon is "assets/icon.png"', 'the page share image is "assets/share.png"'],
+      'the page icon is "assets/icon.png"', 'the page share image is "assets/share.png"',
+      "the page direction is right to left"],
     match: (tokens) => matchPageMetadata(tokens) },
   { id: "caption", description: "Table caption", since: "0.3",
     examples: ['the caption says "Plans"'], match: (tokens) => matchCaption(tokens) },
@@ -185,6 +186,16 @@ const F8_TEMPLATES: readonly StatementTemplate[] = [
     examples: ["its children snap into place"], match: (tokens) => matchSnap(tokens) },
   { id: "lightbox", description: "Image opens larger", since: "0.3",
     examples: ["it opens larger when clicked"], match: (tokens) => matchLightbox(tokens) },
+  { id: "named-icon", description: "Built-in named icon", since: "0.3",
+    examples: ['it shows the icon "arrow right"'], match: (tokens) => matchNamedIcon(tokens) },
+  { id: "embed", description: "Embed that loads when clicked", since: "0.3",
+    examples: ['it embeds "https://www.youtube-nocookie.com/embed/abc" titled "Product tour"'], match: (tokens) => matchEmbed(tokens) },
+  { id: "generative-background", description: "Mesh or aurora background", since: "0.3",
+    examples: ["it has a mesh background of teal, violet and pink", "it has an aurora background of #0F766E and #7C3AED"], match: (tokens) => matchGenerativeBackground(tokens) },
+  { id: "pattern", description: "Background pattern", since: "0.3",
+    examples: ["it has a dotted pattern", "it has a grid pattern in #CBD5E1", "it has a lined pattern"], match: (tokens) => matchPattern(tokens) },
+  { id: "grain", description: "Grain texture", since: "0.3",
+    examples: ["it has a grain texture"], match: (tokens) => matchGrain(tokens) },
 ];
 
 /** kadam 0.3 (F6, D-42) escape hatches. */

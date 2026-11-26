@@ -1,0 +1,25 @@
+kadam 0.3
+
+// The site's header: the brand on one side, links in the slot on the other.
+component NavBar takes a brand as text, a home as page {
+    header1 {
+        a header
+        it has 16px padding on the top and bottom
+        it has 24px padding on the left and right
+        has a 1px #6B728040 border on the bottom
+        nav1 {
+            a navigation bar
+            has no background
+            brand1 {
+                a link
+                the text says "{$brand}"
+                the text is bold
+                the text is not underlined
+                when clicked, go to page "{$home}"
+            }
+            links1 {
+                a slot
+            }
+        }
+    }
+}

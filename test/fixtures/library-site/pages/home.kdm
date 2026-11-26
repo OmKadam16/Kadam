@@ -1,0 +1,59 @@
+kadam 0.3
+page "Home" {
+    the page is dark when the system is dark
+    top1 {
+        a NavBar from kadam
+        with a brand of "Acme"
+        with a home of "Home"
+        pricingLink {
+            a link
+            the text says "Pricing"
+            when clicked, go to page "Pricing"
+        }
+    }
+    notice1 {
+        a Banner from kadam
+        with a message of "Version 2 is out."
+    }
+    hero1 {
+        a Hero from kadam in the centered variant
+        with a title of "Ship pages you can read"
+        with a lead of "Write your site in plain, exact English."
+        with an action of "See pricing"
+        with a target of "Pricing"
+    }
+    features1 {
+        a FeatureGrid from kadam
+        with a title of "Why teams pick Acme"
+        fast1 {
+            a Feature from kadam
+            with a title of "Fast"
+            with a body of "Static HTML and CSS."
+        }
+        safe1 {
+            a Feature from kadam
+            with a title of "Checked"
+            with a body of "Every sentence is checked before anything is built."
+        }
+        same1 {
+            a Feature from kadam
+            with a title of "Repeatable"
+            with a body of "The same source builds the same bytes."
+        }
+    }
+    say1 {
+        a Testimonial from kadam
+        with a quote of "We rebuilt our site in a week."
+        with a name of "Sam Lee"
+        with a role of "Engineer"
+    }
+    bottom1 {
+        a PageFooter from kadam
+        with a note of "Built with Kadam."
+        aboutLink {
+            a link
+            the text says "Pricing"
+            when clicked, go to page "Pricing"
+        }
+    }
+}
