@@ -1,0 +1,44 @@
+kadam 0.3
+
+component Panel takes a title as text, a link as url defaulting to "https://example.com" {
+    panel1 {
+        a card
+        has a #E6F4F1 background
+        heading1 {
+            a section heading
+            the text says "{$title}"
+        }
+        content1 {
+            a slot
+        }
+        footer1 {
+            a footer slot
+            note1 {
+                a paragraph
+                the text says "Default footer"
+            }
+        }
+        more1 {
+            a link
+            the text says "More about {$title}"
+            when clicked, open "{$link}" in a new tab
+        }
+        pick1 {
+            a button
+            the text says "Pick"
+            when clicked, tell the page "pick"
+        }
+    }
+    variant compact {
+        panel2 {
+            a card
+            heading2 {
+                a minor heading
+                the text says "{$title}"
+            }
+            content2 {
+                a slot
+            }
+        }
+    }
+}

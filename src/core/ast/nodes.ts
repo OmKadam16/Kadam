@@ -571,7 +571,9 @@ export type Effect =
   /** kadam 0.3 (D-41): `reload products` loads a runtime data source again. */
   | { readonly type: "reload"; readonly source: string; readonly span: Span }
   /** kadam 0.3 (F6, D-42): `call trackEvent with "hero"` runs a declared external. */
-  | { readonly type: "call"; readonly name: string; readonly nameSpan: Span; readonly args: readonly CallArgument[]; readonly span: Span };
+  | { readonly type: "call"; readonly name: string; readonly nameSpan: Span; readonly args: readonly CallArgument[]; readonly span: Span }
+  /** kadam 0.3 (F6, D-43): `tell the page "select"` dispatches a DOM event from a component. */
+  | { readonly type: "tell"; readonly event: string; readonly span: Span };
 
 export type ShapeFieldType = "text" | "number" | "yes/no" | "url";
 

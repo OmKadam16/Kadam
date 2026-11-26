@@ -99,6 +99,7 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   if (effects.has("flip")) cases.push('      case "toggle": state.set(effect[1], !state.get(effect[1])); break;');
   if (effects.has("add")) cases.push('      case "add": state.set(effect[1], state.get(effect[1]) + effect[2]); break;');
   if (effects.has("reload")) cases.push('      case "reload": load(loaders.find((entry) => entry[0] === effect[1])); break;');
+  if (effects.has("tell")) cases.push('      case "tell": nodes.get(effect[1]).dispatchEvent(new CustomEvent(effect[2], { bubbles: true, composed: true })); break;');
   if (effects.has("call")) {
     // F6 (D-42): externals load on first use; an error stays in the console.
     lines.push(
@@ -167,6 +168,8 @@ function compactEffect(effect: IrEffect): readonly unknown[] {
       return ["reload", effect.source];
     case "call":
       return ["call", effect.module, effect.name, effect.args];
+    case "tell":
+      return ["tell", effect.from, effect.event];
   }
 }
 

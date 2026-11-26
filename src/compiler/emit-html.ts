@@ -576,3 +576,8 @@ export function emitFragmentHtml(page: PageIR, headTags: readonly string[]): str
   ];
   return `${lines.join("\n")}\n`;
 }
+
+/** kadam 0.3 (F6, D-43): just the page's elements, for a custom element's template. */
+export function emitElementsHtml(page: PageIR): string {
+  return page.elements.map((element) => renderElement(element, 0)).join("\n");
+}

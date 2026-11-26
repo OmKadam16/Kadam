@@ -48,7 +48,7 @@ export function fragmentFiles(pages: readonly PageIR[], assets: readonly OutputF
  * wrapper, other selectors without a Kadam class get the wrapper in front,
  * and @keyframes and @font-face are copied unchanged.
  */
-export function scopeCss(css: string): string {
+export function scopeCss(css: string, selector: (selector: string) => string = scopeSelector): string {
   let out = "";
   let index = 0;
   while (index < css.length) {
@@ -71,12 +71,12 @@ export function scopeCss(css: string): string {
     const lead = prelude.match(/^\s*/)![0];
     const head = prelude.trim();
     if (head.startsWith("@media") || head.startsWith("@supports") || head.startsWith("@container") || head.startsWith("@layer")) {
-      out += `${lead}${head} {${scopeCss(body)}}`;
+      out += `${lead}${head} {${scopeCss(body, selector)}}`;
     } else if (head.startsWith("@")) {
       out += `${lead}${head} {${body}}`;
     } else {
       const trailing = prelude.slice(lead.length + head.length);
-      out += `${lead}${scopeSelectors(head)}${trailing}{${body}}`;
+      out += `${lead}${scopeSelectors(head, selector)}${trailing}{${body}}`;
     }
     index = close + 1;
   }
@@ -95,13 +95,13 @@ function matchingBrace(css: string, open: number): number {
   return css.length;
 }
 
-function scopeSelectors(list: string): string {
+function scopeSelectors(list: string, scope: (selector: string) => string): string {
   const parts = list.split(",");
   const scoped: string[] = [];
   for (const part of parts) {
     const space = part.match(/^\s*/)![0];
     const selector = part.trim();
-    const result = scopeSelector(selector);
+    const result = scope(selector);
     if (!scoped.some((item) => item.trim() === result)) scoped.push(`${space}${result}`);
   }
   return scoped.join(",");

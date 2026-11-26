@@ -350,8 +350,19 @@ reference site still writes its pages by hand.
   shop in a styled host page: data loads, filters run, and the host's
   background, margin, font and box model are unchanged. See
   `docs/project-manifest.md`.
-- **Step 3, next: Web Components** (`--target web-components`, D-43).
-- **Step 4: TypeScript declarations**, then the Vite + React exit test.
+- **Step 3, shipped: Web Components** (`kadam build <project> --target
+  web-components`, D-43). Each component is built as a generated page with
+  placeholder parameters, so every check runs, then emitted into
+  `kadam-elements.js`: shadow DOM with constructed stylesheets, text and url
+  attributes, variants, slots with fallback, and the new `tell the page
+  "select"` event. A browser test checks isolation from host CSS, slots,
+  variants, re-rendering, dropped `javascript:` URLs and events.
+- **Step 4, next: TypeScript declarations** (`kadam-elements.d.ts`), then the
+  Vite + React exit test.
+
+**Web Components known gaps:** image, length, color and page parameters;
+components with their own state, dialogs or other events; custom fonts and
+stylesheet classes inside shadow roots; an `elementPrefix` setting.
 
 **F6 known gaps:** raw css is not allowed after `when hovered,` and the other
 interaction states yet; externals cannot return a value into state; a

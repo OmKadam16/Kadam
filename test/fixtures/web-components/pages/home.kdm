@@ -1,0 +1,12 @@
+kadam 0.3
+
+page "Home" {
+    p1 {
+        a Panel
+        with a title of "Hello"
+        body1 {
+            a paragraph
+            the text says "Body"
+        }
+    }
+}

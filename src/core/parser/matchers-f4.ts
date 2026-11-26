@@ -156,7 +156,7 @@ function splitAnd(tokens: readonly Token[]): Token[][] {
   return parts;
 }
 
-const EFFECT_VERBS: ReadonlySet<string> = new Set(["show", "hide", "flip", "open", "close", "focus", "set", "add", "subtract", "reload", "call"]);
+const EFFECT_VERBS: ReadonlySet<string> = new Set(["show", "hide", "flip", "open", "close", "focus", "set", "add", "subtract", "reload", "call", "tell"]);
 
 /** The click effects added in step 2. `matchClick` (0.1) steps aside for them. */
 export function isEffectList(rest: readonly Token[]): boolean {
@@ -208,6 +208,14 @@ function readEffect(tokens: readonly Token[]): Effect | string {
       return { type: "reload", source: name.text, span: spanFromTokens(tokens) };
     }
     return "reload names the data an element loads, e.g. reload products";
+  }
+  if (verb === "tell") {
+    // F6 (D-43): tell the page "select"
+    const event = tokens[3];
+    if (tokens.length === 4 && isKeyword(tokens[1], "the") && isAnyWord(tokens[2], "page") && isString(event) && /^[a-z][a-z0-9-]{0,63}$/.test(event.value)) {
+      return { type: "tell", event: event.value, span: spanFromTokens(tokens) };
+    }
+    return 'write: tell the page "select", with a lowercase event name';
   }
   if (verb === "call") {
     // F6 (D-42): call trackEvent, or call trackEvent with "hero", count

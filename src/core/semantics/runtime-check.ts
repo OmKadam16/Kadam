@@ -201,6 +201,12 @@ export function checkRuntime(
           diagnostics.error("KDM3012", `nothing on this page loads "${value.source}"`, value.span, "reload names the data an element loads with it loads <name> from \"...\"");
         }
         return;
+      case "tell":
+        if (from.componentOrigin === undefined) {
+          diagnostics.error("KDM3012", "tell the page is only used inside a component", value.span,
+            "put it in a component file; a page can use show, set, or call instead");
+        }
+        return;
       case "call": {
         // F6 (D-42): the call matches the external's declared types.
         const external = externals.find((candidate) => candidate.name === value.name);

@@ -102,6 +102,8 @@ export interface ProjectCompileOptions {
   readonly strict?: boolean | undefined;
   /** kadam 0.3 (F6, D-43): build every page as a fragment for an existing page. */
   readonly fragment?: boolean | undefined;
+  /** Internal (F6, D-43): used by the Web Components target, see expandPage. */
+  readonly slotOutlets?: boolean | undefined;
 }
 
 export interface ProjectCompileResult {
@@ -442,7 +444,7 @@ export function compileProject(
   // resulting built-in tree. Page-only pages are cloned with identical content.
   const expandedPages: LoadedPage[] = [];
   for (const loaded of loadedPages) {
-    const expansion = expandPage(loaded.document.page!, catalog);
+    const expansion = expandPage(loaded.document.page!, catalog, { slotOutlets: options.slotOutlets });
     diagnostics.addAll(expansion.diagnostics);
     if (expansion.page === null) continue;
 

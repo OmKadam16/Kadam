@@ -203,3 +203,42 @@ instead of a whole site:
 Limits: the host's own CSS can still reach into the fragment (use Web
 Components, D-43, for full isolation); a state kept in the address changes the
 host page's address; links to other Kadam pages point at their site routes.
+
+### Web Components
+
+`kadam build <project> --target web-components` (kadam 0.3, D-43) builds every
+component in `components` as a custom element, all defined in one module,
+`kadam-elements.js`:
+
+```html
+<script type="module" src="/kadam-elements.js"></script>
+
+<kadam-product-card name="Desk" price="120" link="https://shop.example/desk"></kadam-product-card>
+<kadam-panel title="Hello" variant="compact">
+  <p>Goes in the unnamed slot</p>
+  <p slot="footer">Goes in the footer slot</p>
+</kadam-panel>
+```
+
+- **Tags:** `ProductCard` becomes `kadam-product-card`; a library component
+  adds its namespace (`kadam-studio-hero`).
+- **Attributes:** each `text` or `url` parameter is an attribute. A missing
+  attribute uses the parameter's default, or nothing. Values are written only
+  as text and checked attributes: a `javascript:` URL is dropped, and markup in
+  an attribute stays text. Changing an attribute re-renders the element.
+- **Variants:** `variant="compact"` picks a variant; an unknown name uses the
+  default body.
+- **Slots:** `a slot` becomes `<slot>`, a named slot becomes
+  `<slot name="...">`, and fallback content shows when nothing is slotted.
+- **Styles:** each element has a shadow root, so host CSS does not leak in and
+  Kadam CSS does not leak out. Page-wide text color, font and theme colors are
+  set on `:host`, so the host can override a theme color on the element.
+- **Events:** in a component, `when clicked, tell the page "select"`
+  dispatches a `select` event (bubbling, composed) from the element. In a
+  normal build the same sentence dispatches it from the component's element.
+- Every component variant is checked like a page (types, accessibility,
+  contrast) before anything is written.
+
+Not yet: `image`, `length`, `color` and `page` parameters (`KDM3054`),
+components with their own state or other events (`KDM3055`), custom fonts
+inside shadow roots, and classes from `stylesheets`.

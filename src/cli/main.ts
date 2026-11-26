@@ -19,6 +19,7 @@ import {
   sep,
 } from "node:path";
 import { compileText } from "../compiler/compile.js";
+import { compileWebComponents } from "../compiler/web-components.js";
 import { compileProject } from "../compiler/project.js";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
 import { runCheckCommand } from "./check-command.js";
@@ -127,6 +128,7 @@ if (first === "build") {
       process.exit(2);
     }
     const projectDir = targetPath ?? ".";
+    if (parsedArgs.webComponents) buildWebComponents(projectDir, parsedArgs);
     const result = compileProject({
       projectRoot: projectDir,
       outDir: parsedArgs.outDir,
@@ -282,6 +284,31 @@ function printFragmentTags(files: readonly { readonly path: string; readonly con
   }
 }
 
+/** F6 (D-43): `kadam build <project> --target web-components`. */
+function buildWebComponents(projectDir: string, parsedArgs: BuildArguments): never {
+  const result = compileWebComponents({ projectRoot: projectDir, outDir: parsedArgs.outDir, basePath: parsedArgs.basePath });
+  if (!result.ok) {
+    console.error(formatDiagnostics(result.diagnostics, result.sources));
+    console.error(`\nkadam build: ${result.diagnostics.length} diagnostic${result.diagnostics.length === 1 ? "" : "s"}; no files were written.`);
+    process.exit(1);
+  }
+  if (result.diagnostics.length > 0) console.error(`${formatDiagnostics(result.diagnostics, result.sources)}\n`);
+  try {
+    writeOutputFiles(projectDir, result.outDir, result.files);
+  } catch (error) {
+    console.error(`kadam build: cannot write ${result.outDir}: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+  console.log(`Built project ${projectDir} -> ${result.outDir} (web components)`);
+  for (const file of result.files) console.log(`  ${join(result.outDir, file.path)}`);
+  console.log("\nAdd <script type=\"module\" src=\"/kadam-elements.js\"></script> to the page, then use:");
+  for (const element of result.elements) {
+    const attributes = element.parameters.map((p) => ` ${p.name}="..."`).join("");
+    console.log(`  <${element.tag}${attributes}></${element.tag}>${element.events.length > 0 ? `  events: ${element.events.join(", ")}` : ""}`);
+  }
+  process.exit(0);
+}
+
 interface BuildArguments {
   readonly source: string | undefined;
   readonly target: TargetId | undefined;
@@ -289,6 +316,7 @@ interface BuildArguments {
   readonly outDir: string | undefined;
   readonly basePath: string | undefined;
   readonly fragment: boolean;
+  readonly webComponents: boolean;
 }
 
 function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null {
@@ -298,6 +326,7 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
   let outDir: string | undefined;
   let basePath: string | undefined;
   let fragment = false;
+  let webComponents = false;
 
   for (let index = 0; index < rawArgs.length; index += 1) {
     const argument = rawArgs[index]!;
@@ -313,11 +342,16 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
         );
         return null;
       }
+      if (value === "web-components") {
+        webComponents = true;
+        index += 1;
+        continue;
+      }
       if (!isTargetId(value)) {
         console.error(
           `kadam build: unknown target ${JSON.stringify(value)}; expected ${TARGET_IDS.join(
             " or ",
-          )}`,
+          )} (or web-components for a project)`,
         );
         return null;
       }
@@ -327,11 +361,15 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
     }
     if (argument.startsWith("--target=")) {
       const value = argument.slice("--target=".length);
+      if (value === "web-components") {
+        webComponents = true;
+        continue;
+      }
       if (!isTargetId(value)) {
         console.error(
           `kadam build: unknown target ${JSON.stringify(value)}; expected ${TARGET_IDS.join(
             " or ",
-          )}`,
+          )} (or web-components for a project)`,
         );
         return null;
       }
@@ -408,7 +446,7 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
     }
   }
 
-  return { source, target, projectDir, outDir, basePath, fragment };
+  return { source, target, projectDir, outDir, basePath, fragment, webComponents };
 }
 
 /**

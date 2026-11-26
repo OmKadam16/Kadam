@@ -1,3 +1,4 @@
+import { BUILTIN_KIND_INFO } from "../parser/kind.js";
 import type {
   ComponentElementOrigin,
   ComponentInstanceOrigin,
@@ -31,6 +32,12 @@ export interface ExpandOptions {
   readonly maxDepth?: number | undefined;
   /** Maximum number of elements in the expanded page. */
   readonly maxElements?: number | undefined;
+  /**
+   * kadam 0.3 (F6, D-43): mark the top-level component's content slots with
+   * paragraphs reading `kdm-slot-start:<name>` and `kdm-slot-end:<name>`
+   * around their fallback, so the Web Components target can put <slot> there.
+   */
+  readonly slotOutlets?: boolean | undefined;
 }
 
 export interface ExpansionResult {
@@ -47,6 +54,8 @@ interface ExpansionState {
   count: number;
   limitReported: boolean;
   readonly active: string[];
+  readonly slotOutlets: boolean;
+  markers: number;
 }
 
 /** Caller-expanded children, grouped by the slot they fill. */
@@ -82,6 +91,8 @@ export function expandPage(
     count: 0,
     limitReported: false,
     active: [],
+    slotOutlets: options.slotOutlets === true,
+    markers: 0,
   };
 
   preflightCycles(catalog, diagnostics);
@@ -163,7 +174,11 @@ function expandComponentNode(
         ? scope.content.unnamed
         : scope.content.named.get(name) ?? [];
     if (supplied.length > 0) return [...supplied];
-    return expandComponentChildren(element.children, state, bindings, scope);
+    const fallback = expandComponentChildren(element.children, state, bindings, scope);
+    if (state.slotOutlets && scope.instances.length === 1) {
+      return [slotMarker(element, "start", name, state, scope), ...fallback, slotMarker(element, "end", name, state, scope)];
+    }
+    return fallback;
   }
 
   if (element.kind?.reference.type === "component-kind") {
@@ -213,6 +228,23 @@ function expandComponentChildren(
     result.push(...expandComponentNode(child, state, bindings, scope));
   }
   return result;
+}
+
+/** F6 (D-43): a paragraph standing for one edge of a content slot. */
+function slotMarker(slot: ElementNode, edge: "start" | "end", name: string | null, state: ExpansionState, scope: ExpansionScope): ElementNode {
+  state.markers += 1;
+  const span = slot.span;
+  return {
+    type: "element",
+    name: `kdmSlot${state.markers}`,
+    nameSpan: slot.nameSpan,
+    kind: { type: "kind", article: "a", reference: { type: "builtin-kind", name: "paragraph", category: BUILTIN_KIND_INFO.paragraph.category, span }, span },
+    statements: [{ type: "text", noun: "text", value: `kdm-slot-${edge}:${name ?? ""}`, valueSpan: span, span }],
+    properties: [],
+    children: [],
+    span,
+    componentOrigin: scopeOrigin(scope),
+  };
 }
 
 /** Expand instance children in the caller's scope so they keep caller identity. */

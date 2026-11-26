@@ -26,6 +26,8 @@ export type IrEffect =
   | { readonly type: "flip"; readonly key: string }
   | { readonly type: "add"; readonly key: string; readonly amount: number }
   | { readonly type: "reload"; readonly source: string }
+  /** F6 (D-43): dispatch a DOM event named `event` from `from`. */
+  | { readonly type: "tell"; readonly from: string; readonly event: string }
   /** F6 (D-42): an external, by its index in `externals`; each argument is [0, value] or [1, state key]. */
   | {
       readonly type: "call";
@@ -160,6 +162,8 @@ export function lowerRuntime(
         return { type: "add", key: keyOf(stateFor(effect.state, from)), amount: effect.amount };
       case "reload":
         return { type: "reload", source: effect.source };
+      case "tell":
+        return { type: "tell", from: nodeIdOf(from), event: effect.event };
       case "call": {
         const external = externals.find((candidate) => candidate.name === effect.name);
         if (external === undefined) throw new InternalCompilerError(`external ${effect.name} reached lowering undeclared`, effect.nameSpan);

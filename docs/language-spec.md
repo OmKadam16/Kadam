@@ -1465,6 +1465,13 @@ page "Home" {
   `import()`, so it needs no CSP change. If loading fails or the function
   throws, the error is logged and the page keeps working.
 
+**Telling the page (D-43).** Inside a component, `when clicked, tell the
+page "select"` dispatches a `select` DOM event (bubbling, crossing shadow
+roots) from the component. The name is lowercase letters, digits and `-`
+(`KDM3005`); on a page outside a component it is `KDM3012`. It is how a
+custom element built with `--target web-components` reports clicks to the
+app around it.
+
 **Visibility and strict mode.** `kadam check` ends with a list:
 
 ```text
@@ -2083,6 +2090,8 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3051 | Raw css sets a property Kadam has a sentence for (*kadam 0.3*, D-42) |
 | KDM3052 | A stylesheet class is malformed, unlisted in `kadam.json`, or not in the stylesheet (*kadam 0.3*, D-42) |
 | KDM3053 | Strict mode bans an escape hatch (*kadam 0.3*, D-42) |
+| KDM3054 | A component cannot become a web component: unsupported parameter type, clashing tag, or no components (*kadam 0.3*, D-43) |
+| KDM3055 | A web component uses state or events other than tell the page (*kadam 0.3*, D-43) |
 
 **Project (`KDM4xxx`)**
 
