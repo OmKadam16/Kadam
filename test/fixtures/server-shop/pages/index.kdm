@@ -47,6 +47,12 @@ page "Shop" {
             the label says "Plan"
             the options are "Free", "Pro"
         }
+        seats {
+            a text field
+            the label says "Seats"
+            it accepts numbers
+            it is required
+        }
         news {
             a checkbox
             the label says "Send me news"

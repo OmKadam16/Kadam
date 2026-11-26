@@ -402,13 +402,15 @@ reference site still writes its pages by hand.
   JavaScript). Every server browser test and the dev server test run against
   both targets.
 
-**D-44 is complete.** Next candidates: arguments for loads (filters sent to
-the server), number inputs in forms, `basePath` for server routes, and then
-auth and sessions (a new decision), or F9's library.
+**D-44 is complete.** Follow-ups shipped since: server routes honour
+`basePath` on the page and in both servers, and forms send `number` fields
+(a required text field that accepts numbers, parsed strictly by both
+servers). Still open: arguments for loads (filters sent to the server) and
+auth and sessions, which each need a decision; or F9's library.
 
-**Known gaps:** server loads and forms ignore `basePath`; record text fields
-cannot fill url parameters; forms cannot send numbers yet; without JavaScript
-the answered page shows the `/_kadam/` address.
+**Known gaps:** record text fields cannot fill url parameters; without
+JavaScript the answered page shows the `/_kadam/` address; number inputs take
+whole numbers in the browser.
 
 **Web Components known gaps:** image, length, color and page parameters;
 components with their own state, dialogs or other events; custom fonts and

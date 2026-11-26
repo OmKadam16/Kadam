@@ -31,7 +31,7 @@ test("kadam dev answers server loads and forms through the generated server", as
   const sent = await fetch(`${server.origin}/_kadam/signUp?form=home-signupForm`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", "x-kadam": "1", origin: server.origin },
-    body: "address=dev%40example.com&plan=Pro",
+    body: "address=dev%40example.com&plan=Pro&seats=2",
   });
   assert.equal(sent.status, 200);
   assert.deepEqual(await sent.json(), { ok: true });
@@ -88,7 +88,7 @@ test("kadam dev runs a python server module the same way", async (t) => {
   const sent = await fetch(`${server.origin}/_kadam/signUp?form=home-signupForm`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded", "x-kadam": "1", origin: server.origin },
-    body: "address=py%40example.com&plan=Free&news=on",
+    body: "address=py%40example.com&plan=Free&news=on&seats=4",
   });
   assert.deepEqual(await sent.json(), { ok: true });
   for (let i = 0; i < 50 && !lines.includes("[server] signup: py@example.com (Free)"); i += 1) await new Promise((r) => setTimeout(r, 20));

@@ -636,7 +636,7 @@ export function compileProject(
     if (server !== null) {
       const forms = loweredPages.flatMap((page) =>
         (page.runtime?.forms ?? []).map(([form, sent, failed]) => ({ form, html: page.outputPath, sent, failed })));
-      files.push(...serverFiles(server, calledFunctions(expandedPages.map((loaded) => loaded.document.page!)), forms, manifest.connect ?? []));
+      files.push(...serverFiles(server, calledFunctions(expandedPages.map((loaded) => loaded.document.page!)), forms, manifest.connect ?? [], basePath));
     }
     files.sort((a, b) => compareText(a.path, b.path));
     const output = options.fragment === true ? fragmentFiles(loweredPages, files.filter((file) => file.kind === "asset")) : files;

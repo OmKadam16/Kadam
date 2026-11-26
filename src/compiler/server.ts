@@ -136,9 +136,9 @@ function checkServerForm(element: ElementNode, server: ServerModule | null, diag
   const controls = new Map(inside.filter((candidate) => CONTROLS.has(kindName(candidate) ?? "")).map((control) => [control.name, control]));
   for (const field of record.fields) {
     const control = controls.get(field.name);
-    if (field.type.kind !== "text" && field.type.kind !== "boolean") {
-      diagnostics.error("KDM3061", `${record.name}.${field.name} is ${describeType(field.type)}; a form sends text and boolean fields`, span,
-        field.type.kind === "number" ? "use a text field for now; number inputs come later" : `change ${field.name} in ${record.name}`);
+    if (field.type.kind !== "text" && field.type.kind !== "boolean" && field.type.kind !== "number") {
+      diagnostics.error("KDM3061", `${record.name}.${field.name} is ${describeType(field.type)}; a form sends text, number and boolean fields`, span,
+        `change ${field.name} in ${record.name}`);
       continue;
     }
     if (control === undefined) {
@@ -147,6 +147,17 @@ function checkServerForm(element: ElementNode, server: ServerModule | null, diag
       continue;
     }
     const checkbox = kindName(control) === "checkbox";
+    if (field.type.kind === "number") {
+      // A number needs a number input, and a value: an empty field is not a number.
+      const numeric = kindName(control) === "text field" && control.statements.some((s) => s.type === "field-type" && s.value === "number");
+      if (!numeric) {
+        diagnostics.error("KDM3061", `${field.name} is a number in ${record.name}, so it needs a text field that accepts numbers`, control.nameSpan,
+          "add: it accepts numbers");
+      } else if (!control.statements.some((s) => s.type === "required")) {
+        diagnostics.error("KDM3061", `${field.name} is a number in ${record.name}, so the field must be filled in`, control.nameSpan, "add: it is required");
+      }
+      continue;
+    }
     if ((field.type.kind === "boolean") !== checkbox) {
       diagnostics.error("KDM3061", `${field.name} is ${field.type.kind} in ${record.name}, so it needs ${field.type.kind === "boolean" ? "a checkbox" : "a text field, text area, dropdown, or radio group"}`,
         control.nameSpan, `change the control, or the type of ${field.name}`);
@@ -244,8 +255,9 @@ export function serverFiles(
   called: { readonly loads: readonly string[]; readonly sends: readonly string[] },
   forms: readonly ServerForm[],
   connect: readonly string[],
+  basePath = "",
 ): OutputFile[] {
-  if (server.target === "python") return pythonServerFiles(server, called, forms, connect);
+  if (server.target === "python") return pythonServerFiles(server, called, forms, connect, basePath);
   const moduleFile = `${server.module.name}.ts`;
   const all = [...called.loads, ...called.sends.filter((name) => !called.loads.includes(name))];
   const exports = all.length === 0 ? "" : `\n// Functions the pages call (D-44).\nexport { ${all.map((name) => `k_${name} as ${name}`).join(", ")} };\n`;
@@ -257,7 +269,7 @@ export function serverFiles(
   });
   return [
     { path: `server/${moduleFile}`, contents: `${server.code.replace(/\n*$/, "\n")}${exports}`, kind: "server" },
-    { path: "server/server.ts", contents: serverEntry(moduleFile, called.loads, sends, forms, connect), kind: "server" },
+    { path: "server/server.ts", contents: serverEntry(moduleFile, called.loads, sends, forms, connect, basePath), kind: "server" },
   ];
 }
 
@@ -280,6 +292,7 @@ function pythonServerFiles(
   called: { readonly loads: readonly string[]; readonly sends: readonly string[] },
   forms: readonly ServerForm[],
   connect: readonly string[],
+  basePath: string,
 ): OutputFile[] {
   const name = server.module.name;
   const py = (value: unknown): string => JSON.stringify(value);
@@ -293,6 +306,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import math
 import os
 import re
 import sys
@@ -318,6 +332,8 @@ FORMS = {
 ${forms.map((form) => `    ${py(form.form)}: (${py(form.html)}, ${py(form.sent)}, ${py(form.failed)}),`).join("\n")}
 }
 LIMIT = 64 * 1024
+# The site's base path (kadam.json basePath); every route lives under it.
+BASE = ${py(basePath)}
 TYPES = {
     ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
     ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -369,6 +385,14 @@ def form_record(body, record, fields):
     for name, kind in fields:
         if kind == "boolean":
             arguments["k_" + name] = name in values
+        elif kind == "number":
+            text = values.get(name, [""])[0].strip()
+            if not re.fullmatch(r"-?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?", text):
+                return None
+            number = float(text)
+            if not math.isfinite(number):
+                return None
+            arguments["k_" + name] = number
         elif name in values:
             arguments["k_" + name] = values[name][0]
         else:
@@ -436,6 +460,12 @@ def site_file(path):
 def application(environ, start_response):
     path = environ.get("PATH_INFO", "/")
     method = environ["REQUEST_METHOD"]
+    if BASE:
+        if path == BASE:
+            return respond(start_response, "308 Permanent Redirect", b"", "text/plain", [("Location", BASE + "/")])
+        if not path.startswith(BASE + "/"):
+            return respond(start_response, "404 Not Found", "Not found", "text/plain; charset=utf-8")
+        path = path[len(BASE):]
     if path.startswith("/_kadam/"):
         name = path[len("/_kadam/"):]
         if name in SENDS:
@@ -488,6 +518,7 @@ function serverEntry(
   sends: readonly { readonly name: string; readonly fields: readonly (readonly [string, string])[] }[],
   forms: readonly ServerForm[],
   connect: readonly string[],
+  basePath: string,
 ): string {
   const policy = ["default-src 'self'", "script-src 'self'", "style-src 'self'", "img-src 'self' data: https:", "font-src 'self'", `connect-src ${["'self'", ...connect].join(" ")}`, "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'self'"].join("; ");
   return `// Generated by Kadam. Do not edit.
@@ -519,6 +550,8 @@ const forms: Readonly<Record<string, readonly [string, string, string]>> = {
 ${forms.map((form) => `  ${JSON.stringify(form.form)}: ${JSON.stringify([form.html, form.sent, form.failed])},`).join("\n")}
 };
 const LIMIT = 64 * 1024;
+/** The site's base path (kadam.json basePath); every route lives under it. */
+const BASE = ${JSON.stringify(basePath)};
 
 const TYPES: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -568,12 +601,17 @@ function readBody(request: import("node:http").IncomingMessage): Promise<string 
 }
 
 /** The record a form sends, built field by field from its declared types; null when the body does not fit. */
-function formRecord(body: string, fields: readonly (readonly [string, string])[]): Record<string, string | boolean> | null {
+function formRecord(body: string, fields: readonly (readonly [string, string])[]): Record<string, string | number | boolean> | null {
   const values = new URLSearchParams(body);
-  const record: Record<string, string | boolean> = {};
+  const record: Record<string, string | number | boolean> = {};
   for (const [name, type] of fields) {
     if (type === "boolean") record["k_" + name] = values.has(name);
-    else {
+    else if (type === "number") {
+      const text = values.get(name)?.trim() ?? "";
+      const value = Number(text);
+      if (text === "" || !/^-?(\\d+\\.?\\d*|\\.\\d+)(e[-+]?\\d+)?$/i.test(text) || !Number.isFinite(value)) return null;
+      record["k_" + name] = value;
+    } else {
       const value = values.get(name);
       if (value === null) return null;
       record["k_" + name] = value;
@@ -642,6 +680,17 @@ const server = createServer(async (request, response) => {
   } catch {
     response.writeHead(400, SECURITY).end();
     return;
+  }
+  if (BASE !== "") {
+    if (path === BASE) {
+      response.writeHead(308, { ...SECURITY, location: BASE + "/" }).end();
+      return;
+    }
+    if (!path.startsWith(BASE + "/")) {
+      response.writeHead(404, { ...SECURITY, "content-type": "text/plain; charset=utf-8" }).end("Not found");
+      return;
+    }
+    path = path.slice(BASE.length);
   }
   if (path.startsWith("/_kadam/")) {
     const name = path.slice("/_kadam/".length);

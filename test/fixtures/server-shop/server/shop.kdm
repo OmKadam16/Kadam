@@ -12,10 +12,12 @@ module shop {
         address as text
         plan as text
         news as boolean
+        seats as number
     }
 
     function signUp takes signup as Signup and returns nothing {
         output "signup: " + signup.address + " (" + signup.plan + ")"
+        output signup.seats * 2
     }
 
     function listProducts takes nothing and returns list of Product {

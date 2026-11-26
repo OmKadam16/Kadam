@@ -116,6 +116,7 @@ export function lowerRuntime(
   slug: string,
   nodeIdOf: (element: ElementNode) => string,
   externals: readonly { readonly name: string; readonly href: string }[] = [],
+  basePath = "",
 ): RuntimeLowering | null {
   if (!usesRuntime(elements)) return null;
   const index = indexPage(elements);
@@ -297,7 +298,8 @@ export function lowerRuntime(
     if (shape === undefined || shape.type !== "data-shape") throw new InternalCompilerError("a loader without a shape reached lowering", load.span);
     loaders.push({
       source: load.name,
-      url: load.url,
+      // D-44: server routes live under the site's base path.
+      url: load.server === undefined ? load.url : `${basePath}${load.url}`,
       nodeId: nodeIdOf(element),
       fields: shape.fields.map((field) => [field.name, field.type] as const),
       loading: nodeIdOf(loading),

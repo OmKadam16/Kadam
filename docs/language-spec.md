@@ -1578,8 +1578,11 @@ function signUp takes signup as Signup and returns nothing { ... }
 - The form's controls are exactly the record's fields, by name: a field
   without a control and a control without a field are both `KDM3061`. A
   `text` field is a text field, text area, dropdown or radio group; a
-  `boolean` field is a checkbox (checked is `true`). `number` fields wait for
-  a number input.
+  `boolean` field is a checkbox (checked is `true`). A `number` field is a text
+  field with `it accepts numbers` and `it is required`, since an empty field
+  is not a number. The browser's number input takes whole numbers; both
+  servers accept any finite decimal (`3`, `-2.5`, `1e2`) and refuse anything
+  else (`abc`, `NaN`, `0x10`, `1e999`) with `400`.
 - `when it is sent, it shows <element>` and `when sending fails, it shows
   <element>` are both required and name two different elements inside the
   form (`KDM3061`, `KDM3012`). They start hidden; the sent element is a
@@ -1593,7 +1596,9 @@ function signUp takes signup as Signup and returns nothing { ... }
 
 The generated server accepts a form only from the same site (an `Origin` or
 `Referer` matching the host), only as `application/x-www-form-urlencoded`,
-and only up to 64 KB (`403`, `415`, `413`). It builds the record field by
+and only up to 64 KB (`403`, `415`, `413`). Server routes live under the
+site's `basePath` (`/shop/_kadam/signUp`); both servers serve only paths under
+it. It builds the record field by
 field from its types before calling the function; a body that does not fit
 is `400`. A function that fails is logged on the server and shows the failed
 state.

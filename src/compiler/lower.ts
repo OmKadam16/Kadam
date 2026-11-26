@@ -174,6 +174,7 @@ export function lowerDocument(
           slug,
           (element) => identityFor(element, slug).nodeId,
           (pageNode.externals ?? []).map((external) => ({ name: external.name, href: assetUrl(external.file, basePath) })),
+          basePath,
         );
   const context: LowerContext = {
     runtime,
@@ -380,7 +381,7 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
           title: (findStatement(element, "summary") as { value: string } | null)?.value ?? "",
           open: findStatement(element, "starts-open") !== null,
         }
-      : serverFormAction(element, identity.nodeId, lowerKindContent(element, kind, context.f1, context.pageLanguage));
+      : serverFormAction(element, identity.nodeId, context.basePath, lowerKindContent(element, kind, context.f1, context.pageLanguage));
   const htmlId =
     context.f1.labelIds.get(element) ??
     (context.anchors.get(element.name) === identity.nodeId || context.runtime?.ids.has(element) === true
@@ -1319,11 +1320,11 @@ function elementKind(element: ElementNode): BuiltinKindName {
 }
 
 /** D-44: a form that sends to a server function names itself, so the server can answer without JavaScript. */
-function serverFormAction(element: ElementNode, nodeId: string, content: IrKindContent | undefined): IrKindContent | undefined {
+function serverFormAction(element: ElementNode, nodeId: string, basePath: string, content: IrKindContent | undefined): IrKindContent | undefined {
   if (content?.type !== "form") return content;
   const action = element.statements.find((statement) => statement.type === "form-action");
   if (action?.type !== "form-action" || action.server === undefined) return content;
-  return { ...content, action: `${content.action}?form=${encodeURIComponent(nodeId)}` };
+  return { ...content, action: `${basePath}${content.action}?form=${encodeURIComponent(nodeId)}` };
 }
 
 /** kadam 0.3 (F6, D-42): classes from existing stylesheets. */

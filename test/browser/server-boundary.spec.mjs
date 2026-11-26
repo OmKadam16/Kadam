@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 let TARGET = "typescript";
 
 /** Build the fixture (optionally with a changed module) and run its server. */
-async function start(changeModule = (text) => text, target = TARGET) {
+async function start(changeModule = (text) => text, target = TARGET, extraArgs = []) {
   const project = mkdtempSync(join(tmpdir(), "kadam-server-project-"));
   cpSync(join(root, "test/fixtures/server-shop"), project, { recursive: true });
   const modulePath = join(project, "server/shop.kdm");
@@ -20,7 +20,7 @@ async function start(changeModule = (text) => text, target = TARGET) {
   const manifestPath = join(project, "kadam.json");
   writeFileSync(manifestPath, readFileSync(manifestPath, "utf8").replace('"target": "typescript"', `"target": "${target}"`));
   const out = mkdtempSync(join(tmpdir(), "kadam-server-"));
-  const build = spawnSync(process.execPath, [join(root, "dist/cli/main.js"), "build", project, "-o", out], { encoding: "utf8" });
+  const build = spawnSync(process.execPath, [join(root, "dist/cli/main.js"), "build", project, "-o", out, ...extraArgs], { encoding: "utf8" });
   if (build.status !== 0) throw new Error(build.stdout + build.stderr);
   const child = target === "python"
     ? spawn("python3", ["-u", join(out, "server/server.py")], { env: { ...process.env, PORT: "0" } })
@@ -97,6 +97,7 @@ for (const target of ["typescript", "python"]) {
     await page.goto(`${origin}/`);
     await expect(page.getByText("Thanks, you are signed up.")).toBeHidden();
     await page.getByLabel("Email").fill("ada@example.com");
+    await page.getByLabel("Seats").fill("3");
     await page.getByLabel("Plan").selectOption("Pro");
     await page.getByLabel("Send me news").check();
     await page.getByRole("button", { name: "Sign up" }).click();
@@ -107,6 +108,8 @@ for (const target of ["typescript", "python"]) {
     expect(new URL(page.url()).pathname).toBe("/");
     await expect(page.getByLabel("Email")).toHaveValue("");
     await expect.poll(() => logged).toContain("signup: ada@example.com (Pro)");
+    // The number arrived as a number: seats * 2.
+    await expect.poll(() => logged).toContain("signup: ada@example.com (Pro)\n6\n");
     // The browser's own checks still run first: an empty required field sends nothing.
     await page.getByRole("button", { name: "Sign up" }).click();
     expect(logged.match(/signup:/g)).toHaveLength(1);
@@ -118,9 +121,23 @@ for (const target of ["typescript", "python"]) {
     const { child, origin } = await start((text) => text.replace(/output "signup: "[^\n]*\n/, "let codes be [1]\n        output codes[5]\n"));
     await page.goto(`${origin}/`);
     await page.getByLabel("Email").fill("ada@example.com");
+    await page.getByLabel("Seats").fill("3");
     await page.getByRole("button", { name: "Sign up" }).click();
     await expect(page.getByRole("alert")).toHaveText("Sorry, that did not work. Try again.");
     await expect(page.getByText("Thanks, you are signed up.")).toBeHidden();
+    child.kill();
+  });
+
+  test("under a base path, loads and forms reach the server", async ({ page }) => {
+    const { child, origin } = await start((text) => text, TARGET, ["--base-path", "/shop"]);
+    await page.goto(`${origin}/shop/`);
+    await expect(page.locator(".kdm-kind-card h2")).toHaveText(["Desk", "Shelf", "Lamp"]);
+    await page.getByLabel("Email").fill("base@example.com");
+    await page.getByLabel("Seats").fill("2");
+    await page.getByRole("button", { name: "Sign up" }).click();
+    await expect(page.getByText("Thanks, you are signed up.")).toBeVisible();
+    const outside = await page.evaluate(async () => [(await fetch("/_kadam/listProducts")).status, (await fetch("/index.html")).status]);
+    expect(outside).toEqual([404, 404]);
     child.kill();
   });
 
@@ -134,10 +151,11 @@ for (const target of ["typescript", "python"]) {
     await expect(page.getByText("Thanks, you are signed up.")).toBeHidden();
     await expect(page.getByText("Sorry, that did not work.")).toBeHidden();
     await page.getByLabel("Email").fill("grace@example.com");
+    await page.getByLabel("Seats").fill("2");
     await page.getByRole("button", { name: "Sign up" }).click();
     await expect(page.getByText("Thanks, you are signed up.")).toBeVisible();
     await expect(page.getByText("Sorry, that did not work.")).toBeHidden();
-    await expect.poll(() => logged).toContain("signup: grace@example.com (Free)");
+    await expect.poll(() => logged).toContain("signup: grace@example.com (Free)\n4\n");
     await context.close();
     child.kill();
   });
