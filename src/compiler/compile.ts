@@ -7,6 +7,7 @@ import {
 import { parseSource } from "../core/parser/parser.js";
 import { expandDocuments } from "../core/data/markdown.js";
 import { checkLoadOrigins } from "../core/data/data.js";
+import { fragmentFiles } from "./fragment.js";
 import {
   banEscapeHatches,
   checkStylesheetClasses,
@@ -48,6 +49,8 @@ export interface CompileOptions {
   readonly fonts?: Readonly<Record<string, ManifestFont>> | undefined;
   /** kadam 0.3 (F6, D-42): ban escape hatches. */
   readonly strict?: boolean | undefined;
+  /** kadam 0.3 (F6, D-43): build the page as a fragment for an existing page. */
+  readonly fragment?: boolean | undefined;
 }
 
 export interface CompileResult {
@@ -147,10 +150,10 @@ function compileWithSource(
         const bag = new DiagnosticBag();
         bag.addAll(checked);
         for (const warning of warnings) bag.warning(warning.code, warning.message, warning.span, warning.hint);
-        return { ok: true, diagnostics: bag.sorted(), page, files, escapeHatches };
+        return { ok: true, diagnostics: bag.sorted(), page, files: options.fragment === true ? fragmentFiles([page], []) : files, escapeHatches };
       }
     }
-    return { ok: true, diagnostics: checked, page, files, escapeHatches };
+    return { ok: true, diagnostics: checked, page, files: options.fragment === true ? fragmentFiles([page], []) : files, escapeHatches };
   } catch (error) {
     const span =
       error instanceof InternalCompilerError

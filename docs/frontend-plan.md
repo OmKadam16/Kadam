@@ -344,8 +344,13 @@ reference site still writes its pages by hand.
   module, loaded with `import()`, failures logged). `kadam check` lists every
   hatch; `--strict` or `"strict": true` bans them (`KDM3053`). Raw HTML stays
   out. Spec section 6.25.
-- **Step 2, next: fragments** (`kadam build --fragment`).
-- **Step 3: Web Components** (`--target web-components`, D-43).
+- **Step 2, shipped: fragments** (`kadam build --fragment`). Each page
+  becomes `fragments/<page>.html` plus one stylesheet with every page-wide
+  rule scoped to `.kdm-fragment`, and its runtime. A browser test embeds the
+  shop in a styled host page: data loads, filters run, and the host's
+  background, margin, font and box model are unchanged. See
+  `docs/project-manifest.md`.
+- **Step 3, next: Web Components** (`--target web-components`, D-43).
 - **Step 4: TypeScript declarations**, then the Vite + React exit test.
 
 **F6 known gaps:** raw css is not allowed after `when hovered,` and the other

@@ -21,6 +21,7 @@ import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
 import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
+import { fragmentFiles } from "./fragment.js";
 import {
   banEscapeHatches,
   checkStylesheetClasses,
@@ -99,6 +100,8 @@ export interface ProjectCompileOptions {
   readonly sourceOverrides?: ReadonlyMap<string, string | Uint8Array> | undefined;
   /** kadam 0.3 (F6, D-42): ban escape hatches, as "strict": true in kadam.json does. */
   readonly strict?: boolean | undefined;
+  /** kadam 0.3 (F6, D-43): build every page as a fragment for an existing page. */
+  readonly fragment?: boolean | undefined;
 }
 
 export interface ProjectCompileResult {
@@ -609,13 +612,14 @@ export function compileProject(
     }
 
     files.sort((a, b) => compareText(a.path, b.path));
+    const output = options.fragment === true ? fragmentFiles(loweredPages, files.filter((file) => file.kind === "asset")) : files;
 
     return {
       ok: true,
       diagnostics: diagnostics.sorted(),
       manifest,
       pages: loweredPages,
-      files,
+      files: output,
       outDir,
       sources,
       escapeHatches,

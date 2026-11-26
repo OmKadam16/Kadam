@@ -176,4 +176,30 @@ kadam build --project ./MyWebsite --out ./dist --base-path /my-site
 
 # Single-page build (unchanged from M2)
 kadam build ./page.kdm --out ./dist
+
+# kadam 0.3 (F6, D-43): fragments for an existing page or CMS
+kadam build --project ./MyWebsite --fragment --out ./embed
 ```
+
+### Fragments
+
+`--fragment` builds each page as markup to paste into an existing page,
+instead of a whole site:
+
+- `fragments/<page>.html` holds the page's elements inside
+  `<div class="kdm-fragment kdm-page">`, with no `<html>`, `<head>`, `<title>`
+  or metadata. It starts with a comment that lists the tags the host page adds
+  to its `<head>`; the CLI prints them too.
+- `assets/kadam.<page>.fragment.css` is Kadam's base CSS and the page CSS in
+  one file. Rules for `body`, `html` and `:root` (the page background, text
+  color and theme colors) apply to the wrapper instead, and every other rule
+  without a Kadam class is prefixed with `.kdm-fragment`, so nothing in it can
+  match the host page.
+- A page with state, events or loaded data also gets its runtime
+  (`assets/kadam.<page>.js`) and a scoped JavaScript-off stylesheet.
+- Images, stylesheets and external modules are copied as in a normal build.
+  Use `--base-path` when the files are served under a prefix.
+
+Limits: the host's own CSS can still reach into the fragment (use Web
+Components, D-43, for full isolation); a state kept in the address changes the
+host page's address; links to other Kadam pages point at their site routes.

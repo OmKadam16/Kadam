@@ -131,6 +131,7 @@ if (first === "build") {
       projectRoot: projectDir,
       outDir: parsedArgs.outDir,
       basePath: parsedArgs.basePath,
+      fragment: parsedArgs.fragment,
     });
 
     if (!result.ok) {
@@ -157,10 +158,11 @@ if (first === "build") {
       process.exit(1);
     }
 
-    console.log(`Built project ${projectDir} -> ${result.outDir}`);
+    console.log(`Built project ${projectDir} -> ${result.outDir}${parsedArgs.fragment ? " (fragments)" : ""}`);
     for (const file of result.files) {
       console.log(`  ${join(result.outDir, file.path)}`);
     }
+    if (parsedArgs.fragment) printFragmentTags(result.files);
     process.exit(0);
   }
 
@@ -215,7 +217,7 @@ if (first === "build") {
     process.exit(2);
   }
 
-  const result = compileText(file, text, { basePath: parsedArgs.basePath });
+  const result = compileText(file, text, { basePath: parsedArgs.basePath, fragment: parsedArgs.fragment });
 
   if (!result.ok) {
     const source = new SourceFile(file, text);
@@ -242,10 +244,11 @@ if (first === "build") {
     process.exit(1);
   }
 
-  console.log(`Built ${file} -> ${outDir}`);
+  console.log(`Built ${file} -> ${outDir}${parsedArgs.fragment ? " (fragment)" : ""}`);
   for (const file of result.files) {
     console.log(`  ${join(outDir, file.path)}`);
   }
+  if (parsedArgs.fragment) printFragmentTags(result.files);
   process.exit(0);
 }
 
@@ -269,12 +272,23 @@ function readSource(file: string, command: string): string {
   }
 }
 
+/** F6 (D-43): each fragment starts with a comment naming the tags its host page needs. */
+function printFragmentTags(files: readonly { readonly path: string; readonly contents: string | Uint8Array }[]): void {
+  for (const file of files) {
+    if (!file.path.startsWith("fragments/")) continue;
+    const head = String(file.contents).split("-->")[0]!.split("\n").slice(2);
+    console.log(`\n${file.path}: add to the <head> of the host page:`);
+    for (const line of head) if (line.trim() !== "") console.log(`  ${line.trim()}`);
+  }
+}
+
 interface BuildArguments {
   readonly source: string | undefined;
   readonly target: TargetId | undefined;
   readonly projectDir: string | undefined;
   readonly outDir: string | undefined;
   readonly basePath: string | undefined;
+  readonly fragment: boolean;
 }
 
 function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null {
@@ -283,9 +297,14 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
   let projectDir: string | undefined;
   let outDir: string | undefined;
   let basePath: string | undefined;
+  let fragment = false;
 
   for (let index = 0; index < rawArgs.length; index += 1) {
     const argument = rawArgs[index]!;
+    if (argument === "--fragment") {
+      fragment = true;
+      continue;
+    }
     if (argument === "--target") {
       const value = rawArgs[index + 1];
       if (value === undefined || value === "") {
@@ -389,7 +408,7 @@ function parseBuildArguments(rawArgs: readonly string[]): BuildArguments | null 
     }
   }
 
-  return { source, target, projectDir, outDir, basePath };
+  return { source, target, projectDir, outDir, basePath, fragment };
 }
 
 /**
@@ -533,6 +552,8 @@ Build and check options:
   -p, --project <dir>                 Project directory containing kadam.json
   -o, --out <dir>                     Output directory (default: dist; build only)
   -b, --base-path <path>              Deployment base path (e.g. /subpath)
+      --fragment                      Build each page as an HTML fragment for an existing
+                                       page or CMS, with CSS scoped to the fragment (build only)
       --target <id>                   Target for a kadam 0.2 module: typescript or python
                                        (build defaults to typescript; check is core-only
                                        unless a target is supplied)
