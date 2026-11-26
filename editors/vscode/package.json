@@ -1,0 +1,31 @@
+{
+  "name": "kadam",
+  "displayName": "Kadam",
+  "description": "Kadam language support: highlighting, and errors, completion, hover, go to definition and formatting from kadam lsp.",
+  "version": "0.3.0",
+  "publisher": "kadam",
+  "license": "Apache-2.0",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Programming Languages", "Formatters", "Linters"],
+  "keywords": ["kadam", "ui", "html", "css", "language"],
+  "activationEvents": ["onLanguage:kadam"],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      { "id": "kadam", "aliases": ["Kadam", "kadam"], "extensions": [".kdm"], "configuration": "./language-configuration.json" }
+    ],
+    "grammars": [
+      { "language": "kadam", "scopeName": "source.kadam", "path": "./syntaxes/kadam.tmLanguage.json" }
+    ],
+    "configuration": {
+      "title": "Kadam",
+      "properties": {
+        "kadam.path": {
+          "type": "string",
+          "default": "kadam",
+          "description": "The kadam command the extension runs as `kadam lsp`."
+        }
+      }
+    }
+  }
+}

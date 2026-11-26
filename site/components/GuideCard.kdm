@@ -1,0 +1,31 @@
+kadam 0.3
+
+component GuideCard takes a title as text, a summary as text, a target as page {
+    card1 {
+        a card
+        it is full width
+        has a surface background
+        has a 1px line border
+        has 12px rounded corners
+        has no shadow
+        it has 20px padding
+        it has 8px gap between children
+        when hovered, it lifts by 2px
+        title1 {
+            a minor heading
+            the text says "{$title}"
+            the text is ink
+        }
+        summary1 {
+            a paragraph
+            the text says "{$summary}"
+            the text is muted
+        }
+        open1 {
+            a link
+            the text says "Read {$title}"
+            the text is brand
+            when clicked, go to page "{$target}"
+        }
+    }
+}

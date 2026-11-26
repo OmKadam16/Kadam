@@ -34,7 +34,8 @@ const cards = (page) => page.locator(".kdm-kind-card h2");
 
 test.describe("runtime data", () => {
   test("loads, filters, sorts, and fills cards with text only", async ({ page }) => {
-    const { shop, errors } = await open(page, () => ({ body: PRODUCTS, delay: 200 }));
+    // Long enough that the loading state is still up when the page has rendered, even on a busy machine.
+    const { shop, errors } = await open(page, () => ({ body: PRODUCTS, delay: 1500 }));
     await expect(page.getByText("Loading products...")).toBeVisible();
     await expect(page.locator(".kdm-home-catalog, [data-kdm-id='home-catalog']").first()).toHaveAttribute("aria-busy", "true");
     await expect(cards(page)).toHaveText(["Desk", "Shelf", "Lamp"]);

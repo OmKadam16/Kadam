@@ -12,6 +12,7 @@ import {
   DEV_PREFIX,
   contentTypeFor,
   injectClientScript,
+  injectStateKeeper,
   renderErrorShell,
   renderNotFound,
   resolveRequestPath,
@@ -200,6 +201,8 @@ export async function createDevServer(
           contentTypeFor(resolved.path) ?? "application/octet-stream";
         if (entry.kind === "html" && typeof entry.contents === "string") {
           sendBody(res, 200, injectClientScript(entry.contents), type, headOnly);
+        } else if (entry.kind === "js" && typeof entry.contents === "string") {
+          sendBody(res, 200, injectStateKeeper(entry.contents), type, headOnly);
         } else {
           sendBody(res, 200, entry.contents, type, headOnly);
         }

@@ -1,0 +1,127 @@
+kadam 0.3
+
+// The Kadam documentation site's home page, written in Kadam.
+page "Kadam" {
+    the page description says "Kadam: a constrained-English UI language that compiles to plain HTML and CSS."
+    the page background is paper
+    the page text is ink
+    the page is dark when the system is dark
+
+    top1 {
+        a SiteHeader
+    }
+
+    hero {
+        a section
+        it has 88px padding on the top
+        it has 56px padding on the bottom
+        it has 24px padding on the left and right
+        it has 20px gap between children
+        on phones, it has 48px padding on the top
+        heroTitle {
+            a main heading
+            the text says "Write the page in English. Get plain HTML and CSS."
+            the text is between 2.25rem and 3.5rem
+            the text weight is 600
+            the letter spacing is -1.2px
+            the line height is 1.08
+            it is full width
+            it is at most 1100px wide
+            it is centered
+        }
+        heroLead {
+            a paragraph
+            the text says "Kadam is a small, deterministic language for user interfaces. Every sentence means exactly one thing, the compiler rejects what it cannot read precisely, and the output is plain HTML and CSS you can read."
+            the words "exactly one thing" are bold
+            the text is 19px
+            the text is muted
+            the line height is 1.55
+            it is full width
+            it is at most 1100px wide
+            it is centered
+        }
+        heroCode {
+            a container
+            it is full width
+            it is at most 1100px wide
+            it is centered
+            sample {
+                a code block
+                the text says "hero {\n    a section\n    it has 64px padding\n    title {\n        a main heading\n        the text says \"Hello\"\n        the letter spacing is -1px\n    }\n    start {\n        a button\n        the text says \"Get started\"\n        when clicked, go to page \"Getting started\"\n    }\n}"
+                has a code background
+                the text is ink
+                has 12px rounded corners
+                it has 20px padding
+                the line height is 1.6
+                it is at most 640px wide
+            }
+        }
+        heroActions {
+            a container
+            it is full width
+            it is at most 1100px wide
+            it is centered
+            it arranges its children in a row
+            it wraps its children
+            it has 12px gap between children
+            startGuide {
+                a button
+                the text says "Get started"
+                has a brand background
+                has fully rounded corners
+                in dark mode, the text is #111318
+                when clicked, go to page "Getting started"
+            }
+            browseSentences {
+                a button
+                the text says "Every sentence"
+                has a tint background
+                the text is brand
+                has fully rounded corners
+                when clicked, go to page "Sentences"
+            }
+        }
+    }
+
+    guides {
+        a section
+        it has 24px padding on the left and right
+        it has 72px padding on the bottom
+        it has 20px gap between children
+        guidesTitle {
+            a section heading
+            the text says "Guide"
+            the text is 28px
+            it is full width
+            it is at most 1100px wide
+            it is centered
+        }
+        guideGrid {
+            a container
+            it is full width
+            it is at most 1100px wide
+            it is centered
+            it arranges its children in columns at least 300px wide
+            it has 16px gap between children
+            guideCard {
+                a GuideCard for each guide in guides
+                sorted by the order of guide
+                with a title of the title of guide
+                with a summary of the summary of guide
+                with a target of the title of guide
+            }
+        }
+    }
+
+    siteFooter {
+        a footer
+        it has 24px padding
+        has a 1px line border on the top
+        footerNote {
+            a paragraph
+            the text says "This site is written in Kadam and built with kadam build."
+            the text is muted
+            the text is centered
+        }
+    }
+}

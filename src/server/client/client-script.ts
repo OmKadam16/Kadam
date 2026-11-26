@@ -267,6 +267,13 @@ export const CLIENT_SCRIPT = String.raw`(function () {
     });
 
     source.addEventListener("reload", function () {
+      // F7: the page runtime saves its state, and the scroll position is kept.
+      try {
+        sessionStorage.setItem("kadam-dev-scroll:" + location.pathname, String(window.scrollY));
+      } catch (error) {
+        // Storage is optional.
+      }
+      dispatchEvent(new Event("kadam:before-reload"));
       location.reload();
     });
 
@@ -334,6 +341,17 @@ export const CLIENT_SCRIPT = String.raw`(function () {
       .then(function (sources) { if (sources[id]) showSource(sources[id]); })
       .catch(function () {});
   }, true);
+
+  try {
+    var scrollKey = "kadam-dev-scroll:" + location.pathname;
+    var scroll = sessionStorage.getItem(scrollKey);
+    if (scroll !== null) {
+      sessionStorage.removeItem(scrollKey);
+      window.scrollTo(0, Number(scroll) || 0);
+    }
+  } catch (error) {
+    // Storage is optional.
+  }
 
   ensureOverlay();
   connect();

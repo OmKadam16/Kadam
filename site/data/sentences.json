@@ -1,0 +1,457 @@
+[
+  {
+    "name": "Alignment of children",
+    "version": "0.1",
+    "examples": "it centers its children   ·   it centers its children horizontally"
+  },
+  {
+    "name": "Background blur behind an element",
+    "version": "0.3",
+    "examples": "it blurs the background behind it by 12px"
+  },
+  {
+    "name": "Background image",
+    "version": "0.3",
+    "examples": "has a \"assets/hero.jpg\" background image"
+  },
+  {
+    "name": "Background image fit and focus",
+    "version": "0.3",
+    "examples": "the background image covers its box   ·   the background image fits inside its box   ·   the background image repeats"
+  },
+  {
+    "name": "Blur, rotation, move, or scale",
+    "version": "0.3",
+    "examples": "it is blurred by 4px   ·   it is rotated by 10deg   ·   it is moved 8px down"
+  },
+  {
+    "name": "Border",
+    "version": "0.1",
+    "examples": "has a white border   ·   has a 2px white border   ·   has no border"
+  },
+  {
+    "name": "Built-in dark palette",
+    "version": "0.3",
+    "examples": "the page is dark when the system is dark"
+  },
+  {
+    "name": "Center the box in its parent",
+    "version": "0.3",
+    "examples": "it is centered"
+  },
+  {
+    "name": "Checked, disabled, or length-limit state",
+    "version": "0.3",
+    "examples": "it is checked   ·   it is disabled   ·   it is at least 8 characters"
+  },
+  {
+    "name": "Child layout direction",
+    "version": "0.1",
+    "examples": "it arranges its children in a row"
+  },
+  {
+    "name": "Child wrapping and spacing",
+    "version": "0.3",
+    "examples": "it wraps its children   ·   it spreads its children apart   ·   it spaces its children evenly"
+  },
+  {
+    "name": "Choice options",
+    "version": "0.3",
+    "examples": "the options are \"Small\", \"Medium\", \"Large\""
+  },
+  {
+    "name": "Class from an existing stylesheet (escape hatch)",
+    "version": "0.3",
+    "examples": "it also uses the class \"legacy-hero\" from \"styles/legacy.css\""
+  },
+  {
+    "name": "Click action",
+    "version": "0.1",
+    "examples": "when clicked, go to page \"About\"   ·   when clicked, open \"https://example.com\" in a new tab"
+  },
+  {
+    "name": "Click effects",
+    "version": "0.3",
+    "examples": "when clicked, flip \"menu1\"   ·   when clicked, show \"panel2\" and hide \"panel1\"   ·   when clicked, open dialog \"signupDialog\""
+  },
+  {
+    "name": "Corner radius",
+    "version": "0.1",
+    "examples": "has rounded corners   ·   has 12px rounded corners   ·   has fully rounded corners"
+  },
+  {
+    "name": "Custom font",
+    "version": "0.3",
+    "examples": "the font is \"Inter\""
+  },
+  {
+    "name": "Dashed, dotted, or per-side border",
+    "version": "0.3",
+    "examples": "has a 2px dashed red border   ·   has a 1px #E5E5E5 border on the bottom   ·   has a dotted blue border on the left and right"
+  },
+  {
+    "name": "Element kind declaration",
+    "version": "0.1",
+    "examples": "a button   ·   an image that is 560px by 360px   ·   a text field"
+  },
+  {
+    "name": "Element state",
+    "version": "0.3",
+    "examples": "it remembers isOpen, a boolean that starts as false   ·   it remembers count, a number that starts as 0"
+  },
+  {
+    "name": "Entrance animation",
+    "version": "0.1",
+    "examples": "it fades in when the page loads   ·   it fades in over 600ms when the page loads   ·   it slides in from the left when the page loads"
+  },
+  {
+    "name": "Entrance when scrolled into view",
+    "version": "0.3",
+    "examples": "it fades in when it scrolls into view   ·   it slides in from the left when it scrolls into view"
+  },
+  {
+    "name": "Expandable section starts open",
+    "version": "0.3",
+    "examples": "it starts open"
+  },
+  {
+    "name": "Expandable section title",
+    "version": "0.3",
+    "examples": "the title says \"What is Kadam?\""
+  },
+  {
+    "name": "External function (escape hatch)",
+    "version": "0.3",
+    "examples": "external trackEvent from \"analytics.js\" takes text and returns nothing"
+  },
+  {
+    "name": "Field error message",
+    "version": "0.3",
+    "examples": "the error says \"Enter a valid email address\""
+  },
+  {
+    "name": "Field input type",
+    "version": "0.3",
+    "examples": "it accepts phone numbers   ·   it accepts dates   ·   it accepts web addresses"
+  },
+  {
+    "name": "Fluid text size",
+    "version": "0.3",
+    "examples": "the text is between 1rem and 2.5rem   ·   the text size is between 16px and 24px"
+  },
+  {
+    "name": "Font family preset",
+    "version": "0.1",
+    "examples": "the font is sans serif"
+  },
+  {
+    "name": "Form destination",
+    "version": "0.3",
+    "examples": "it sends to \"https://example.com/subscribe\""
+  },
+  {
+    "name": "Form sent or failed state (D-44)",
+    "version": "0.3",
+    "examples": "when it is sent, it shows thanksNote   ·   when sending fails, it shows sorryNote"
+  },
+  {
+    "name": "Gap between children",
+    "version": "0.1",
+    "examples": "it has 16px gap between children"
+  },
+  {
+    "name": "Gradient angle",
+    "version": "0.3",
+    "examples": "the gradient goes at 135deg"
+  },
+  {
+    "name": "Gradient direction",
+    "version": "0.1",
+    "examples": "the gradient goes from left to right"
+  },
+  {
+    "name": "Grid column span",
+    "version": "0.3",
+    "examples": "it spans 2 columns   ·   it spans all columns"
+  },
+  {
+    "name": "Grid columns",
+    "version": "0.3",
+    "examples": "it arranges its children in 3 columns   ·   it arranges its children in columns at least 240px wide"
+  },
+  {
+    "name": "Hidden until shown by an effect",
+    "version": "0.3",
+    "examples": "it starts hidden"
+  },
+  {
+    "name": "Hover effect",
+    "version": "0.1",
+    "examples": "when hovered, the background turns blue   ·   when hovered, it lifts by 2px   ·   when hovered, it scales to 105%"
+  },
+  {
+    "name": "Image description",
+    "version": "0.1",
+    "examples": "the description says \"A person using the Kadam editor\""
+  },
+  {
+    "name": "Image fit",
+    "version": "0.3",
+    "examples": "it fills its box   ·   it fits inside its box"
+  },
+  {
+    "name": "Image focus point",
+    "version": "0.3",
+    "examples": "it keeps the top in view   ·   it keeps the bottom right in view"
+  },
+  {
+    "name": "Image loading",
+    "version": "0.3",
+    "examples": "it loads lazily   ·   it loads right away"
+  },
+  {
+    "name": "Image source path",
+    "version": "0.1",
+    "examples": "it shows \"assets/hero.png\""
+  },
+  {
+    "name": "In-page, email, phone, or download link",
+    "version": "0.3",
+    "examples": "when clicked, go to \"features\"   ·   when clicked, send an email to \"hello@acme.com\"   ·   when clicked, call \"+1 555 0100\""
+  },
+  {
+    "name": "Inline text span",
+    "version": "0.3",
+    "examples": "the words \"docs\" go to page \"Docs\"   ·   the words \"fast\" are bold   ·   the word \"now\" is italic"
+  },
+  {
+    "name": "Inner, colored, or custom shadow",
+    "version": "0.3",
+    "examples": "has a soft blue shadow   ·   has an inner shadow   ·   has a #00000033 shadow that is 24px blurred and 8px down"
+  },
+  {
+    "name": "Interaction state effect",
+    "version": "0.3",
+    "examples": "when focused, the border turns blue   ·   when pressed, it scales to 102%   ·   when disabled, the background turns gray"
+  },
+  {
+    "name": "Key press effects",
+    "version": "0.3",
+    "examples": "when the Escape key is pressed, hide \"menu1\"   ·   when the Escape key is pressed, it is hidden"
+  },
+  {
+    "name": "Load data at run time",
+    "version": "0.3",
+    "examples": "it loads products from \"https://api.example.com/products\""
+  },
+  {
+    "name": "Loading, empty, and error states",
+    "version": "0.3",
+    "examples": "while loading, it shows loadingNote   ·   when there are none, it shows emptyNote   ·   when loading fails, it shows errorNote"
+  },
+  {
+    "name": "Looping animation",
+    "version": "0.3",
+    "examples": "it spins forever   ·   it pulses every 2s   ·   it floats forever"
+  },
+  {
+    "name": "Markdown document shown inside the element",
+    "version": "0.3",
+    "examples": "it shows the document \"content/intro.md\""
+  },
+  {
+    "name": "Multi-color or radial gradient",
+    "version": "0.3",
+    "examples": "has a blue and white and red gradient   ·   has a radial white and blue gradient"
+  },
+  {
+    "name": "Outline",
+    "version": "0.3",
+    "examples": "has a 2px blue outline"
+  },
+  {
+    "name": "Overflow",
+    "version": "0.3",
+    "examples": "it scrolls vertically   ·   it scrolls horizontally   ·   it hides overflow"
+  },
+  {
+    "name": "Padding or margin",
+    "version": "0.1",
+    "examples": "it has 24px padding   ·   it has 16px padding on the left   ·   it has 16px padding on the left and right"
+  },
+  {
+    "name": "Page background color",
+    "version": "0.1",
+    "examples": "the page background is #F7F5F0"
+  },
+  {
+    "name": "Page default font family",
+    "version": "0.1",
+    "examples": "the page font is sans serif"
+  },
+  {
+    "name": "Page default text color",
+    "version": "0.1",
+    "examples": "the page text is #171717"
+  },
+  {
+    "name": "Page metadata",
+    "version": "0.3",
+    "examples": "the page description says \"Plans and pricing\"   ·   the page language is \"fr\"   ·   the page icon is \"assets/icon.png\""
+  },
+  {
+    "name": "Per-corner rounding",
+    "version": "0.3",
+    "examples": "has 12px rounded corners on the top   ·   has fully rounded corners on the left"
+  },
+  {
+    "name": "Percentage size",
+    "version": "0.3",
+    "examples": "it is 50% wide   ·   it is 100% tall   ·   it is 50% by 300px"
+  },
+  {
+    "name": "Pinned or placed position",
+    "version": "0.3",
+    "examples": "it is pinned to the bottom right   ·   it is pinned 24px from the bottom right   ·   it is placed over its parent"
+  },
+  {
+    "name": "Raw CSS declaration (escape hatch)",
+    "version": "0.3",
+    "examples": "the css \"mask-image\" is \"url(assets/fade.svg)\"   ·   the css \"clip-path\" is \"circle(40%)\""
+  },
+  {
+    "name": "Regular property sentence",
+    "version": "0.3",
+    "examples": "the text size is 18px   ·   the text color is #171717   ·   the text weight is semibold"
+  },
+  {
+    "name": "Rule for a child in a row or column",
+    "version": "0.3",
+    "examples": "it grows to fill the space   ·   it does not shrink   ·   it sits at the end"
+  },
+  {
+    "name": "Shadow preset",
+    "version": "0.1",
+    "examples": "has a soft shadow   ·   has a medium shadow   ·   has no shadow"
+  },
+  {
+    "name": "Shape (aspect ratio)",
+    "version": "0.3",
+    "examples": "it keeps a 16 by 9 shape   ·   it keeps a square shape"
+  },
+  {
+    "name": "Shape of loaded records",
+    "version": "0.3",
+    "examples": "each product has a name as text, a price as a number, and a link as a url"
+  },
+  {
+    "name": "Size limit",
+    "version": "0.3",
+    "examples": "it is at most 1200px wide   ·   it is at least 50vh tall"
+  },
+  {
+    "name": "Size, visibility, decorative, or required state",
+    "version": "0.1",
+    "examples": "it is 160px by 48px   ·   it is 160px wide   ·   it is full width"
+  },
+  {
+    "name": "Solid, absent, or gradient background",
+    "version": "0.1",
+    "examples": "has a blue background   ·   has no background   ·   has a blue and black gradient"
+  },
+  {
+    "name": "Staggered child entrance",
+    "version": "0.3",
+    "examples": "its children fade in one after another   ·   its children slide in from the bottom one after another"
+  },
+  {
+    "name": "Sticky position",
+    "version": "0.3",
+    "examples": "it sticks to the top   ·   it sticks 16px from the top"
+  },
+  {
+    "name": "Submit button",
+    "version": "0.3",
+    "examples": "it submits the form"
+  },
+  {
+    "name": "Table caption",
+    "version": "0.3",
+    "examples": "the caption says \"Plans\""
+  },
+  {
+    "name": "Text bound to state",
+    "version": "0.3",
+    "examples": "the text shows count of cart1"
+  },
+  {
+    "name": "Text content",
+    "version": "0.1",
+    "examples": "the text says \"Get Started\"   ·   the button text says \"Get Started\"   ·   the heading text says \"Welcome\""
+  },
+  {
+    "name": "Text decoration, case, and line length",
+    "version": "0.3",
+    "examples": "the text is underlined   ·   the text is struck through   ·   the text is uppercase"
+  },
+  {
+    "name": "Text field input type",
+    "version": "0.1",
+    "examples": "it accepts email addresses"
+  },
+  {
+    "name": "Text field label",
+    "version": "0.1",
+    "examples": "the label says \"Email\""
+  },
+  {
+    "name": "Text field placeholder",
+    "version": "0.1",
+    "examples": "the placeholder says \"you@example.com\""
+  },
+  {
+    "name": "Text typography",
+    "version": "0.1",
+    "examples": "the text is 18px   ·   the text is blue   ·   the text is semibold"
+  },
+  {
+    "name": "Theme color",
+    "version": "0.3",
+    "examples": "the brand color is #FF0066"
+  },
+  {
+    "name": "Truncation",
+    "version": "0.3",
+    "examples": "it shows at most 2 lines"
+  },
+  {
+    "name": "Video captions file",
+    "version": "0.3",
+    "examples": "the captions are \"assets/intro.vtt\""
+  },
+  {
+    "name": "Video or audio source",
+    "version": "0.3",
+    "examples": "it plays \"assets/intro.mp4\""
+  },
+  {
+    "name": "Video poster image",
+    "version": "0.3",
+    "examples": "the poster is \"assets/poster.jpg\""
+  },
+  {
+    "name": "Video without speech",
+    "version": "0.3",
+    "examples": "it has no speech"
+  },
+  {
+    "name": "Visibility bound to state",
+    "version": "0.3",
+    "examples": "it is hidden unless isOpen of menu1 is true"
+  },
+  {
+    "name": "Width that hugs the content",
+    "version": "0.3",
+    "examples": "it is as wide as its content"
+  }
+]

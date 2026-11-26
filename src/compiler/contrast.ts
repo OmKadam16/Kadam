@@ -27,6 +27,8 @@ const DARK_KIND_BACKGROUND: Readonly<Partial<Record<string, string>>> = {
 const DARK_KIND_TEXT: Readonly<Partial<Record<string, string>>> = {
   link: "#60A5FA",
   badge: "#BFDBFE",
+  // The dark palette sets code block text to the dark page text.
+  "code block": DARK_PAGE_TEXT,
 };
 
 function parseHex(value: string): Rgb | null {

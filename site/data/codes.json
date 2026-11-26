@@ -1,0 +1,497 @@
+[
+  {
+    "code": "KDM1001",
+    "area": "source text",
+    "meaning": "Unexpected character"
+  },
+  {
+    "code": "KDM1002",
+    "area": "source text",
+    "meaning": "Unterminated string"
+  },
+  {
+    "code": "KDM1003",
+    "area": "source text",
+    "meaning": "Invalid escape sequence"
+  },
+  {
+    "code": "KDM1004",
+    "area": "source text",
+    "meaning": "Malformed number, length, duration, or unit"
+  },
+  {
+    "code": "KDM1005",
+    "area": "source text",
+    "meaning": "Source file exceeds a documented limit"
+  },
+  {
+    "code": "KDM2001",
+    "area": "syntax",
+    "meaning": "Unrecognized statement"
+  },
+  {
+    "code": "KDM2002",
+    "area": "syntax",
+    "meaning": "Malformed page or element header"
+  },
+  {
+    "code": "KDM2003",
+    "area": "syntax",
+    "meaning": "Kind sentence is not the first statement"
+  },
+  {
+    "code": "KDM2004",
+    "area": "syntax",
+    "meaning": "Element has no kind sentence"
+  },
+  {
+    "code": "KDM2005",
+    "area": "syntax",
+    "meaning": "Missing closing brace"
+  },
+  {
+    "code": "KDM2006",
+    "area": "syntax",
+    "meaning": "Content outside the page block"
+  },
+  {
+    "code": "KDM2007",
+    "area": "syntax",
+    "meaning": "Invalid identifier"
+  },
+  {
+    "code": "KDM2008",
+    "area": "syntax",
+    "meaning": "File must contain exactly one page"
+  },
+  {
+    "code": "KDM2009",
+    "area": "syntax",
+    "meaning": "Block delimiter is not on its own line"
+  },
+  {
+    "code": "KDM2010",
+    "area": "syntax",
+    "meaning": "Unexpected token or punctuation"
+  },
+  {
+    "code": "KDM2011",
+    "area": "syntax",
+    "meaning": "Element nesting exceeds 64 levels"
+  },
+  {
+    "code": "KDM2012",
+    "area": "syntax",
+    "meaning": "A source file contains more than one page or component"
+  },
+  {
+    "code": "KDM2013",
+    "area": "syntax",
+    "meaning": "Construct requires a newer language version (kadam 0.3)"
+  },
+  {
+    "code": "KDM3001",
+    "area": "meaning",
+    "meaning": "Unknown or incomplete kind"
+  },
+  {
+    "code": "KDM3002",
+    "area": "meaning",
+    "meaning": "Duplicate kind sentence"
+  },
+  {
+    "code": "KDM3003",
+    "area": "meaning",
+    "meaning": "Statement is not supported by this kind"
+  },
+  {
+    "code": "KDM3004",
+    "area": "meaning",
+    "meaning": "Duplicate property or action"
+  },
+  {
+    "code": "KDM3005",
+    "area": "meaning",
+    "meaning": "Invalid value, URL, or value combination"
+  },
+  {
+    "code": "KDM3006",
+    "area": "meaning",
+    "meaning": "Unknown color"
+  },
+  {
+    "code": "KDM3007",
+    "area": "meaning",
+    "meaning": "Unknown page reference"
+  },
+  {
+    "code": "KDM3008",
+    "area": "meaning",
+    "meaning": "Duplicate element name"
+  },
+  {
+    "code": "KDM3009",
+    "area": "meaning",
+    "meaning": "Missing required content"
+  },
+  {
+    "code": "KDM3010",
+    "area": "meaning",
+    "meaning": "Leaf element cannot contain children"
+  },
+  {
+    "code": "KDM3011",
+    "area": "meaning",
+    "meaning": "Duplicate page title"
+  },
+  {
+    "code": "KDM3012",
+    "area": "meaning",
+    "meaning": "Invalid event target (or an in-page link to a missing element)"
+  },
+  {
+    "code": "KDM3013",
+    "area": "meaning",
+    "meaning": "Statement is not allowed in a responsive scope"
+  },
+  {
+    "code": "KDM3014",
+    "area": "meaning",
+    "meaning": "Hover border color requires a base border"
+  },
+  {
+    "code": "KDM3015",
+    "area": "meaning",
+    "meaning": "Hover background color is invalid on a gradient"
+  },
+  {
+    "code": "KDM3020",
+    "area": "meaning",
+    "meaning": "Duplicate component name"
+  },
+  {
+    "code": "KDM3021",
+    "area": "meaning",
+    "meaning": "Invalid component body: page setting, no root, multiple roots, component block shape"
+  },
+  {
+    "code": "KDM3022",
+    "area": "meaning",
+    "meaning": "Unknown component kind"
+  },
+  {
+    "code": "KDM3023",
+    "area": "meaning",
+    "meaning": "Missing required property"
+  },
+  {
+    "code": "KDM3024",
+    "area": "meaning",
+    "meaning": "Unknown property"
+  },
+  {
+    "code": "KDM3025",
+    "area": "meaning",
+    "meaning": "Duplicate property binding"
+  },
+  {
+    "code": "KDM3026",
+    "area": "meaning",
+    "meaning": "Property value has the wrong type, or a page value does not name a page"
+  },
+  {
+    "code": "KDM3027",
+    "area": "meaning",
+    "meaning": "Unknown/malformed placeholder or wrong interpolation slot"
+  },
+  {
+    "code": "KDM3028",
+    "area": "meaning",
+    "meaning": "Circular component reference"
+  },
+  {
+    "code": "KDM3029",
+    "area": "meaning",
+    "meaning": "Unknown, duplicate, reserved, or malformed variant"
+  },
+  {
+    "code": "KDM3030",
+    "area": "meaning",
+    "meaning": "Component instance contains children or non-binding statements"
+  },
+  {
+    "code": "KDM3031",
+    "area": "meaning",
+    "meaning": "Invalid parameter declaration: duplicate name, bad default, duplicate default"
+  },
+  {
+    "code": "KDM3032",
+    "area": "meaning",
+    "meaning": "Expansion depth or total expanded-element limit exceeded"
+  },
+  {
+    "code": "KDM3033",
+    "area": "meaning",
+    "meaning": "Slot declaration misuse: outside a component body, duplicated name, at the root, nested in a fallback, or with statements"
+  },
+  {
+    "code": "KDM3034",
+    "area": "meaning",
+    "meaning": "Slot fill misuse: unknown slot name, duplicate group, a slot used as a group, or statements on a group"
+  },
+  {
+    "code": "KDM3035",
+    "area": "meaning",
+    "meaning": "Duplicate component name inside one library namespace"
+  },
+  {
+    "code": "KDM3036",
+    "area": "meaning",
+    "meaning": "Unknown namespace, or the component is not in that namespace"
+  },
+  {
+    "code": "KDM3037",
+    "area": "meaning",
+    "meaning": "Namespace qualifier on a component in the project namespace"
+  },
+  {
+    "code": "KDM3038",
+    "area": "meaning",
+    "meaning": "Warning: two elements are pinned to the same spot (kadam 0.3)"
+  },
+  {
+    "code": "KDM3039",
+    "area": "meaning",
+    "meaning": "Warning: text contrast is below WCAG AA (kadam 0.3, D-39)"
+  },
+  {
+    "code": "KDM3040",
+    "area": "meaning",
+    "meaning": "Only a component can repeat for each record; a data list has one sort and one limit (kadam 0.3)"
+  },
+  {
+    "code": "KDM3041",
+    "area": "meaning",
+    "meaning": "A record field is read outside a data list, or a data list is inside a component (kadam 0.3)"
+  },
+  {
+    "code": "KDM3042",
+    "area": "meaning",
+    "meaning": "Unknown data name, or a data list in a single-file build (kadam 0.3)"
+  },
+  {
+    "code": "KDM3043",
+    "area": "meaning",
+    "meaning": "Unknown field, wrong record name, a true/false field used as a value, or a filter value of the wrong type (kadam 0.3)"
+  },
+  {
+    "code": "KDM3044",
+    "area": "meaning",
+    "meaning": "A data list makes an element name that is already used (kadam 0.3)"
+  },
+  {
+    "code": "KDM3045",
+    "area": "meaning",
+    "meaning": "Loaded data is missing its shape or a loading, empty, or error state, is loaded twice, or is never shown (kadam 0.3, D-41)"
+  },
+  {
+    "code": "KDM3046",
+    "area": "meaning",
+    "meaning": "A loaded URL is not https, not same-site, or its origin is not in connect (kadam 0.3, D-41)"
+  },
+  {
+    "code": "KDM3050",
+    "area": "meaning",
+    "meaning": "A raw css property or value is not allowed: unknown name, custom property, forbidden characters, or a url() outside the project (kadam 0.3, D-42)"
+  },
+  {
+    "code": "KDM3051",
+    "area": "meaning",
+    "meaning": "Raw css sets a property Kadam has a sentence for (kadam 0.3, D-42)"
+  },
+  {
+    "code": "KDM3052",
+    "area": "meaning",
+    "meaning": "A stylesheet class is malformed, unlisted in kadam.json, or not in the stylesheet (kadam 0.3, D-42)"
+  },
+  {
+    "code": "KDM3053",
+    "area": "meaning",
+    "meaning": "Strict mode bans an escape hatch (kadam 0.3, D-42)"
+  },
+  {
+    "code": "KDM3054",
+    "area": "meaning",
+    "meaning": "A component cannot become a web component: unsupported parameter type, clashing tag, or no components (kadam 0.3, D-43)"
+  },
+  {
+    "code": "KDM3055",
+    "area": "meaning",
+    "meaning": "A web component uses state or events other than tell the page (kadam 0.3, D-43)"
+  },
+  {
+    "code": "KDM3060",
+    "area": "meaning",
+    "meaning": "A server load names a missing function, one that takes values or does not return a list of flat records, or the project has no server module (kadam 0.3, D-44)"
+  },
+  {
+    "code": "KDM3061",
+    "area": "meaning",
+    "meaning": "A server form's function, controls, field types or sent and failed states do not match (kadam 0.3, D-44)"
+  },
+  {
+    "code": "KDM4001",
+    "area": "project",
+    "meaning": "Missing or invalid kadam.json"
+  },
+  {
+    "code": "KDM4002",
+    "area": "project",
+    "meaning": "Page file is missing or unreadable"
+  },
+  {
+    "code": "KDM4003",
+    "area": "project",
+    "meaning": "Asset is missing, outside the project root, or unsupported"
+  },
+  {
+    "code": "KDM4004",
+    "area": "project",
+    "meaning": "Language version mismatch or unsupported version"
+  },
+  {
+    "code": "KDM4005",
+    "area": "project",
+    "meaning": "Duplicate route"
+  },
+  {
+    "code": "KDM4006",
+    "area": "project",
+    "meaning": "Project declares no pages"
+  },
+  {
+    "code": "KDM4007",
+    "area": "project",
+    "meaning": "Component manifest entry is missing, unreadable, outside the project, or not a .kdm file"
+  },
+  {
+    "code": "KDM4008",
+    "area": "project",
+    "meaning": "Component file contains a page, page file contains a component, or a component path is duplicated"
+  },
+  {
+    "code": "KDM4009",
+    "area": "project",
+    "meaning": "Malformed library entry: bad namespace, unknown property, or missing source"
+  },
+  {
+    "code": "KDM4010",
+    "area": "project",
+    "meaning": "Data file is missing, not valid JSON, or not an array of flat records with one type per field (kadam 0.3)"
+  },
+  {
+    "code": "KDM4011",
+    "area": "project",
+    "meaning": "Markdown document is missing, or uses something the Markdown subset does not support (kadam 0.3)"
+  },
+  {
+    "code": "KDM4012",
+    "area": "project",
+    "meaning": "The server module is missing, or a page uses a route the generated server needs (kadam 0.3, D-44)"
+  },
+  {
+    "code": "KDM5001",
+    "area": "kadam 0.2 core",
+    "meaning": "Invalid file header, module shape, or module/file name mismatch"
+  },
+  {
+    "code": "KDM5002",
+    "area": "kadam 0.2 core",
+    "meaning": "Core syntax error"
+  },
+  {
+    "code": "KDM5003",
+    "area": "kadam 0.2 core",
+    "meaning": "Unknown or invalid type"
+  },
+  {
+    "code": "KDM5004",
+    "area": "kadam 0.2 core",
+    "meaning": "Duplicate declaration or local name, or shadowed name"
+  },
+  {
+    "code": "KDM5005",
+    "area": "kadam 0.2 core",
+    "meaning": "Unknown function, field, or local"
+  },
+  {
+    "code": "KDM5006",
+    "area": "kadam 0.2 core",
+    "meaning": "Type mismatch"
+  },
+  {
+    "code": "KDM5007",
+    "area": "kadam 0.2 core",
+    "meaning": "Assignment to an immutable binding or invalid set"
+  },
+  {
+    "code": "KDM5008",
+    "area": "kadam 0.2 core",
+    "meaning": "Target has no provider for an external declaration"
+  },
+  {
+    "code": "KDM5009",
+    "area": "kadam 0.2 core",
+    "meaning": "Target lacks a required effect capability"
+  },
+  {
+    "code": "KDM5010",
+    "area": "kadam 0.2 core",
+    "meaning": "Invalid return or missing return on a reachable path"
+  },
+  {
+    "code": "KDM5011",
+    "area": "kadam 0.2 core",
+    "meaning": "Control-flow condition is not boolean"
+  },
+  {
+    "code": "KDM5012",
+    "area": "kadam 0.2 core",
+    "meaning": "Invalid record construction or field set"
+  },
+  {
+    "code": "KDM5013",
+    "area": "kadam 0.2 core",
+    "meaning": "Invalid expression statement, call, index, or operator operand"
+  },
+  {
+    "code": "KDM5014",
+    "area": "kadam 0.2 core",
+    "meaning": "Invalid external declaration, duplicate provider, or duplicate effect"
+  },
+  {
+    "code": "KDM5015",
+    "area": "kadam 0.2 core",
+    "meaning": "Unreachable statement after an unconditional return"
+  },
+  {
+    "code": "KDM5016",
+    "area": "kadam 0.2 core",
+    "meaning": "Invalid main entry point or signature"
+  },
+  {
+    "code": "KDM9001",
+    "area": "compiler",
+    "meaning": "Statement matches more than one template (compiler defect)"
+  },
+  {
+    "code": "KDM9002",
+    "area": "compiler",
+    "meaning": "Internal emission failure"
+  },
+  {
+    "code": "KDM9003",
+    "area": "compiler",
+    "meaning": "Too many diagnostics; reporting stopped"
+  }
+]

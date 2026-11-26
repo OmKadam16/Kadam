@@ -1,0 +1,40 @@
+kadam 0.3
+
+page "Errors" {
+    the page background is paper
+    the page text is ink
+    the page is dark when the system is dark
+
+    top1 {
+        a SiteHeader
+    }
+
+    reference {
+        a section
+        it is full width
+        it is at most 900px wide
+        it is centered
+        it has 40px padding on the top and bottom
+        it has 24px padding on the left and right
+        it stretches its children
+        it has 10px gap between children
+        referenceTitle {
+            a main heading
+            the text says "Error codes"
+            the text is between 2rem and 2.5rem
+            the letter spacing is -0.8px
+        }
+        referenceLead {
+            a paragraph
+            the text says "Every code the compiler can report. The same text is built into the command line: kadam explain KDM3005."
+            the words "kadam explain KDM3005" are code
+            the text is muted
+        }
+        codeRow {
+            a CodeRow for each entry in codes
+            with a code of the code of entry
+            with an area of the area of entry
+            with a meaning of the meaning of entry
+        }
+    }
+}

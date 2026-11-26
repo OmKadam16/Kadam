@@ -155,3 +155,29 @@ export function renderErrorShell(): string {
 </html>
 `;
 }
+
+/**
+ * F7: in development only, a page runtime keeps its state across live
+ * reloads. Right after the runtime creates its state, it takes back the
+ * values saved before the reload (same keys, same types); the dev client
+ * asks it to save them just before reloading. Build output is unchanged.
+ */
+export function injectStateKeeper(js: string): string {
+  const marker = /^const state = new Map\(.*\);$/m;
+  const found = marker.exec(js);
+  if (found === null) return js;
+  const keeper = [
+    found[0],
+    "// kadam dev: keep state across live reloads.",
+    'const kadamDevKey = "kadam-dev-state:" + location.pathname;',
+    "try {",
+    "  const saved = JSON.parse(sessionStorage.getItem(kadamDevKey) || \"null\");",
+    "  sessionStorage.removeItem(kadamDevKey);",
+    "  if (Array.isArray(saved)) for (const [key, value] of saved) if (state.has(key) && typeof value === typeof state.get(key)) state.set(key, value);",
+    "} catch {}",
+    'addEventListener("kadam:before-reload", () => {',
+    "  try { sessionStorage.setItem(kadamDevKey, JSON.stringify([...state])); } catch {}",
+    "});",
+  ].join("\n");
+  return js.replace(found[0], keeper);
+}

@@ -208,8 +208,9 @@ export function matchTextSpan(tokens: readonly Token[]): Body {
   if ((isAnyWord(rest[0], "are") || isKeyword(rest[0], "is")) && rest.length === 2) {
     if (isKeyword(rest[1], "bold")) effect = { type: "bold" };
     else if (isKeyword(rest[1], "italic")) effect = { type: "italic" };
-    else if (isAnyWord(rest[1], "code")) effect = { type: "code" };
-    else if (isAnyWord(rest[1], "underlined")) effect = { type: "underline" };
+    // `code` and `underlined` are effects even when a theme has a color with that name.
+    else if (rest[1]?.text.toLowerCase() === "code") effect = { type: "code" };
+    else if (rest[1]?.text.toLowerCase() === "underlined") effect = { type: "underline" };
     else {
       const color = readColor(rest[1]!);
       if (color !== null) effect = { type: "color", color };

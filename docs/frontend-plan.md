@@ -495,8 +495,13 @@ projects), `kadam format` (whitespace only, `--check` for CI, proven not to
 change any example's output), `kadam lsp` (diagnostics, completion, hover,
 go to definition, formatting; tested over stdio), and Alt-click in
 `kadam dev` to see an element's source line. See `docs/tooling.md`.
-Still open: state-preserving reload, a published VS Code extension, and the
-documentation site written in Kadam.
+Then shipped: state- and scroll-preserving live reload in `kadam dev`, the
+VS Code extension in `editors/vscode` (packaged as a `.vsix`, tested against
+`kadam lsp` through a stand-in VS Code API; publishing needs the owner's
+Marketplace account), and the documentation site in `site/`, written in Kadam.
+Writing the site found and fixed two bugs: `the font is <preset>` was dropped
+on text elements, and the contrast check misjudged code blocks in dark mode.
+**F7 is complete** apart from the Marketplace publish.
 
 ### F8 — Rich visuals and immersive UI (later; after F3 and F4)
 

@@ -1,0 +1,36 @@
+kadam 0.3
+
+component SentenceRow takes a name as text, a version as text, an examples as text {
+    row1 {
+        a container
+        it stretches its children
+        it has 4px gap between children
+        has a 1px line border on the bottom
+        it has 12px padding on the top and bottom
+        head1 {
+            a container
+            it arranges its children in a row
+            it centers its children vertically
+            it has 10px gap between children
+            name1 {
+                a paragraph
+                the text is semibold
+                the text says "{$name}"
+                the text is 15px
+                the text is ink
+            }
+            version1 {
+                a badge
+                the text says "kadam {$version}"
+            }
+        }
+        examples1 {
+            a paragraph
+            the text says "{$examples}"
+            the font is monospace
+            the text is 13px
+            the text is muted
+            the line height is 1.6
+        }
+    }
+}

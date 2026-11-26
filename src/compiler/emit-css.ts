@@ -845,6 +845,10 @@ function appendTypographyPresets(
   authored: IrAuthoredStyle,
   typography: IrTypography | null,
 ): void {
+  // `the font is monospace` on a text element (fields write it on their wrapper).
+  if (authored.fontFamily !== undefined && typography !== null) {
+    declarations.push(["font-family", FONT_STACKS[authored.fontFamily]]);
+  }
   const selected = authored.typography;
   if (selected === undefined || typography === null) return;
   if (selected.fontSize !== undefined) {

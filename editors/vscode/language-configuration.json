@@ -1,0 +1,15 @@
+{
+  "comments": { "lineComment": "//" },
+  "brackets": [["{", "}"]],
+  "autoClosingPairs": [
+    { "open": "{", "close": "}" },
+    { "open": "\"", "close": "\"", "notIn": ["string", "comment"] }
+  ],
+  "surroundingPairs": [["{", "}"], ["\"", "\""]],
+  "indentationRules": {
+    "increaseIndentPattern": "\\{\\s*(//.*)?$",
+    "decreaseIndentPattern": "^\\s*\\}"
+  },
+  "onEnterRules": [],
+  "wordPattern": "[A-Za-z_][A-Za-z0-9_]*|#[0-9A-Fa-f]{3,8}|-?\\d+(\\.\\d+)?(px|rem|em|vw|vh|dvh|%|ms|s|deg)?"
+}

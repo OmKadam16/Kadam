@@ -1,0 +1,63 @@
+kadam 0.3
+
+component SiteHeader {
+    bar1 {
+        a header
+        it sticks to the top
+        the layer is 10
+        has a paper background
+        has a 1px line border on the bottom
+        it has 14px padding on the top and bottom
+        it has 24px padding on the left and right
+        row1 {
+            a container
+            it is full width
+            it is at most 1100px wide
+            it is centered
+            it arranges its children in a row
+            it spreads its children apart
+            it centers its children vertically
+            on phones, it wraps its children
+            brand1 {
+                a link
+                the text says "Kadam"
+                the text is 18px
+                the text is semibold
+                the text is ink
+                the text is not underlined
+                when clicked, go to page "Kadam"
+            }
+            links1 {
+                a navigation bar
+                it is as wide as its content
+                has no background
+                it arranges its children in a row
+                it has 22px gap between children
+                guide1 {
+                    a link
+                    the text says "Guide"
+                    the text is muted
+                    the text is not underlined
+                    when hovered, the text turns #2747C9
+                    when clicked, go to page "Getting started"
+                }
+                sentences1 {
+                    a link
+                    the text says "Sentences"
+                    the text is muted
+                    the text is not underlined
+                    when hovered, the text turns #2747C9
+                    when clicked, go to page "Sentences"
+                }
+                errors1 {
+                    a link
+                    the text says "Errors"
+                    the text is muted
+                    the text is not underlined
+                    when hovered, the text turns #2747C9
+                    when clicked, go to page "Errors"
+                }
+            }
+        }
+    }
+}

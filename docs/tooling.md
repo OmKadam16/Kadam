@@ -63,8 +63,38 @@ Any editor with a generic LSP client can use it. For example, in Neovim:
 vim.lsp.start({ name = "kadam", cmd = { "kadam", "lsp" }, root_dir = vim.fs.root(0, { "kadam.json" }) })
 ```
 
-and in VS Code, any generic LSP extension configured to run `kadam lsp` for
-`*.kdm` files.
+## VS Code
+
+`editors/vscode` is the Kadam extension: highlighting, plus everything above
+from `kadam lsp`. It has no dependencies (it carries its own small LSP client).
+
+```bash
+node scripts/package-vscode.mjs                      # writes editors/vscode/kadam-0.3.0.vsix
+code --install-extension editors/vscode/kadam-0.3.0.vsix
+```
+
+Publishing it to the Marketplace needs your own publisher account and access
+token. Set `publisher` in `editors/vscode/package.json` to your publisher ID,
+then run `npx @vscode/vsce publish --packagePath editors/vscode/kadam-0.3.0.vsix`.
+
+## Live reload keeps your place
+
+When `kadam dev` reloads a page after an edit, the page's state (a counter, an
+open menu, a selected tab) and the scroll position stay as they were. Only the
+development server does this; built pages always start from their declared
+values.
+
+## The documentation site
+
+`site/` is the Kadam documentation, written in Kadam: a home page, guide pages
+made from `site/data/guides.json` and Markdown in `site/content/`, and two
+reference pages, every sentence and every error code, whose data
+`scripts/generate-site-data.mjs` writes from the compiler itself.
+
+```bash
+kadam dev site
+kadam build site --out site/dist
+```
 
 ## In the browser: Alt-click
 

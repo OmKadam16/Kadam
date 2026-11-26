@@ -1,0 +1,55 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Kadam",
+  "scopeName": "source.kadam",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#version" },
+    { "include": "#declaration" },
+    { "include": "#element" },
+    { "include": "#kind" },
+    { "include": "#string" },
+    { "include": "#color" },
+    { "include": "#number" },
+    { "include": "#event" },
+    { "include": "#keyword" }
+  ],
+  "repository": {
+    "comment": { "name": "comment.line.double-slash.kadam", "match": "//.*$" },
+    "version": {
+      "match": "^\\s*(kadam)\\s+(\\d+\\.\\d+)",
+      "captures": { "1": { "name": "keyword.control.directive.kadam" }, "2": { "name": "constant.numeric.version.kadam" } }
+    },
+    "declaration": {
+      "match": "^\\s*(page|component|variant|module|record|function|external|theme)\\b\\s*([A-Za-z][A-Za-z0-9]*)?",
+      "captures": { "1": { "name": "storage.type.kadam" }, "2": { "name": "entity.name.type.kadam" } }
+    },
+    "element": {
+      "match": "^\\s*([a-z][A-Za-z0-9]*)\\s*(\\{)\\s*$",
+      "captures": { "1": { "name": "entity.name.tag.kadam" }, "2": { "name": "punctuation.section.block.kadam" } }
+    },
+    "kind": {
+      "match": "^\\s*(an?)\\s+([A-Z][A-Za-z0-9]*|[a-z]+(?: [a-z]+)?)(?=\\s|$)",
+      "captures": { "1": { "name": "keyword.other.article.kadam" }, "2": { "name": "support.type.kind.kadam" } }
+    },
+    "string": {
+      "name": "string.quoted.double.kadam",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.kadam", "match": "\\\\." },
+        { "name": "variable.parameter.placeholder.kadam", "match": "\\{\\$[A-Za-z][A-Za-z0-9]*\\}|\\{the [a-z][A-Za-z0-9]* of [a-z][A-Za-z0-9]*\\}" }
+      ]
+    },
+    "color": { "name": "constant.other.color.kadam", "match": "#[0-9A-Fa-f]{3,8}\\b" },
+    "number": { "name": "constant.numeric.kadam", "match": "(?<![A-Za-z])-?\\d+(\\.\\d+)?(px|rem|em|vw|vh|dvh|%|ms|s|deg)?\\b" },
+    "event": {
+      "match": "^\\s*(when|while|on|in dark mode)\\b([^,]*)(,)",
+      "captures": { "1": { "name": "keyword.control.kadam" }, "3": { "name": "punctuation.separator.kadam" } }
+    },
+    "keyword": {
+      "name": "keyword.other.kadam",
+      "match": "\\b(it|its|has|the|is|are|says|shows|remembers|loads|sends|takes|returns|with|of|for each|in|from|only where|sorted by|showing|let|var|set|return|if|otherwise|while|output)\\b"
+    }
+  }
+}

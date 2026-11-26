@@ -1,0 +1,7 @@
+[
+  { "slug": "getting-started", "title": "Getting started", "order": 1, "summary": "Install Kadam, create a project and build it.", "body": "content/getting-started.md" },
+  { "slug": "language-tour", "title": "Language tour", "order": 2, "summary": "Sentences, layout, themes, components and escape hatches.", "body": "content/language-tour.md" },
+  { "slug": "data-and-state", "title": "Data and state", "order": 3, "summary": "State, build-time data and data loaded at run time.", "body": "content/data-and-state.md" },
+  { "slug": "server", "title": "The server", "order": 4, "summary": "Pages that call typed functions in a Kadam server module.", "body": "content/server.md" },
+  { "slug": "tooling", "title": "Tooling", "order": 5, "summary": "The language server, Alt-click and checks for CI.", "body": "content/tooling.md" }
+]

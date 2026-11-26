@@ -1,0 +1,39 @@
+kadam 0.3
+
+component CodeRow takes a code as text, an area as text, a meaning as text {
+    row1 {
+        a container
+        it arranges its children in a row
+        it has 16px gap between children
+        has a 1px line border on the bottom
+        it has 10px padding on the top and bottom
+        on phones, it arranges its children in a column
+        on phones, it has 2px gap between children
+        code1 {
+            a paragraph
+            the text says "{$code}"
+            the font is monospace
+            the text is 14px
+            the text is semibold
+            the text is brand
+            it is 90px wide
+            it does not shrink
+        }
+        meaning1 {
+            a paragraph
+            the text says "{$meaning}"
+            the text is ink
+            it grows to fill the space
+        }
+        area1 {
+            a paragraph
+            the text says "{$area}"
+            the text is 13px
+            the text is muted
+            it is 130px wide
+            it does not shrink
+            the text is right aligned
+            on phones, the text is left aligned
+        }
+    }
+}

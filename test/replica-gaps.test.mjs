@@ -90,3 +90,19 @@ test("a style that follows state names a real state with a value of its type", (
   // Other sentences that start with when are unchanged.
   assert.deepEqual(codes(page(["b1 {", "    a button", '    the text says "x"', "    when hovered, the background turns #333333", "}"])), []);
 });
+
+// Found by writing the documentation site in Kadam.
+test("the font is monospace reaches the CSS of a text element", () => {
+  const result = page(["p1 {", "    a paragraph", '    the text says "x"', "    the font is monospace", "}", "p2 {", "    a minor heading", '    the text says "y"', "    the font is serif", "}"]);
+  assert.deepEqual(codes(result), []);
+  const css = file(result, "assets/kadam.home.css");
+  assert.match(css, /\.kdm-home-p1 \{\n {2}font-family: ui-monospace[^;]*;\n\}/);
+  assert.match(css, /\.kdm-home-p2 \{\n {2}font-family: ui-serif[^;]*;\n\}/);
+});
+
+test("are code and are underlined win over a theme color with the same name", () => {
+  const result = compileText("a.kdm", ["kadam 0.3", 'page "A" {', "    the code color is #F2F3F6", "    the underlined color is #F2F3F6",
+    "    t1 {", "        a paragraph", '        the text says "Run kadam check now"', '        the words "kadam check" are code', '        the words "now" are underlined', "    }", "}", ""].join("\n"));
+  assert.deepEqual(codes(result), []);
+  assert.match(file(result, "index.html"), /Run <code class="kdm-inline-code">kadam check<\/code> <span class="kdm-inline-underline">now<\/span>/);
+});
