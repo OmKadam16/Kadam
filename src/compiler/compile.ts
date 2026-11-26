@@ -8,6 +8,7 @@ import { parseSource } from "../core/parser/parser.js";
 import { expandDocuments } from "../core/data/markdown.js";
 import { checkLoadOrigins } from "../core/data/data.js";
 import { fragmentFiles } from "./fragment.js";
+import { bindServerLoads } from "./server.js";
 import {
   banEscapeHatches,
   checkStylesheetClasses,
@@ -104,6 +105,8 @@ function compileWithSource(
   diagnostics.addAll(parsed.diagnostics);
   // A single file has no manifest, so it may only load from its own site.
   if (document.page !== null) checkLoadOrigins(document.page.elements, [], documentDiagnostics);
+  // ... and no server module to load from (D-44).
+  if (document.page !== null) bindServerLoads(document.page, null, documentDiagnostics);
   // ... and has no stylesheets to take classes from.
   if (document.page !== null) checkStylesheetClasses(document.page.elements, null, documentDiagnostics);
   const escapeHatches = document.page === null ? [] : collectEscapeHatches(document.page);

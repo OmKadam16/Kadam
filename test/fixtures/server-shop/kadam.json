@@ -1,0 +1,7 @@
+{
+  "kadam": "0.3",
+  "name": "server-shop",
+  "components": ["components/ItemCard.kdm"],
+  "pages": [{ "source": "pages/index.kdm", "route": "/" }],
+  "server": { "module": "server/shop.kdm", "target": "typescript" }
+}

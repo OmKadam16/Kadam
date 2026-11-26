@@ -523,7 +523,15 @@ export type F4Statement =
     })
   | (NodeBase & { readonly type: "starts-hidden" })
   // kadam 0.3 (F5 step 6, D-41): runtime data.
-  | (NodeBase & { readonly type: "data-load"; readonly name: string; readonly nameSpan: Span; readonly url: string; readonly urlSpan: Span })
+  | (NodeBase & {
+      readonly type: "data-load";
+      readonly name: string;
+      readonly nameSpan: Span;
+      readonly url: string;
+      readonly urlSpan: Span;
+      /** D-44: `from the server function listProducts`; the url is then `/_kadam/<function>`. */
+      readonly server?: string | undefined;
+    })
   | (NodeBase & { readonly type: "data-shape"; readonly item: string; readonly itemSpan: Span; readonly fields: readonly ShapeField[] })
   | (NodeBase & { readonly type: "data-state"; readonly state: "loading" | "empty" | "error"; readonly target: string; readonly targetSpan: Span })
   | (NodeBase & {

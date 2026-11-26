@@ -1,0 +1,15 @@
+kadam 0.3
+
+component ItemCard takes a name as text, a price as text {
+    item1 {
+        a card
+        name1 {
+            a section heading
+            the text says "{$name}"
+        }
+        price1 {
+            a paragraph
+            the text says "{$price} USD"
+        }
+    }
+}

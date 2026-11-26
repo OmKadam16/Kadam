@@ -68,6 +68,8 @@ export interface KadamManifest {
   readonly stylesheets?: readonly string[] | undefined;
   /** kadam 0.3 (F6, D-42): ban every escape hatch. */
   readonly strict?: boolean | undefined;
+  /** D-44: the kadam 0.2 module pages call, and the target its server is generated for. */
+  readonly server?: { readonly module: string; readonly target: "typescript" } | undefined;
   /** kadam 0.3 (F5): data names to project-relative JSON files, e.g. { "projects": "data/projects.json" }. */
   readonly data?: Readonly<Record<string, string>> | undefined;
 }
@@ -105,6 +107,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "connect",
   "stylesheets",
   "strict",
+  "server",
 ]);
 
 const KNOWN_PAGE_KEYS = new Set([
@@ -463,6 +466,21 @@ export function loadManifest(
           diagnostics.error("KDM4001", `stylesheet ${JSON.stringify(path)} must be a project-relative .css path`, rootSpan, hint);
         }
       }
+    }
+  }
+
+  // D-44: the server module.
+  if ("server" in raw) {
+    const value = raw.server as Record<string, unknown> | null;
+    const hint = 'use "server": { "module": "server/shop.kdm", "target": "typescript" }';
+    if (raw.kadam !== "0.3") {
+      diagnostics.error("KDM4001", "'server' in kadam.json requires \"kadam\": \"0.3\"", rootSpan, 'set "kadam": "0.3", or remove server');
+    } else if (typeof value !== "object" || value === null || Array.isArray(value) || Object.keys(value).some((key) => key !== "module" && key !== "target")) {
+      diagnostics.error("KDM4001", "'server' in kadam.json must be an object with module and target", rootSpan, hint);
+    } else if (typeof value.module !== "string" || !value.module.endsWith(".kdm") || value.module.startsWith("/") || value.module.split("/").includes("..")) {
+      diagnostics.error("KDM4001", "server module must be a project-relative .kdm path", rootSpan, hint);
+    } else if (value.target !== "typescript") {
+      diagnostics.error("KDM4001", `server target ${JSON.stringify(value.target)} is not supported yet; use "typescript"`, rootSpan, hint);
     }
   }
 
@@ -840,6 +858,10 @@ export function loadManifest(
     connect: Array.isArray(raw.connect) ? (raw.connect as string[]) : undefined,
     stylesheets: Array.isArray(raw.stylesheets) ? (raw.stylesheets as string[]) : undefined,
     strict: raw.strict === true ? true : undefined,
+    server:
+      typeof raw.server === "object" && raw.server !== null && typeof (raw.server as Record<string, unknown>).module === "string"
+        ? { module: (raw.server as { module: string }).module, target: "typescript" }
+        : undefined,
     data:
       typeof raw.data === "object" && raw.data !== null && !Array.isArray(raw.data)
         ? (raw.data as Record<string, string>)

@@ -377,6 +377,21 @@ reference site still writes its pages by hand.
 
 **Next:** back to the backend (section 6), or F9's library, as decided.
 
+**Server boundary status (D-44, approved 2026-11-25).**
+
+- **Step 1, shipped: loading from the server.** `it loads products from the
+  server function listProducts` takes its shape from the function's return
+  record; the build writes the module and a standard-library Node server
+  (`server/server.ts`). Tested end to end: the CLI builds a fixture, Node runs
+  the generated server, and the browser shows the filtered, sorted records;
+  a failing function shows the error state. Spec section 6.26.
+- **Step 2, next: forms** that send to a server function taking one record.
+- **Step 3:** `kadam dev` runs the server module and restarts it on change.
+- **Step 4:** the Python target.
+
+**Known gaps:** server loads ignore `basePath`; record text fields cannot fill
+url parameters.
+
 **Web Components known gaps:** image, length, color and page parameters;
 components with their own state, dialogs or other events; custom fonts and
 stylesheet classes inside shadow roots; an `elementPrefix` setting.

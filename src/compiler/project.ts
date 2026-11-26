@@ -22,6 +22,7 @@ import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
 import { expandPage } from "../core/components/expand.js";
 import { fragmentFiles } from "./fragment.js";
+import { bindServerLoads, calledFunctions, compileServerModule, serverFiles, type ServerModule } from "./server.js";
 import {
   banEscapeHatches,
   checkStylesheetClasses,
@@ -213,6 +214,20 @@ export function compileProject(
   }
   const colorTokens = new Set(themeColors.map((color) => color.name));
 
+  // D-44: the server module pages call. It is compiled, never run.
+  let server: ServerModule | null = null;
+  if (manifest.server !== undefined) {
+    const serverSource = loadProjectSource({
+      projectRoot, realProjectRoot, outDir, sourcePath: manifest.server.module, kind: "server", code: "KDM4012",
+      missingSpan: manifestSpan, overrides: options.sourceOverrides, diagnostics, sources,
+    });
+    if (serverSource !== null) server = compileServerModule(manifest.server.module, serverSource.text, diagnostics).server;
+    if (server === null) {
+      // Page errors about server loads would only repeat this one.
+      return { ok: false, diagnostics: diagnostics.sorted(), manifest, pages: [], files: [], outDir, sources };
+    }
+  }
+
   // kadam 0.3 (F5): project data files, read once and shared by every page.
   const data = new Map<string, DataSet | null>();
   for (const [name, sourcePath] of Object.entries(manifest.data ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
@@ -282,7 +297,11 @@ export function compileProject(
     reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     if (parsed.document.page === null) continue;
 
-    const template = parsed.document.page;
+    const template = bindServerLoads(parsed.document.page, server, diagnostics);
+    if (manifest.server !== undefined && /^\/(server|_kadam)(\/|$)/.test(pageEntry.route)) {
+      diagnostics.error("KDM4012", `the route "${pageEntry.route}" is used by the generated server`, manifestSpan, "choose another route for this page");
+      continue;
+    }
     checkLoadOrigins(template.elements, manifest.connect ?? [], diagnostics);
     const dynamicRoute = pageEntry.route.split("/").some((segment) => segment.startsWith(":"));
     // kadam 0.3 (F5 step 3): a page made for each record becomes one page per record.
@@ -613,6 +632,8 @@ export function compileProject(
       });
     }
 
+    // D-44: the generated server and the module it calls.
+    if (server !== null) files.push(...serverFiles(server, calledFunctions(expandedPages.map((loaded) => loaded.document.page!)), manifest.connect ?? []));
     files.sort((a, b) => compareText(a.path, b.path));
     const output = options.fragment === true ? fragmentFiles(loweredPages, files.filter((file) => file.kind === "asset")) : files;
 
@@ -652,8 +673,8 @@ interface ProjectSourceRequest {
   readonly realProjectRoot: string;
   readonly outDir: string;
   readonly sourcePath: string;
-  readonly kind: "page" | "component" | "theme" | "data" | "document";
-  readonly code: "KDM4002" | "KDM4007" | "KDM4010" | "KDM4011";
+  readonly kind: "page" | "component" | "theme" | "data" | "document" | "server";
+  readonly code: "KDM4002" | "KDM4007" | "KDM4010" | "KDM4011" | "KDM4012";
   readonly missingSpan: Span;
   readonly overrides: ProjectCompileOptions["sourceOverrides"];
   readonly diagnostics: DiagnosticBag;

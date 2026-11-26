@@ -1,0 +1,34 @@
+kadam 0.3
+
+page "Shop" {
+    intro {
+        a main heading
+        the text says "Shop"
+    }
+    catalog {
+        a container
+        it loads products from the server function listProducts
+        while loading, it shows loadingNote
+        when there are none, it shows emptyNote
+        when loading fails, it shows errorNote
+        tile {
+            an ItemCard for each product in products
+            only where the inStock of product is true
+            sorted by the price of product from highest to lowest
+            with a name of the name of product
+            with a price of the price of product
+        }
+        loadingNote {
+            a paragraph
+            the text says "Loading products..."
+        }
+        emptyNote {
+            a paragraph
+            the text says "Nothing is in stock."
+        }
+        errorNote {
+            a paragraph
+            the text says "The products could not be loaded."
+        }
+    }
+}

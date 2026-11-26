@@ -1483,6 +1483,57 @@ kadam check: 2 escape hatches (1 css, 1 external); --strict bans them:
 `kadam check --strict`, or `"strict": true` in `kadam.json`, makes every
 escape hatch an error (`KDM3053`). Raw HTML is not an escape hatch in 0.3.
 
+### 6.26 Loading from the server (*kadam 0.3*, D-44 step 1)
+
+A project can name one `kadam 0.2` server module in `kadam.json`
+(`"server": { "module": "server/shop.kdm", "target": "typescript" }`). A page
+loads data from one of its functions by name:
+
+```kdm
+catalog {
+    a container
+    it loads products from the server function listProducts
+    while loading, it shows loadingNote
+    when there are none, it shows emptyNote
+    when loading fails, it shows errorNote
+    tile {
+        an ItemCard for each product in products
+        only where the inStock of product is true
+        with a name of the name of product
+    }
+    ...
+}
+```
+
+- The function must exist (`KDM3060`), take nothing, and return
+  `list of <Record>` whose fields are `text`, `number` or `boolean`.
+- The shape comes from the record, so the element has no
+  `each product has ...` line (writing one is `KDM3060`). Record `boolean`
+  fields are true-or-false fields. Every list sentence and binding is checked
+  against the record's fields, with the errors of 6.23.
+- The three states and everything else in 6.23 apply unchanged. Record `text`
+  fields cannot fill a `url` component parameter yet.
+- A server module with errors stops the build with only its own diagnostics.
+  It has no `main` (`KDM3060`). Pages may not use the routes `/server` and
+  `/_kadam` (`KDM4012`).
+- A single file built without a project has no server (`KDM3060`).
+
+`kadam build` writes `server/<module>.ts` (the module compiled by the
+TypeScript target, plus an export list of only the functions pages load from)
+and `server/server.ts`, a server that uses only Node's standard library:
+
+```bash
+node --experimental-strip-types dist/server/server.ts
+```
+
+It serves the site with a strict Content-Security-Policy and answers
+`GET /_kadam/<function>` with the function's records as JSON, using the
+record's own field names. Other functions, other methods, the `server/`
+folder, dot files and paths outside the site are refused. A function that
+fails at run time is logged on the server and answered with
+`{"error":"the server function failed"}`, so the page shows its error state.
+The compiler never runs the module; only the generated server does.
+
 ---
 
 ## 7. Events and interactions
@@ -2092,6 +2143,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3053 | Strict mode bans an escape hatch (*kadam 0.3*, D-42) |
 | KDM3054 | A component cannot become a web component: unsupported parameter type, clashing tag, or no components (*kadam 0.3*, D-43) |
 | KDM3055 | A web component uses state or events other than tell the page (*kadam 0.3*, D-43) |
+| KDM3060 | A server load names a missing function, one that takes values or does not return a list of flat records, or the project has no server module (*kadam 0.3*, D-44) |
 
 **Project (`KDM4xxx`)**
 
@@ -2105,6 +2157,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM4006 | Project declares no pages |
 | KDM4010 | Data file is missing, not valid JSON, or not an array of flat records with one type per field (*kadam 0.3*) |
 | KDM4011 | Markdown document is missing, or uses something the Markdown subset does not support (*kadam 0.3*) |
+| KDM4012 | The server module is missing, or a page uses a route the generated server needs (*kadam 0.3*, D-44) |
 
 **Internal (`KDM9xxx`)**
 

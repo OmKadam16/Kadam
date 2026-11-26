@@ -32,6 +32,14 @@ export function matchDataLoad(tokens: readonly Token[]): Body {
   const hint = 'for example: it loads products from "https://api.example.com/products"';
   const name = tokens[2];
   const url = tokens[4];
+  // D-44: it loads products from the server function listProducts
+  if (isKeyword(tokens[4], "the") && isAnyWord(tokens[5], "server")) {
+    const fn = tokens[7];
+    if (tokens.length !== 8 || !isName(name) || !isAnyWord(tokens[6], "function") || !isName(fn)) {
+      return fail("write: it loads <name> from the server function <function>", tokens, "for example: it loads products from the server function listProducts");
+    }
+    return ok({ type: "data-load", name: name.text, nameSpan: name.span, url: `/_kadam/${fn.text}`, urlSpan: fn.span, server: fn.text, span: spanFromTokens(tokens) });
+  }
   if (tokens.length !== 5 || !isName(name) || !isAnyWord(tokens[3], "from") || !isString(url) || url.value.trim() === "") {
     return fail("write: it loads <name> from \"<url>\"", tokens, hint);
   }

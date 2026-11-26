@@ -1525,6 +1525,129 @@ intact).
 3. One custom element per page instead of per component: too coarse to reuse
    inside an existing app.
 
+### D-44 — The server boundary: pages call typed Kadam functions (after F6)
+
+**Status:** Approved by the user on 2026-11-25.
+
+**Problem.** A Kadam page can load JSON from a URL (D-41) and a form can post
+to a URL, but what answers is written in another language, by hand, with
+nothing checking that both sides agree on the data. A field renamed on the
+server shows up as an error state in production. The plan's next step is the
+backend: one project where the page and the server share types and the
+compiler checks both.
+
+**Proposal.** A project may name one `kadam 0.2` server module. Pages call its
+functions by name; the compiler checks every call against the function's
+types and generates the server and the wiring.
+
+```json
+{ "kadam": "0.3", "server": { "module": "server/shop.kdm", "target": "typescript" } }
+```
+
+```kdm
+kadam 0.2
+
+module shop {
+    record Product {
+        name as text
+        price as number
+        inStock as boolean
+    }
+    record Signup {
+        email as text
+        plan as text
+    }
+    function listProducts takes nothing and returns list of Product {
+        return [Product { name: "Lamp", price: 40, inStock: true }]
+    }
+    function signUp takes signup as Signup and returns nothing {
+        output "new signup: " + signup.email
+    }
+}
+```
+
+```kdm
+catalog {
+    a container
+    it loads products from the server function listProducts
+    while loading, it shows loadingNote
+    when there are none, it shows emptyNote
+    when loading fails, it shows errorNote
+    tile {
+        a ProductCard for each product in products
+        with a name of the name of product
+    }
+}
+signupForm {
+    a form
+    it sends to the server function signUp
+    when it is sent, it shows thanksNote
+    when sending fails, it shows sorryNote
+    email { a text field ... }
+    plan { a dropdown ... }
+}
+```
+
+1. **Types come from the server.** A server load takes its shape from the
+   function's return type, `list of <Record>` (KDM3060 otherwise), so there is
+   no `each product has ...` sentence to keep in sync; writing one is an
+   error. Record fields map to the D-41 types: `text`, `number`, `boolean`
+   (true or false). Every list sentence (`only where`, `sorted by`, paging)
+   and every component binding is checked against the record, with the same
+   errors as today.
+2. **Forms match a record.** A form that sends to a server function needs a
+   function that takes one record and returns `nothing`. Each field of the
+   record must be a control in the form with the same name, and each control
+   must be a field (KDM3061, naming the missing or extra one). Types match
+   controls: `text` for text fields, text areas and dropdowns, `boolean` for
+   a checkbox. A `number` field in a form record waits for a number input. `it is required` stays a page
+   rule; the server checks types again on every request.
+3. **Two required states, like D-41.** `when it is sent, it shows X` and
+   `when sending fails, it shows Y` are required. Without JavaScript the form
+   still works: it posts normally and the server answers with the page and
+   the sent or failed state shown.
+4. **The generated server.** `kadam build` writes `server/` next to the site:
+   the module compiled by its existing target adapter (D-31), plus a small
+   generated HTTP layer using only the target's standard library (Node
+   `http` for TypeScript, `wsgiref`-compatible WSGI for Python). It serves the
+   static site and one route per called function under `/_kadam/` (`GET` for
+   loads, returning JSON; `POST` for forms). Only functions a page calls are
+   exposed; the rest of the module stays private.
+5. **Security by default.** Same-origin only: requests must carry the
+   `X-Kadam` header (sent by the runtime) or a same-origin `Origin`, so other
+   sites cannot post forms on a user's behalf. Bodies are limited to 64 KB,
+   parsed by type before the function runs (a bad body is a 400, never a
+   call), and errors are logged on the server and answered with a fixed
+   message, never a stack trace. Cookies, sessions and auth stay out of this
+   decision.
+6. **Development.** `kadam dev` builds the server module and runs it as a
+   child process (Node runs the TypeScript output with type stripping; Python
+   runs with the system `python3`), restarts it when the module changes, and
+   sends `/_kadam/` requests to it. Live reload keeps working.
+7. **The compiler still never runs code.** Building checks types across the
+   page and the module and emits files; only `kadam dev` and the user's own
+   deployment run the server.
+8. **Deterministic and zero-dependency (D-15).** Same input, same files. The
+   generated server needs nothing beyond the target's runtime.
+
+**Steps.** (1) server data loading with TypeScript; (2) forms; (3) `kadam dev`
+running the server; (4) the Python target. Each is tested end to end against
+the generated server in a browser.
+
+**Not included (later decisions).** Arguments to loads (filters sent to the
+server), auth and sessions, databases (a server function can use an
+`external` from D-31), streaming, and more than one server module.
+
+**Alternatives considered.**
+
+1. A separate API language (OpenAPI, GraphQL): another file to keep in sync,
+   which is the problem this solves.
+2. Generating only types for a hand-written server: still lets the handler
+   disagree with the page at run time, and leaves HTTP, parsing and security
+   to each project.
+3. Server code inside page files: breaks the D-30 module/page separation and
+   mixes code that runs in two places.
+
 ---
 
 ## Approval checklist
@@ -1574,6 +1697,7 @@ intact).
 | D-41 | Runtime data: declared origins, typed shapes, required loading/empty/error states | F5 step 6 | Approve | Approved |
 | D-42 | Escape hatches: raw CSS declaration, existing classes, typed externals; no raw HTML; `--strict` bans them | F6 | Approve | Approved |
 | D-43 | Interop: fragments, Web Components (primary), TypeScript declarations | F6 | Approve | Approved |
+| D-44 | Server boundary: pages call typed functions in a kadam 0.2 server module; generated server | After F6 | Approve | Approved |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through

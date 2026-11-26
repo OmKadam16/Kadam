@@ -1,0 +1,14 @@
+kadam 0.2
+
+module shop {
+    record Product {
+        name as text
+        category as text
+        price as number
+        inStock as boolean
+    }
+
+    function listProducts takes nothing and returns list of Product {
+        return [Product { name: "Lamp", category: "lighting", price: 40, inStock: true }, Product { name: "Desk", category: "furniture", price: 250, inStock: true }, Product { name: "Chair", category: "furniture", price: 120, inStock: false }, Product { name: "Shelf", category: "furniture", price: 90, inStock: true }]
+    }
+}
