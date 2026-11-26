@@ -100,6 +100,11 @@ export class DevSession {
     this.#now = options.now ?? Date.now;
   }
 
+  /** Every file of the last successful build, including the generated server (D-44). */
+  get files(): readonly OutputFile[] {
+    return this.#latestFiles;
+  }
+
   get snapshot(): OutputSnapshot | null {
     return this.#snapshot;
   }
@@ -148,6 +153,8 @@ export class DevSession {
     if (this.#manifest.theme !== undefined) paths.add(this.#manifest.theme);
     for (const source of Object.values(this.#manifest.data ?? {})) paths.add(source);
     for (const path of this.#latestDocuments) paths.add(path);
+    // D-44: the server module is an input; its generated files are not.
+    if (this.#manifest.server !== undefined) paths.add(this.#manifest.server.module);
     for (const file of this.#latestFiles) {
       if (file.kind === "asset") paths.add(file.path);
     }
@@ -200,7 +207,8 @@ export class DevSession {
     }
 
     const previous = this.#snapshot;
-    const next = snapshotFromFiles(result.files, (previous?.buildId ?? 0) + 1);
+    // D-44: the generated server runs beside the site; it is never served.
+    const next = snapshotFromFiles(result.files.filter((file) => file.kind !== "server"), (previous?.buildId ?? 0) + 1);
     const plan = planUpdate(previous, next, changedPaths);
 
     this.#snapshot = next;

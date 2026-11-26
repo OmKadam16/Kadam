@@ -245,8 +245,8 @@ export function serverFiles(
     return { name, fields: record.fields.map((field) => [field.name, field.type.kind] as const) };
   });
   return [
-    { path: `server/${moduleFile}`, contents: `${server.code.replace(/\n*$/, "\n")}${exports}`, kind: "asset" },
-    { path: "server/server.ts", contents: serverEntry(moduleFile, called.loads, sends, forms, connect), kind: "asset" },
+    { path: `server/${moduleFile}`, contents: `${server.code.replace(/\n*$/, "\n")}${exports}`, kind: "server" },
+    { path: "server/server.ts", contents: serverEntry(moduleFile, called.loads, sends, forms, connect), kind: "server" },
   ];
 }
 

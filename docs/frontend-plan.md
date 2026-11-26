@@ -392,7 +392,10 @@ reference site still writes its pages by hand.
   and the state shown. The server checks the origin, content type, size and
   types before calling. Browser tests cover sending, a failing function, and
   JavaScript off. Spec section 6.27.
-- **Step 3:** `kadam dev` runs the server module and restarts it on change.
+- **Step 3, shipped: `kadam dev` runs the server.** The generated server runs
+  as a child process; `/_kadam/` requests are forwarded to it; editing the
+  module restarts it; a failed build keeps the last good one. Tests in
+  `test/dev-app-server.test.mjs`. See `docs/dev-server.md` 5.4a.
 - **Step 4:** the Python target.
 
 **Known gaps:** server loads and forms ignore `basePath`; record text fields

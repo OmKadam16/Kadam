@@ -332,6 +332,24 @@ anchors, unchanged from production. The 404 page lists known routes as links
 (rendered from manifest titles with `escapeText`), which is safe and useful
 when a developer mistypes a URL.
 
+### 5.4a Server functions (D-44 step 3)
+
+When `kadam.json` names a server module, the dev server runs the generated
+server (`server/server.ts`) as a child process with
+`node --experimental-strip-types`, on a free local port, from a temporary copy
+of the server files and built pages. Requests under `/_kadam/` (loads and
+form posts) are forwarded to it with their original `Host` and `Origin`, so
+the generated server's same-site check sees the dev origin. Its output is
+logged with a `[server]` prefix.
+
+- The server module is watched like any other input. A build that changes the
+  generated server code restarts the child; a page-only edit just rewrites
+  the pages it may answer with.
+- A build that fails keeps the last good server running, like the last good
+  pages.
+- Without a server module, `/_kadam/` answers `503`. The generated server's
+  own files are never served as site files.
+
 ### 5.5 Port selection
 
 - Default `3000`; `--port <n>` sets it explicitly; `--port 0` is allowed and

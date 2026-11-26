@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
 import { CLIENT_SCRIPT } from "./client/client-script.js";
 import { CLIENT_STYLE } from "./client/client-style.js";
+import { AppServer } from "./app-server.js";
 import { DevSession, type BuildOutcome, type DevStatus } from "./dev-session.js";
 import {
   DEV_PREFIX,
@@ -74,6 +75,9 @@ export async function createDevServer(
 
   const initial = session.build([]);
   logBuild(initial, logger, true);
+  // D-44: the project's server module runs beside the dev server.
+  const app = new AppServer(logger);
+  if (initial.ok) app.sync(session.files);
 
   const basePath = session.basePath;
   const host = options.host ?? "127.0.0.1";
@@ -111,6 +115,12 @@ export async function createDevServer(
 
     if (!hostAllowed(req.headers.host, host)) {
       sendText(res, 403, "Forbidden");
+      return;
+    }
+
+    // D-44: server functions are answered by the generated server.
+    if ((req.url ?? "").startsWith(`${basePath}/_kadam/`) || (req.url ?? "").startsWith("/_kadam/")) {
+      void app.proxy(req, res);
       return;
     }
 
@@ -227,6 +237,7 @@ export async function createDevServer(
   function runRebuild(changedPaths: readonly string[] = []): BuildOutcome {
     const outcome = session.build(changedPaths);
     watcher?.update(session.watchPaths);
+    if (outcome.ok) app.sync(session.files);
     logBuild(outcome, logger, false);
 
     broadcast("status", outcome.status, outcome.status.buildId);
@@ -316,6 +327,7 @@ export async function createDevServer(
 
     watcher?.close();
     clearInterval(heartbeat);
+    app.close();
 
     for (const client of clients) {
       try {

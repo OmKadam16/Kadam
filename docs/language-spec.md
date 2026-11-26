@@ -1534,6 +1534,9 @@ fails at run time is logged on the server and answered with
 `{"error":"the server function failed"}`, so the page shows its error state.
 The compiler never runs the module; only the generated server does.
 
+`kadam dev` runs the generated server beside the pages and restarts it when
+the server module changes (`docs/dev-server.md`).
+
 ---
 
 ### 6.27 Forms that send to the server (*kadam 0.3*, D-44 step 2)

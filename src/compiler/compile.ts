@@ -28,7 +28,8 @@ import type { PageIR } from "./ir.js";
 import { lowerDocument } from "./lower.js";
 import { normalizeRoute, pageCssFileName } from "./routes.js";
 
-export type OutputFileKind = "html" | "css" | "asset" | "xml" | "js";
+/** `server` (D-44): the generated server, written to disk but never served as a page file. */
+export type OutputFileKind = "html" | "css" | "asset" | "xml" | "js" | "server";
 
 export interface OutputFile {
   /** Path relative to the output directory, using `/` separators. */
