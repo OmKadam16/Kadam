@@ -564,6 +564,16 @@ is unavailable.
 product viewer and a scroll scene) passes axe, works keyboard-only, meets its
 performance budget, and shows the poster fallbacks with reduced motion on.
 
+**F8 status (2026-11-26).** Shipped (spec 6.29): grayscale, sepia,
+brightness, contrast and saturation filters merged with blur; `in color` and
+`tilts by` states; colour overlays; seven shapes; slow zoom; background video
+with a required poster, a pause button and no autoplay under reduced motion;
+a keyboard-accessible lightbox on a native dialog; masonry columns; scroll
+snapping; parallax and a scroll progress bar on CSS scroll-driven animations.
+Flip cards were skipped. Still to do: named icons, click-to-load embeds and
+right-to-left pages; 3D models and build-time image processing need decision
+records first.
+
 ### F9 — No ceiling: the Kadam library and escape hatches (later; registry after F6)
 
 **Goal (2026-11-25):** like HTML and CSS, Kadam must have no ceiling. Anything

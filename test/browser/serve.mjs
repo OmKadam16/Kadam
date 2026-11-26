@@ -6,7 +6,7 @@ import { compileProject } from "../../dist/compiler/project.js";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 
-const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".xml": "application/xml", ".txt": "text/plain" };
+const TYPES = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".xml": "application/xml", ".txt": "text/plain", ".mp4": "video/mp4", ".png": "image/png", ".jpg": "image/jpeg" };
 
 /** Compile a reference project in memory and serve it on a free port. */
 /**

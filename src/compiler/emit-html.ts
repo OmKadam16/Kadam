@@ -268,6 +268,18 @@ function renderImage(
   if (width !== null) attributes.push(`width="${width}"`);
   if (height !== null) attributes.push(`height="${height}"`);
   if (image.loading === "lazy") attributes.push(`loading="lazy"`);
+  if (image.lightbox === true) {
+    // F8: the image is a button that opens a dialog with the image at full size.
+    const alt = image.alt ?? "";
+    attributes.push('tabindex="0"', 'role="button"', 'aria-haspopup="dialog"', `aria-label="${escapeAttribute(`Open larger: ${alt}`)}"`, `data-kdm-lightbox-open="${element.nodeId}"`);
+    return [
+      `${indent}<img ${attributes.join(" ")}>`,
+      `${indent}<dialog class="kdm-lightbox" data-kdm-lightbox="${element.nodeId}" aria-label="${escapeAttribute(alt)}">`,
+      `${indent}  <img class="kdm-lightbox-image" src="${escapeAttribute(image.url)}" alt="${escapeAttribute(alt)}">`,
+      `${indent}  <button class="kdm-lightbox-close" type="button">Close</button>`,
+      `${indent}</dialog>`,
+    ].join("\n");
+  }
   return `${indent}<img ${attributes.join(" ")}>`;
 }
 
@@ -393,6 +405,21 @@ function renderMedia(element: IrElement, indent: string, classAttribute: string)
     throw new InternalCompilerError(`${element.kind} reached emission without a source`, element.nameSpan);
   }
   const tag = content.media === "video" ? "video" : "audio";
+  if (content.background === true) {
+    // F8: no autoplay attribute: the runtime plays it unless motion is reduced, so
+    // without JavaScript, and for reduced motion, the poster is what people see.
+    const background = [
+      `class="${classAttribute} kdm-background-video"`,
+      `data-kdm-id="${element.nodeId}"`,
+      `src="${escapeAttribute(content.url)}"`,
+      "muted", "loop", "playsinline", "disablepictureinpicture", 'preload="metadata"', 'aria-hidden="true"',
+      ...(content.posterUrl === null ? [] : [`poster="${escapeAttribute(content.posterUrl)}"`]),
+    ];
+    return [
+      `${indent}<video ${background.join(" ")}></video>`,
+      `${indent}<button class="kdm-video-toggle" type="button" data-kdm-video-toggle="${element.nodeId}" aria-label="Pause the background video" hidden>Pause</button>`,
+    ].join("\n");
+  }
   const attributes = [
     `class="${classAttribute}"`,
     `data-kdm-id="${element.nodeId}"`,

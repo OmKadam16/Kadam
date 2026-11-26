@@ -360,10 +360,12 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
   const boundText = context.runtime?.texts.get(element);
   const runtimeAttributes = context.runtime?.attributes.get(element);
   const loweredImage = lowerImage(element, kind, context.basePath);
-  const image =
+  const lazyImage =
     loweredImage !== null && kind === "image" && isLazy(element, context)
       ? { ...loweredImage, loading: "lazy" as const }
       : loweredImage;
+  // F8: an image that opens larger when clicked.
+  const image = lazyImage !== null && findStatement(element, "lightbox") !== null ? { ...lazyImage, lightbox: true as const } : lazyImage;
   const loweredField =
     lowerField(element, kind, identity.nodeId) ??
     lowerControlField(element, kind, identity.nodeId);

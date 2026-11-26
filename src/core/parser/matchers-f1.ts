@@ -66,6 +66,8 @@ export const matchCaption = (tokens: readonly Token[]): Body =>
 
 // it plays "assets/intro.mp4"
 export const matchMediaSource = (tokens: readonly Token[]): Body =>
+  // F8: `it plays in the background` is its own sentence.
+  tokens[2]?.text.toLowerCase() === "in" ? null :
   stringAfter(tokens, ["it", "plays"], "media-source", 'it plays "assets/intro.mp4"');
 
 // the captions are "assets/intro.vtt"

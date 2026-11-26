@@ -108,6 +108,7 @@ export function lowerKindContent(
         captionsUrl: captions === null ? null : assetUrl(captions.value, context.basePath),
         posterUrl: poster === null ? null : assetUrl(poster.value, context.basePath),
         language: pageLanguage,
+        ...(find(element, "background-play") === null ? {} : { background: true as const }),
       };
     }
     case "table":

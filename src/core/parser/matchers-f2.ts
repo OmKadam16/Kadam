@@ -354,6 +354,8 @@ export function isGridLayout(tokens: readonly Token[]): boolean {
     isKeyword(tokens[3], "children") &&
     isKeyword(tokens[4], "in") &&
     !isKeyword(tokens[5], "a") &&
+    // kadam 0.3 (F8): `in 3 masonry columns` is masonry.
+    !isAnyWord(tokens[6], "masonry") &&
     (tokens[5]?.kind === "number" || isAnyWord(tokens[5], "columns"))
   );
 }
@@ -407,6 +409,8 @@ export function matchColumnSpan(tokens: readonly Token[]): Body {
 export function matchOverflow(tokens: readonly Token[]): Body {
   if (!isKeyword(tokens[0], "it")) return null;
   const span = spanFromTokens(tokens);
+  // kadam 0.3 (F8): `it scrolls slower than the page` is parallax.
+  if (isAnyWord(tokens[1], "scrolls") && isAnyWord(tokens[2], "slower")) return null;
   if (isAnyWord(tokens[1], "scrolls")) {
     if (tokens.length === 3 && (isAnyWord(tokens[2], "vertically") || isAnyWord(tokens[2], "horizontally"))) {
       return ok({ type: "overflow", mode: isAnyWord(tokens[2], "vertically") ? "scroll-y" : "scroll-x", span });

@@ -112,6 +112,7 @@ import type {
 } from "./statement-types.js";
 import { describeTokens, isAnyWord, isKeyword, readLength, spanFromTokens } from "./values.js";
 import { matchExternal, matchFormState, matchRawCss, matchStylesheetClass } from "./matchers-f6.js";
+import { matchAdjustment, matchBackgroundPlay, matchColorFilter, matchLightbox, matchMasonry, matchOverlay, matchScrollEffect, matchShape, matchSnap } from "./matchers-f8.js";
 import {
   LATEST_UI_LANGUAGE_VERSION,
   uiVersionAtLeast,
@@ -164,6 +165,28 @@ const F1_TEMPLATES: readonly StatementTemplate[] = [
 ];
 
 /** kadam 0.3 (F2) layout and sizing templates. */
+/** kadam 0.3 (F8) image and box effects. */
+const F8_TEMPLATES: readonly StatementTemplate[] = [
+  { id: "color-filter", description: "Grayscale or sepia", since: "0.3",
+    examples: ["it is grayscale", "it is sepia"], match: (tokens) => matchColorFilter(tokens) },
+  { id: "adjustment", description: "Brightness, contrast, or saturation", since: "0.3",
+    examples: ["the brightness is 120%", "the contrast is 110%", "the saturation is 0%"], match: (tokens) => matchAdjustment(tokens) },
+  { id: "overlay", description: "Color overlay", since: "0.3",
+    examples: ["it has a dark overlay at 40%", "it has a light overlay at 20%", "it has a #0F766E overlay at 30%"], match: (tokens) => matchOverlay(tokens) },
+  { id: "shape", description: "Shape", since: "0.3",
+    examples: ["it is shaped like a circle", "it is shaped like a hexagon", "it is shaped like a blob"], match: (tokens) => matchShape(tokens) },
+  { id: "background-play", description: "Background video", since: "0.3",
+    examples: ["it plays in the background"], match: (tokens) => matchBackgroundPlay(tokens) },
+  { id: "scroll-effect", description: "Parallax or scroll progress", since: "0.3",
+    examples: ["it scrolls slower than the page", "it shows how far the page has scrolled"], match: (tokens) => matchScrollEffect(tokens) },
+  { id: "masonry", description: "Masonry columns", since: "0.3",
+    examples: ["it arranges its children in 3 masonry columns"], match: (tokens) => matchMasonry(tokens) },
+  { id: "snap", description: "Children snap while scrolling (carousel)", since: "0.3",
+    examples: ["its children snap into place"], match: (tokens) => matchSnap(tokens) },
+  { id: "lightbox", description: "Image opens larger", since: "0.3",
+    examples: ["it opens larger when clicked"], match: (tokens) => matchLightbox(tokens) },
+];
+
 /** kadam 0.3 (F6, D-42) escape hatches. */
 const F6_TEMPLATES: readonly StatementTemplate[] = [
   { id: "raw-css", description: "Raw CSS declaration (escape hatch)", since: "0.3",
@@ -585,6 +608,7 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
   ...F1_TEMPLATES,
   ...F2_TEMPLATES,
   ...F6_TEMPLATES,
+  ...F8_TEMPLATES,
   ...F3_TEMPLATES,
   ...F4_TEMPLATES,
   {
@@ -659,6 +683,10 @@ const RESPONSIVE_ALLOWED: ReadonlySet<string> = new Set([
   "visibility-binding",
   // kadam 0.3 (F6): the raw css escape hatch
   "raw-css",
+  // kadam 0.3 (F8): image and box effects
+  "image-filter",
+  "overlay",
+  "shape",
 ]);
 
 const BREAKPOINTS: ReadonlySet<string> = new Set([

@@ -89,6 +89,54 @@ export function emitRuntimeJs(runtime: IrRuntime): string {
   }
 
   if (loads) lines.push(...LOADER_JS, "");
+  if (runtime.backgroundVideos.length > 0) {
+    // F8: play background videos unless motion is reduced; the button pauses and resumes them.
+    lines.push(
+      `const backgroundVideos = ${json(runtime.backgroundVideos)};`,
+      'const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");',
+      "for (const id of backgroundVideos) {",
+      "  const video = nodes.get(id);",
+      "  const toggle = document.querySelector(`[data-kdm-video-toggle=\"${id}\"]`);",
+      "  const show = (playing) => {",
+      '    toggle.textContent = playing ? "Pause" : "Play";',
+      '    toggle.setAttribute("aria-label", playing ? "Pause the background video" : "Play the background video");',
+      "  };",
+      "  toggle.hidden = false;",
+      "  toggle.addEventListener(\"click\", () => {",
+      "    if (video.paused) video.play().then(() => show(true), () => show(false));",
+      "    else {",
+      "      video.pause();",
+      "      show(false);",
+      "    }",
+      "  });",
+      "  if (reduceMotion.matches) show(false);",
+      "  else video.play().then(() => show(true), () => show(false));",
+      "}",
+      "",
+    );
+  }
+  if (runtime.lightboxes.length > 0) {
+    // F8: an image opens larger in a dialog; Escape, Close, or a click outside closes it.
+    lines.push(
+      `const lightboxes = ${json(runtime.lightboxes)};`,
+      "for (const id of lightboxes) {",
+      "  const image = nodes.get(id);",
+      "  const dialog = document.querySelector(`[data-kdm-lightbox=\"${id}\"]`);",
+      "  const open = () => { if (!dialog.open) dialog.showModal(); };",
+      '  image.addEventListener("click", open);',
+      '  image.addEventListener("keydown", (event) => {',
+      '    if (event.key === "Enter" || event.key === " ") {',
+      "      event.preventDefault();",
+      "      open();",
+      "    }",
+      "  });",
+      '  dialog.querySelector(".kdm-lightbox-close").addEventListener("click", () => dialog.close());',
+      '  dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });',
+      '  dialog.addEventListener("close", () => image.focus());',
+      "}",
+      "",
+    );
+  }
   if (runtime.forms.length > 0) {
     // D-44: send the form to its server function and show the sent or failed state.
     lines.push(
@@ -247,6 +295,68 @@ export function runtimeCssBlocks(page: PageIR, breakpointQuery: (breakpoint: "ph
   const runtime = page.runtime;
   if (runtime === undefined) return [];
   const blocks = ["[data-kdm-hidden] {\n  display: none !important;\n}"];
+  if (runtime.lightboxes.length > 0) {
+    blocks.push([
+      "[data-kdm-lightbox-open] {",
+      "  cursor: zoom-in;",
+      "}",
+      "",
+      ".kdm-lightbox {",
+      "  max-width: 92vw;",
+      "  max-height: 92vh;",
+      "  padding: 0;",
+      "  border: 0;",
+      "  background: transparent;",
+      "}",
+      "",
+      ".kdm-lightbox::backdrop {",
+      "  background-color: rgb(0 0 0 / 0.85);",
+      "}",
+      "",
+      ".kdm-lightbox-image {",
+      "  display: block;",
+      "  max-width: 92vw;",
+      "  max-height: 86vh;",
+      "  object-fit: contain;",
+      "}",
+      "",
+      ".kdm-lightbox-close {",
+      "  display: block;",
+      "  margin: 10px auto 0;",
+      "  padding: 6px 16px;",
+      "  border: 0;",
+      "  border-radius: 9999px;",
+      "  background-color: #FFFFFF;",
+      "  color: #111111;",
+      "  font: inherit;",
+      "  cursor: pointer;",
+      "}",
+    ].join("\n"));
+  }
+  if (runtime.backgroundVideos.length > 0) {
+    // F8: the pause button sits in the corner of the video's box.
+    blocks.push([
+      ".kdm-video-toggle {",
+      "  position: absolute;",
+      "  right: 12px;",
+      "  bottom: 12px;",
+      "  z-index: 1;",
+      "  padding: 6px 14px;",
+      "  border: 0;",
+      "  border-radius: 9999px;",
+      "  background-color: rgb(0 0 0 / 0.6);",
+      "  color: #FFFFFF;",
+      "  font: inherit;",
+      "  font-size: 13px;",
+      "  cursor: pointer;",
+      "}",
+      "",
+      ".kdm-video-toggle:focus-visible {",
+      "  outline: 2px solid #FFFFFF;",
+      "  outline-offset: 2px;",
+      "}",
+    ].join("\n"));
+  }
   for (const breakpoint of runtime.scopes) {
     blocks.push(`@media ${breakpointQuery(breakpoint)} {\n  [data-kdm-hidden-${breakpoint}] {\n    display: none !important;\n  }\n}`);
   }

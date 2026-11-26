@@ -19,7 +19,7 @@ import type {
   PageIR,
 } from "./ir.js";
 import { FONT_STACKS, GLOBAL_TOKENS, SHADOW_VALUES } from "./defaults.js";
-import { LOOP_KEYFRAMES } from "./lower-f3.js";
+import { LOOP_KEYFRAMES, SCROLL_KEYFRAMES } from "./lower-f3.js";
 import { DARK_PAGE_BACKGROUND, DARK_PAGE_TEXT, DARK_RULES } from "./dark-palette.js";
 
 type Declaration = readonly [property: string, value: string];
@@ -513,6 +513,11 @@ export function emitPageCss(page: PageIR): string {
   for (const name of Object.keys(LOOP_KEYFRAMES)) {
     if (!loops.has(name)) continue;
     blocks.push(keyframes(`kdm-loop-${name}`, LOOP_KEYFRAMES[name]!.frames));
+  }
+  // F8: scroll-driven keyframes this page uses.
+  for (const name of Object.keys(SCROLL_KEYFRAMES)) {
+    const used = elements.some((element) => (element.rules ?? []).some((rule) => rule.declarations.some((d) => d.property === "animation" && d.value.startsWith(`${name} `))));
+    if (used) blocks.push(keyframes(name, SCROLL_KEYFRAMES[name]!));
   }
 
   const reducedMotionRules: string[] = [];

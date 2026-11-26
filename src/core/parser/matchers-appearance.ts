@@ -338,6 +338,8 @@ export function matchSizeState(tokens: readonly Token[]): StatementMatchBody | n
   // kadam 0.3 sizes, limits, and positions have their own templates.
   if (isF2State(tokens)) return null;
   if (isF3State(tokens)) return null;
+  // kadam 0.3 (F8): it is grayscale | it is sepia | it is shaped like a circle
+  if (/^(grayscale|greyscale|sepia|shaped)$/.test(tokens[2]?.text.toLowerCase() ?? "") && tokens[0]?.text.toLowerCase() === "it") return null;
   // kadam 0.3 (F4): `it is hidden unless ...` is a binding.
   if (isVisibilityBinding(tokens)) return null;
   const rest = tokens.slice(2);
@@ -696,6 +698,8 @@ export function matchImageSource(tokens: readonly Token[]): StatementMatchBody |
   if (!isKeyword(tokens[0], "it") || !isKeyword(tokens[1], "shows")) return null;
   // kadam 0.3: `it shows at most 2 lines` is truncation.
   if (tokens[2]?.text.toLowerCase() === "at") return null;
+  // kadam 0.3 (F8): `it shows how far the page has scrolled`.
+  if (tokens[2]?.text.toLowerCase() === "how") return null;
   // kadam 0.3: `it shows the document "content/intro.md"`.
   if (tokens[2]?.text.toLowerCase() === "the" && tokens[3]?.text.toLowerCase() === "document") return null;
   const span = spanFromTokens(tokens);

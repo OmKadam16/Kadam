@@ -37,6 +37,9 @@ export function matchHover(tokens: readonly Token[], minScale = 100): StatementM
   }
   // kadam 0.3: `when hovered, it rotates by 10deg` is an F3 state sentence.
   if (isKeyword(tokens[3], "it") && tokens[4]?.text.toLowerCase() === "rotates") return null;
+  // kadam 0.3 (F8): `when hovered, it is in color` is an F3 state sentence too.
+  if (isKeyword(tokens[3], "it") && tokens[4]?.text.toLowerCase() === "is" && tokens[5]?.text.toLowerCase() === "in") return null;
+  if (isKeyword(tokens[3], "it") && tokens[4]?.text.toLowerCase() === "tilts") return null;
   const span = spanFromTokens(tokens);
   if (!isComma(tokens[2])) {
     return {

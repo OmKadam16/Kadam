@@ -90,6 +90,10 @@ export interface IrRuntime {
   readonly addressed: readonly (readonly [string, string])[];
   /** F6 (D-42): addresses of the external modules calls import. */
   readonly externals: readonly string[];
+  /** F8: background videos the runtime plays (unless motion is reduced) and pauses. */
+  readonly backgroundVideos: readonly string[];
+  /** F8: images that open larger in a dialog. */
+  readonly lightboxes: readonly string[];
   /** kadam 0.3: elements styled while a state has a value; the attribute is present then. */
   readonly whenBindings: readonly { readonly nodeId: string; readonly key: string; readonly value: IrStateValue; readonly attribute: string }[];
   /** D-44: forms that send to a server function, as [form id, sent id, failed id, function]. */
@@ -277,6 +281,13 @@ export function lowerRuntime(
     list.push(element);
     templates.set(element.runtimeList.source, list);
   });
+  // F8: background videos.
+  const backgroundVideos: string[] = [];
+  const lightboxes: string[] = [];
+  visit(elements, (element) => {
+    if (element.statements.some((s) => s.type === "background-play")) backgroundVideos.push(nodeIdOf(element));
+    if (element.statements.some((s) => s.type === "lightbox")) lightboxes.push(nodeIdOf(element));
+  });
   // D-44: forms that send to a server function; both states start hidden.
   const forms: (readonly [string, string, string, string])[] = [];
   visit(elements, (element) => {
@@ -355,6 +366,8 @@ export function lowerRuntime(
       externals: modules,
       forms,
       whenBindings,
+      backgroundVideos,
+      lightboxes,
     },
     attributes,
     texts,

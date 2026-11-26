@@ -481,7 +481,7 @@ const STATES: Readonly<Record<string, InteractionState>> = {
 export function matchState(tokens: readonly Token[]): Body {
   if (!isKeyword(tokens[0], "when")) return null;
   const word = text(tokens[1]);
-  const hoverRotate = word === "hovered" && isKeyword(tokens[3], "it") && text(tokens[4]) === "rotates";
+  const hoverRotate = word === "hovered" && isKeyword(tokens[3], "it") && (text(tokens[4]) === "rotates" || text(tokens[4]) === "tilts" || (text(tokens[4]) === "is" && text(tokens[5]) === "in"));
   const state = hoverRotate ? "hovered" : STATES[word];
   if (state === undefined) return null;
   const span = spanFromTokens(tokens);
@@ -500,6 +500,19 @@ export function matchState(tokens: readonly Token[]): Body {
   const diagnostics: DiagnosticSpec[] = [];
   let effect: StateEffect;
   let length: number;
+  // F8: when hovered, it tilts by 8deg
+  if (isKeyword(rest[0], "it") && text(rest[1]) === "tilts") {
+    const degrees = readAngle(rest[3]);
+    if (rest.length !== 4 || !isKeyword(rest[2], "by") || degrees === null || degrees > 45) {
+      return fail("a tilt is it tilts by <1deg to 45deg>", tokens, `for example: when ${word}, it tilts by 8deg`);
+    }
+    return ok({ type: "state", state, effect: { type: "tilt", degrees }, span });
+  }
+  // F8: when hovered, it is in color
+  if (isKeyword(rest[0], "it") && isKeyword(rest[1], "is") && text(rest[2]) === "in" && text(rest[3]) === "color") {
+    if (rest.length !== 4) return fail("write: when hovered, it is in color", tokens, "for example: when hovered, it is in color");
+    return ok({ type: "state", state, effect: { type: "in-color" }, span });
+  }
   if (isKeyword(rest[0], "it") && text(rest[1]) === "rotates") {
     const degrees = readAngle(rest[3]);
     if (!isKeyword(rest[2], "by") || degrees === null || degrees > 360) {
@@ -551,11 +564,13 @@ export function matchScrollEntrance(tokens: readonly Token[]): Body {
   });
 }
 
-const LOOPS: Readonly<Record<string, "spin" | "pulse" | "bounce" | "float">> = {
+const LOOPS: Readonly<Record<string, "spin" | "pulse" | "bounce" | "float" | "zoom">> = {
   spins: "spin",
   pulses: "pulse",
   bounces: "bounce",
   floats: "float",
+  // F8: a slow pan and zoom (Ken Burns), for images and hero backgrounds.
+  zooms: "zoom",
 };
 
 // it spins [forever] [every 2s]
@@ -565,6 +580,7 @@ export function matchLoop(tokens: readonly Token[]): Body {
   if (effect === undefined) return null;
   const hint = "for example: it spins forever, or it pulses every 2s";
   let index = 2;
+  if (effect === "zoom" && isAnyWord(tokens[index], "slowly")) index += 1;
   if (isAnyWord(tokens[index], "forever")) index += 1;
   let duration: DurationValue | null = null;
   if (isAnyWord(tokens[index], "every")) {

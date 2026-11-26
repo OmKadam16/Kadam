@@ -32,6 +32,25 @@ export const LOOP_KEYFRAMES: Readonly<Record<string, { readonly timing: string; 
   pulse: { timing: "ease-in-out", duration: "2s", frames: [["0%,\n  100%", [["opacity", "1"]]], ["50%", [["opacity", "0.5"]]]] },
   bounce: { timing: "ease-in-out", duration: "1s", frames: [["0%,\n  100%", [["translate", "0 0"]]], ["50%", [["translate", "0 -8px"]]]] },
   float: { timing: "ease-in-out", duration: "3s", frames: [["0%,\n  100%", [["translate", "0 0"]]], ["50%", [["translate", "0 -6px"]]]] },
+  // F8: a slow pan and zoom (Ken Burns).
+  zoom: { timing: "ease-in-out", duration: "24s", frames: [["0%,\n  100%", [["scale", "1"], ["translate", "0 0"]]], ["50%", [["scale", "1.08"], ["translate", "-1.5% -1%"]]]] },
+};
+
+/** F8 scroll-driven keyframes, emitted only on pages that use them. */
+export const SCROLL_KEYFRAMES: Readonly<Record<string, readonly (readonly [string, readonly (readonly [string, string])[]])[]>> = {
+  "kdm-parallax": [["from", [["translate", "0 -40px"]]], ["to", [["translate", "0 40px"]]]],
+  "kdm-scroll-progress": [["from", [["scale", "0 1"]]], ["to", [["scale", "1 1"]]]],
+};
+
+/** F8 shapes: clip paths, or rounded corners for the soft shapes. */
+const SHAPES: Readonly<Record<string, readonly [string, string]>> = {
+  circle: ["clip-path", "circle(50%)"],
+  ellipse: ["clip-path", "ellipse(50% 50%)"],
+  hexagon: ["clip-path", "polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)"],
+  diamond: ["clip-path", "polygon(50% 0, 100% 50%, 50% 100%, 0 50%)"],
+  triangle: ["clip-path", "polygon(50% 0, 100% 100%, 0 100%)"],
+  blob: ["border-radius", "42% 58% 70% 30% / 45% 45% 55% 55%"],
+  arch: ["border-radius", "9999px 9999px 0 0"],
 };
 
 const FIELD_KINDS: ReadonlySet<BuiltinKindName> = new Set(["text field", "text area", "dropdown"]);
@@ -77,6 +96,17 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
   const d = (property: string, value: string): void => {
     out.push({ property, value });
   };
+  // F8: every filter function shares one `filter` declaration, where the first one was written.
+  let filterAt = -1;
+  const filters: string[] = [];
+  const addFilter = (fn: string): void => {
+    if (filterAt === -1) {
+      filterAt = out.length;
+      out.push({ property: "filter", value: "" });
+    }
+    filters.push(fn);
+  };
+  let overlay: string | null = null;
   const has = <T extends StatementNode["type"]>(type: T): Extract<StatementNode, { type: T }> | undefined =>
     statements.find((statement) => statement.type === type) as Extract<StatementNode, { type: T }> | undefined;
   let transformBox = false;
@@ -177,7 +207,7 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
       }
       case "filter":
         if (statement.mode === "blur") {
-          d("filter", `blur(${length(statement.amount)})`);
+          addFilter(`blur(${length(statement.amount)})`);
         } else {
           // Safari 16.4 to 17 needs the prefix (D-35).
           d("-webkit-backdrop-filter", `blur(${length(statement.amount)})`);
@@ -196,6 +226,34 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
         d("scale", number(statement.percentage / 100));
         transformBox = true;
         break;
+      case "image-filter":
+        addFilter(`${statement.fn}(${number(statement.percent)}%)`);
+        break;
+      case "overlay":
+        overlay = `color-mix(in srgb, ${color(statement.color)} ${number(statement.percent)}%, transparent)`;
+        break;
+      case "masonry":
+        // F8: columns that items flow down, with no gaps under short items.
+        d("display", "block");
+        d("column-count", String(statement.columns));
+        break;
+      case "snap": {
+        const row = statements.some((s) => s.type === "layout" && s.property === "direction" && s.value === "row");
+        d("scroll-snap-type", `${row ? "x" : "y"} mandatory`);
+        break;
+      }
+      case "scroll-effect":
+        // F8: the bar grows from the left as the page scrolls (see lowerExtraRules).
+        if (statement.effect === "progress") {
+          d("transform-origin", "left center");
+          d("scale", "0 1");
+        }
+        break;
+      case "shape": {
+        const [property, value] = SHAPES[statement.shape]!;
+        d(property, value);
+        break;
+      }
       case "loop": {
         const loop = LOOP_KEYFRAMES[statement.effect]!;
         const duration = statement.duration === null ? loop.duration : `${number(statement.duration.value)}${statement.duration.unit}`;
@@ -206,6 +264,14 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
       default:
         break;
     }
+  }
+  if (filterAt !== -1) out[filterAt] = { property: "filter", value: filters.join(" ") };
+  // F8: an overlay is the top background layer, over any image or gradient.
+  if (overlay !== null) {
+    const layer = `linear-gradient(${overlay}, ${overlay})`;
+    const image = out.findIndex((declaration) => declaration.property === "background-image");
+    if (image === -1) out.push({ property: "background-image", value: layer });
+    else out[image] = { property: "background-image", value: `${layer}, ${out[image]!.value}` };
   }
   // Inline links cannot be transformed; give them a transformable box.
   if (transformBox && context.kind === "link") d("display", "inline-block");
@@ -253,6 +319,10 @@ function effectDeclarations(effect: StateEffect): IrDeclaration[] {
       return [{ property: "scale", value: number(effect.percentage.value / 100) }];
     case "rotate":
       return [{ property: "rotate", value: `${number(effect.degrees)}deg` }];
+    case "in-color":
+      return [{ property: "filter", value: "none" }];
+    case "tilt":
+      return [{ property: "transform", value: `perspective(800px) rotateX(${number(effect.degrees / 2)}deg) rotateY(${number(-effect.degrees)}deg)` }];
   }
 }
 
@@ -304,6 +374,49 @@ export function lowerExtraRules(element: ElementNode, context: F3Context): IrRul
         ],
         reducedMotion: true,
       });
+    } else if (statement.type === "masonry") {
+      const gap = element.statements.find((s) => s.type === "layout" && s.property === "gap");
+      const space = gap?.type === "layout" && gap.property === "gap" ? length(gap.value) : "16px";
+      rules.push({
+        at: null,
+        selector: `${base} > *`,
+        declarations: [
+          { property: "break-inside", value: "avoid" },
+          { property: "margin-bottom", value: space },
+          { property: "width", value: "100%" },
+        ],
+        reducedMotion: false,
+      });
+    } else if (statement.type === "snap") {
+      rules.push({
+        at: null,
+        selector: `${base} > *`,
+        declarations: [{ property: "scroll-snap-align", value: "start" }, { property: "flex-shrink", value: "0" }],
+        reducedMotion: false,
+      });
+    } else if (statement.type === "scroll-effect") {
+      // F8: scroll-driven, so it needs no script; older browsers show the element still.
+      rules.push(statement.effect === "parallax"
+        ? {
+            at: "@supports (animation-timeline: view())",
+            selector: base,
+            declarations: [
+              { property: "animation", value: "kdm-parallax linear both" },
+              { property: "animation-timeline", value: "view()" },
+              { property: "animation-range", value: "cover 0% cover 100%" },
+            ],
+            reducedMotion: true,
+          }
+        : {
+            at: "@supports (animation-timeline: scroll())",
+            selector: base,
+            declarations: [
+              { property: "animation", value: "kdm-scroll-progress linear both" },
+              { property: "animation-timeline", value: "scroll(root)" },
+            ],
+            // Progress follows the reader's own scrolling, so it stays on.
+            reducedMotion: false,
+          });
     } else if (statement.type === "stagger") {
       const name = statement.effect === "fade" ? "kdm-fade-in" : `kdm-slide-in-${statement.direction ?? "bottom"}`;
       rules.push({

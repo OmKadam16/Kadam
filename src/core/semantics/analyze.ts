@@ -238,6 +238,12 @@ function analyzeImage(
   element: ElementNode,
   diagnostics: DiagnosticBag,
 ): void {
+  // F8: an image that opens larger names the dialog it opens, so it needs a description.
+  const lightbox = findStatement(element, "lightbox");
+  if (lightbox !== null && findStatement(element, "decorative") !== null) {
+    diagnostics.error("KDM3005", "a decorative image cannot open larger; the dialog needs its description", lightbox.span,
+      'remove it is decorative and add the description says "..."');
+  }
   const source = findStatement(element, "image-source") as ImageSourceStatement | null;
   const description = findStatement(
     element,
@@ -463,6 +469,15 @@ function analyzeF1Element(
       if (source !== null) checkAssetPath(source.value, source.valueSpan, ASSET_EXTENSIONS.video, "video source", diagnostics);
       const captions = findStatement(element, "captions");
       const noSpeech = findStatement(element, "no-speech");
+      // F8: a background video is decorative: no captions, no controls, and a poster for everyone who does not see it move.
+      const background = findStatement(element, "background-play");
+      if (background !== null) {
+        if (captions !== null) diagnostics.error("KDM3005", "a background video is decorative and has no captions", captions.span, "remove the captions, or show the video with controls instead");
+        require(element, findStatement(element, "poster") !== null, "a poster", 'add the poster is "assets/poster.jpg"; people who prefer reduced motion see it instead', diagnostics);
+        const poster = findStatement(element, "poster");
+        if (poster !== null) checkAssetPath(poster.value, poster.valueSpan, ASSET_EXTENSIONS.image, "poster image", diagnostics);
+        return;
+      }
       if (captions !== null && noSpeech !== null) {
         diagnostics.error("KDM3005", "a video cannot have captions and no speech", noSpeech.span, "remove one of the two statements");
       }

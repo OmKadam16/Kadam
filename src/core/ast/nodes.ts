@@ -400,7 +400,29 @@ export type CallArgument =
   | { readonly kind: "literal"; readonly value: StateLiteral }
   | { readonly kind: "state"; readonly state: StateReference };
 
+/** kadam 0.3 (F8) image and box effects; matched in `src/core/parser/matchers-f8.ts`. */
+export type F8Statement =
+  // it is grayscale | it is sepia | the brightness is 120% | the contrast is 110% | the saturation is 0%
+  | (NodeBase & { readonly type: "image-filter"; readonly fn: "grayscale" | "sepia" | "brightness" | "contrast" | "saturate"; readonly percent: number })
+  // it has a dark overlay at 40% | it has a #0F766E overlay at 30%
+  | (NodeBase & { readonly type: "overlay"; readonly color: ColorValue; readonly percent: number })
+  // it is shaped like a circle
+  | (NodeBase & { readonly type: "shape"; readonly shape: ShapeName })
+  // it plays in the background (a video)
+  | (NodeBase & { readonly type: "background-play" })
+  // it scrolls slower than the page | it shows how far the page has scrolled
+  | (NodeBase & { readonly type: "scroll-effect"; readonly effect: "parallax" | "progress" })
+  // it arranges its children in 3 masonry columns
+  | (NodeBase & { readonly type: "masonry"; readonly columns: number })
+  // its children snap into place
+  | (NodeBase & { readonly type: "snap" })
+  // it opens larger when clicked (an image)
+  | (NodeBase & { readonly type: "lightbox" });
+
+export type ShapeName = "circle" | "ellipse" | "hexagon" | "diamond" | "triangle" | "blob" | "arch";
+
 export type StatementNode =
+  | F8Statement
   | F6Statement
   | SizeStatement
   | BackgroundStatement
@@ -617,7 +639,13 @@ export interface RuntimeList {
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 /** An interaction state effect: the hover effects plus rotation. */
-export type StateEffect = HoverEffect | { readonly type: "rotate"; readonly degrees: number };
+export type StateEffect =
+  | HoverEffect
+  | { readonly type: "rotate"; readonly degrees: number }
+  /** F8: `when hovered, it is in color` removes its filters. */
+  | { readonly type: "in-color" }
+  /** F8: `when hovered, it tilts by 8deg`, a 3D tilt. */
+  | { readonly type: "tilt"; readonly degrees: number };
 
 export type InteractionState = "hovered" | "focused" | "pressed" | "disabled" | "checked" | "invalid";
 
@@ -684,7 +712,7 @@ export type F3Statement =
     })
   | (NodeBase & {
       readonly type: "loop";
-      readonly effect: "spin" | "pulse" | "bounce" | "float";
+      readonly effect: "spin" | "pulse" | "bounce" | "float" | "zoom";
       readonly duration: DurationValue | null;
     })
   | (NodeBase & {

@@ -273,6 +273,8 @@ export type IrKindContent =
   | {
       readonly type: "media";
       readonly media: "video" | "audio";
+      /** F8: a decorative background video, started by the runtime unless motion is reduced. */
+      readonly background?: true;
       readonly url: string;
       readonly captionsUrl: string | null;
       readonly posterUrl: string | null;
@@ -291,6 +293,8 @@ export interface IrImageContent {
   readonly decorative: boolean;
   /** kadam 0.3: `lazy` for every image but the first, unless the author says. */
   readonly loading?: "lazy";
+  /** F8: `it opens larger when clicked`. */
+  readonly lightbox?: true;
 }
 
 export interface IrFieldContent {

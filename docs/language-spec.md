@@ -1653,6 +1653,91 @@ tabTerminal {
   start when the state's starting value matches, so it looks right before the
   page script runs and without JavaScript; the runtime keeps it in step.
 
+
+### 6.29 Rich visuals (*kadam 0.3*, F8)
+
+```kdm
+heroVideo {
+    a video
+    it plays "assets/loop.mp4"
+    the poster is "assets/loop.jpg"
+    it plays in the background
+}
+photo {
+    an image
+    it shows "assets/desk.jpg"
+    the description says "A desk"
+    it is grayscale
+    when hovered, it is in color
+    the contrast is 120%
+    it is shaped like a circle
+    it zooms slowly forever
+    it opens larger when clicked
+}
+featureCard {
+    a container
+    it has a dark overlay at 40%
+    when hovered, it tilts by 8deg
+    it scrolls slower than the page
+}
+gallery {
+    a container
+    it arranges its children in 3 masonry columns
+}
+strip {
+    a container
+    it arranges its children in a row
+    it scrolls horizontally
+    its children snap into place
+}
+progressBar {
+    a container
+    it is 3px tall
+    it shows how far the page has scrolled
+}
+```
+
+- **Filters.** `it is grayscale`, `it is sepia`, and `the brightness|contrast|saturation
+  is N%` (0–300). Every filter on an element, including `it is blurred by`,
+  becomes one `filter` declaration in source order. `when <state>, it is in
+  color` sets `filter: none` for that state. Each filter may be said once
+  (`KDM3004`).
+- **Overlays.** `it has a dark|light|<color> overlay at N%` (1–100) layers a
+  flat colour gradient over the element's background. Not allowed on an
+  image, video, icon or divider (`KDM3003`); put the image in a container's
+  background instead.
+- **Shapes.** `it is shaped like a circle|ellipse|hexagon|diamond|triangle|blob|arch`.
+  Polygons use `clip-path`; blob and arch use `border-radius`, so they
+  conflict with a corner sentence (`KDM3004`).
+- **Slow zoom.** `it zooms slowly forever` is a 24-second loop of a 1.08 scale, the
+  Ken Burns pan. Like every loop it stops with reduced motion.
+- **Background video.** `it plays in the background` is allowed only on a
+  video (`KDM3003`). It needs a poster (`KDM3009`) and cannot have captions
+  (`KDM3005`); it is muted, looped, `playsinline`, hidden from assistive
+  technology, and has no `autoplay` attribute. The runtime starts it only
+  when reduced motion is off and shows a Pause/Play button (WCAG 2.2.2).
+  Without JavaScript or with reduced motion, the poster is what shows.
+- **Lightbox.** `it opens larger when clicked` is allowed only on an image
+  that is not decorative (`KDM3005`). The image becomes focusable with
+  `role="button"`; click, Enter or Space opens a native `<dialog>`, which
+  closes with its Close button, Escape, or a click outside the picture, and
+  focus returns to the image.
+- **Tilt.** `when <state>, it tilts by Ndeg` (1–45) is a CSS 3D
+  `perspective(800px)` rotation.
+- **Masonry.** `it arranges its children in N masonry columns` (2–6) uses CSS
+  columns; children do not break across columns, and `it has Npx gap between
+  children` sets both gaps. It conflicts with other layout sentences
+  (`KDM3004`).
+- **Snapping.** `its children snap into place` adds mandatory scroll snapping
+  on the row's or column's axis.
+- **Scroll effects.** `it scrolls slower than the page` (parallax) and `it
+  shows how far the page has scrolled` (a bar that grows from the left) use
+  CSS scroll-driven animations inside `@supports`, so browsers without them
+  show the element still. Parallax stops with reduced motion; the progress
+  bar does not move by itself, so it stays. An element has at most one scroll
+  effect (`KDM3004`).
+- Flip cards were left out: they need two faces and a state, which the
+  dialog and state sentences already cover.
 ---
 
 ## 7. Events and interactions

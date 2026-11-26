@@ -698,6 +698,28 @@ function checkCapability(
     case "background-focus":
       if (kindName === "divider") reject("a divider supports margin, color, and spacing only");
       return;
+    case "overlay":
+      // An overlay is a background layer, so it needs a box behind the content.
+      if (kindName === "image" || kindName === "video" || kindName === "icon" || kindName === "divider") {
+        reject(`an overlay goes on a box, not ${kindName === "image" ? "an image" : `a ${kindName}`}; darken an image with the brightness is 60%, or use the image as a background image`);
+      }
+      return;
+    case "image-filter":
+    case "shape":
+      if (kindName === "divider") reject("a divider supports margin, color, and spacing only");
+      return;
+    case "background-play":
+      if (kindName !== "video") reject("it plays in the background applies only to a video");
+      return;
+    case "scroll-effect":
+    case "snap":
+      return;
+    case "masonry":
+      if (!CONTAINERS.has(kindName)) reject("masonry columns apply to a container, card, section, or list");
+      return;
+    case "lightbox":
+      if (kindName !== "image") reject("it opens larger when clicked applies only to an image");
+      return;
     case "custom-font":
       // A font on a container is inherited by the text inside it.
       if (!TEXT_BEARING.has(kindName) && !CONTAINERS.has(kindName)) {
@@ -1022,6 +1044,22 @@ function describeStatement(statement: StatementNode): string {
       return "an outline statement";
     case "gradient":
       return "a gradient statement";
+    case "image-filter":
+      return `a ${statement.fn === "saturate" ? "saturation" : statement.fn} statement`;
+    case "overlay":
+      return "an overlay statement";
+    case "shape":
+      return "a shape statement";
+    case "background-play":
+      return "an it plays in the background statement";
+    case "scroll-effect":
+      return statement.effect === "parallax" ? "an it scrolls slower than the page statement" : "an it shows how far the page has scrolled statement";
+    case "masonry":
+      return "a masonry statement";
+    case "snap":
+      return "an its children snap into place statement";
+    case "lightbox":
+      return "an it opens larger when clicked statement";
     case "gradient-angle":
       return "a gradient angle statement";
     case "background-image":
@@ -1241,6 +1279,25 @@ function propertyKeys(statement: StatementNode): string[] {
     case "gradient":
       // One background per scope, like has a blue background.
       return ["background"];
+    case "image-filter":
+      return [`filter-${statement.fn}`];
+    case "overlay":
+      return ["overlay"];
+    case "background-play":
+      return ["background-play"];
+    case "scroll-effect":
+      // Both drive the element's animation from scrolling.
+      return ["scroll-effect"];
+    case "masonry":
+      // Masonry replaces the row, column, or grid arrangement.
+      return ["layout-direction"];
+    case "snap":
+      return ["snap"];
+    case "lightbox":
+      return ["lightbox", "click"];
+    case "shape":
+      // A blob and an arch are rounded corners, so they conflict with corner sentences.
+      return statement.shape === "blob" || statement.shape === "arch" ? ["shape", "corners"] : ["shape"];
     case "gradient-angle":
       return ["gradient-direction"];
     case "custom-font":

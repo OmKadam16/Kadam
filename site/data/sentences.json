@@ -20,6 +20,11 @@
     "examples": "the background image covers its box   ·   the background image fits inside its box   ·   the background image repeats"
   },
   {
+    "name": "Background video",
+    "version": "0.3",
+    "examples": "it plays in the background"
+  },
+  {
     "name": "Blur, rotation, move, or scale",
     "version": "0.3",
     "examples": "it is blurred by 4px   ·   it is rotated by 10deg   ·   it is moved 8px down"
@@ -28,6 +33,11 @@
     "name": "Border",
     "version": "0.1",
     "examples": "has a white border   ·   has a 2px white border   ·   has no border"
+  },
+  {
+    "name": "Brightness, contrast, or saturation",
+    "version": "0.3",
+    "examples": "the brightness is 120%   ·   the contrast is 110%   ·   the saturation is 0%"
   },
   {
     "name": "Built-in dark palette",
@@ -55,6 +65,11 @@
     "examples": "it wraps its children   ·   it spreads its children apart   ·   it spaces its children evenly"
   },
   {
+    "name": "Children snap while scrolling (carousel)",
+    "version": "0.3",
+    "examples": "its children snap into place"
+  },
+  {
     "name": "Choice options",
     "version": "0.3",
     "examples": "the options are \"Small\", \"Medium\", \"Large\""
@@ -73,6 +88,11 @@
     "name": "Click effects",
     "version": "0.3",
     "examples": "when clicked, flip \"menu1\"   ·   when clicked, show \"panel2\" and hide \"panel1\"   ·   when clicked, open dialog \"signupDialog\""
+  },
+  {
+    "name": "Color overlay",
+    "version": "0.3",
+    "examples": "it has a dark overlay at 40%   ·   it has a light overlay at 20%   ·   it has a #0F766E overlay at 30%"
   },
   {
     "name": "Corner radius",
@@ -170,6 +190,11 @@
     "examples": "the gradient goes from left to right"
   },
   {
+    "name": "Grayscale or sepia",
+    "version": "0.3",
+    "examples": "it is grayscale   ·   it is sepia"
+  },
+  {
     "name": "Grid column span",
     "version": "0.3",
     "examples": "it spans 2 columns   ·   it spans all columns"
@@ -208,6 +233,11 @@
     "name": "Image loading",
     "version": "0.3",
     "examples": "it loads lazily   ·   it loads right away"
+  },
+  {
+    "name": "Image opens larger",
+    "version": "0.3",
+    "examples": "it opens larger when clicked"
   },
   {
     "name": "Image source path",
@@ -260,6 +290,11 @@
     "examples": "it shows the document \"content/intro.md\""
   },
   {
+    "name": "Masonry columns",
+    "version": "0.3",
+    "examples": "it arranges its children in 3 masonry columns"
+  },
+  {
     "name": "Multi-color or radial gradient",
     "version": "0.3",
     "examples": "has a blue and white and red gradient   ·   has a radial white and blue gradient"
@@ -300,6 +335,11 @@
     "examples": "the page description says \"Plans and pricing\"   ·   the page language is \"fr\"   ·   the page icon is \"assets/icon.png\""
   },
   {
+    "name": "Parallax or scroll progress",
+    "version": "0.3",
+    "examples": "it scrolls slower than the page   ·   it shows how far the page has scrolled"
+  },
+  {
     "name": "Per-corner rounding",
     "version": "0.3",
     "examples": "has 12px rounded corners on the top   ·   has fully rounded corners on the left"
@@ -333,6 +373,11 @@
     "name": "Shadow preset",
     "version": "0.1",
     "examples": "has a soft shadow   ·   has a medium shadow   ·   has no shadow"
+  },
+  {
+    "name": "Shape",
+    "version": "0.3",
+    "examples": "it is shaped like a circle   ·   it is shaped like a hexagon   ·   it is shaped like a blob"
   },
   {
     "name": "Shape (aspect ratio)",
