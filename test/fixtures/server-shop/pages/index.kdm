@@ -31,4 +31,38 @@ page "Shop" {
             the text says "The products could not be loaded."
         }
     }
+    signupForm {
+        a form
+        it sends to the server function signUp
+        when it is sent, it shows thanksNote
+        when sending fails, it shows sorryNote
+        address {
+            a text field
+            the label says "Email"
+            it accepts email addresses
+            it is required
+        }
+        plan {
+            a dropdown
+            the label says "Plan"
+            the options are "Free", "Pro"
+        }
+        news {
+            a checkbox
+            the label says "Send me news"
+        }
+        join {
+            a button
+            the text says "Sign up"
+            it submits the form
+        }
+        thanksNote {
+            a paragraph
+            the text says "Thanks, you are signed up."
+        }
+        sorryNote {
+            a paragraph
+            the text says "Sorry, that did not work. Try again."
+        }
+    }
 }

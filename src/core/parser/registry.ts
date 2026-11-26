@@ -109,7 +109,7 @@ import type {
   TemplateContext,
 } from "./statement-types.js";
 import { describeTokens, isAnyWord, isKeyword, readLength, spanFromTokens } from "./values.js";
-import { matchExternal, matchRawCss, matchStylesheetClass } from "./matchers-f6.js";
+import { matchExternal, matchFormState, matchRawCss, matchStylesheetClass } from "./matchers-f6.js";
 import {
   LATEST_UI_LANGUAGE_VERSION,
   uiVersionAtLeast,
@@ -173,6 +173,9 @@ const F6_TEMPLATES: readonly StatementTemplate[] = [
   { id: "external", description: "External function (escape hatch)", since: "0.3",
     examples: ['external trackEvent from "analytics.js" takes text and returns nothing'],
     match: (tokens) => matchExternal(tokens) },
+  { id: "form-state", description: "Form sent or failed state (D-44)", since: "0.3",
+    examples: ["when it is sent, it shows thanksNote", "when sending fails, it shows sorryNote"],
+    match: (tokens) => matchFormState(tokens) },
 ];
 
 const F2_TEMPLATES: readonly StatementTemplate[] = [

@@ -67,7 +67,7 @@ export function usesRuntime(elements: readonly ElementNode[]): boolean {
         kindOf(element) === "dialog" ||
         element.statements.some((statement) => {
           const type = inner(statement).type;
-          return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden" || type === "data-load";
+          return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden" || type === "data-load" || type === "form-state";
         }) ||
         visit(element.children),
     );

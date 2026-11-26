@@ -45,6 +45,7 @@ export function bindServerLoads(page: PageNode, server: ServerModule | null, dia
   const bind = (elements: readonly ElementNode[]): ElementNode[] =>
     elements.map((element) => {
       const children = bind(element.children);
+      checkServerForm(element, server, diagnostics);
       const load = element.statements.find((statement) => statement.type === "data-load");
       if (load?.type !== "data-load" || load.server === undefined) return { ...element, children };
       const shape = serverShape(load.server, load.urlSpan, server, diagnostics);
@@ -63,6 +64,90 @@ export function bindServerLoads(page: PageNode, server: ServerModule | null, dia
       return { ...element, statements, children };
     });
   return { ...page, elements: bind(page.elements) };
+}
+
+const CONTROLS: ReadonlySet<string> = new Set(["text field", "text area", "dropdown", "checkbox", "radio group"]);
+
+function kindName(element: ElementNode): string | null {
+  return element.kind?.reference.type === "builtin-kind" ? element.kind.reference.name : null;
+}
+
+function descendants(element: ElementNode): ElementNode[] {
+  return element.children.flatMap((child) => [child, ...descendants(child)]);
+}
+
+/**
+ * D-44: a form that sends to a server function. The function takes one
+ * record and returns nothing; the form's controls are exactly the record's
+ * fields, with matching types; the sent and failed states are named.
+ */
+function checkServerForm(element: ElementNode, server: ServerModule | null, diagnostics: DiagnosticBag): void {
+  const action = element.statements.find((statement) => statement.type === "form-action");
+  const states = element.statements.filter((statement): statement is Extract<StatementNode, { type: "form-state" }> => statement.type === "form-state");
+  if (action?.type !== "form-action" || action.server === undefined) {
+    for (const state of states) {
+      diagnostics.error("KDM3061", "sent and failed states are for a form that sends to a server function", state.span,
+        "write: it sends to the server function <function>");
+    }
+    return;
+  }
+  const inside = descendants(element);
+  for (const want of ["sent", "failed"] as const) {
+    const state = states.find((candidate) => candidate.state === want);
+    const sentence = want === "sent" ? "when it is sent, it shows <element name>" : "when sending fails, it shows <element name>";
+    if (state === undefined) {
+      diagnostics.error("KDM3061", `${element.name} sends to ${action.server} but has no ${want} state`, action.span, `add: ${sentence}`);
+    } else if (!inside.some((candidate) => candidate.name === state.target)) {
+      diagnostics.error("KDM3012", `"${state.target}" is not an element inside ${element.name}`, state.targetSpan, `name one element inside ${element.name}`);
+    }
+  }
+  if (states.length === 2 && states[0]!.target === states[1]!.target) {
+    diagnostics.error("KDM3061", "the sent and failed states need different elements", states[1]!.targetSpan, "use one element for each state");
+  }
+  const name = action.server;
+  const span = action.urlSpan;
+  if (server === null) {
+    diagnostics.error("KDM3061", `there is no server module to send ${element.name} to`, span,
+      'add to kadam.json: "server": { "module": "server/app.kdm", "target": "typescript" }');
+    return;
+  }
+  const fn = server.module.functions.find((candidate) => candidate.name === name);
+  if (fn === undefined) {
+    diagnostics.error("KDM3061", `the server module has no function named ${name}`, span, `add function ${name} to ${server.path}`);
+    return;
+  }
+  const parameter = fn.parameters[0];
+  const record = parameter?.type.kind === "record" ? server.module.records.find((candidate) => candidate.name === (parameter.type as { name: string }).name) : undefined;
+  if (fn.parameters.length !== 1 || record === undefined || fn.returnType.kind !== "nothing") {
+    diagnostics.error("KDM3061", `a form sends to a function that takes one record and returns nothing; ${name} does not`, span,
+      `write: function ${name} takes <value> as <Record> and returns nothing`);
+    return;
+  }
+  const controls = new Map(inside.filter((candidate) => CONTROLS.has(kindName(candidate) ?? "")).map((control) => [control.name, control]));
+  for (const field of record.fields) {
+    const control = controls.get(field.name);
+    if (field.type.kind !== "text" && field.type.kind !== "boolean") {
+      diagnostics.error("KDM3061", `${record.name}.${field.name} is ${describeType(field.type)}; a form sends text and boolean fields`, span,
+        field.type.kind === "number" ? "use a text field for now; number inputs come later" : `change ${field.name} in ${record.name}`);
+      continue;
+    }
+    if (control === undefined) {
+      diagnostics.error("KDM3061", `${record.name} has a field ${field.name}, but ${element.name} has no control named ${field.name}`, span,
+        `add a control named ${field.name} to the form`);
+      continue;
+    }
+    const checkbox = kindName(control) === "checkbox";
+    if ((field.type.kind === "boolean") !== checkbox) {
+      diagnostics.error("KDM3061", `${field.name} is ${field.type.kind} in ${record.name}, so it needs ${field.type.kind === "boolean" ? "a checkbox" : "a text field, text area, dropdown, or radio group"}`,
+        control.nameSpan, `change the control, or the type of ${field.name}`);
+    }
+  }
+  for (const [controlName, control] of controls) {
+    if (!record.fields.some((field) => field.name === controlName)) {
+      diagnostics.error("KDM3061", `${element.name} sends ${controlName}, but ${record.name} has no field ${controlName}`, control.nameSpan,
+        `add ${controlName} to ${record.name}, or remove the control`);
+    }
+  }
 }
 
 function serverShape(name: string, span: Span, server: ServerModule | null, diagnostics: DiagnosticBag): ShapeField[] | null {
@@ -118,32 +203,60 @@ function repeatItem(elements: readonly ElementNode[], source: string): string | 
   return null;
 }
 
-/** Server functions the pages load from, in first-use order. */
-export function calledFunctions(pages: readonly PageNode[]): string[] {
-  const names: string[] = [];
+/** Server functions the pages load from, and those forms send to, in first-use order. */
+export function calledFunctions(pages: readonly PageNode[]): { readonly loads: string[]; readonly sends: string[] } {
+  const loads: string[] = [];
+  const sends: string[] = [];
   const visit = (elements: readonly ElementNode[]): void => {
     for (const element of elements) {
       for (const statement of element.statements) {
-        if (statement.type === "data-load" && statement.server !== undefined && !names.includes(statement.server)) names.push(statement.server);
+        if (statement.type === "data-load" && statement.server !== undefined && !loads.includes(statement.server)) loads.push(statement.server);
+        if (statement.type === "form-action" && statement.server !== undefined && !sends.includes(statement.server)) sends.push(statement.server);
       }
       visit(element.children);
     }
   };
   for (const page of pages) visit(page.elements);
-  return names;
+  return { loads, sends };
+}
+
+/** A form on a built page, for answering a request sent without JavaScript. */
+export interface ServerForm {
+  readonly form: string;
+  readonly html: string;
+  readonly sent: string;
+  readonly failed: string;
 }
 
 /** `server/<module>.ts` (with an export list) and `server/server.ts`. */
-export function serverFiles(server: ServerModule, called: readonly string[], connect: readonly string[]): OutputFile[] {
+export function serverFiles(
+  server: ServerModule,
+  called: { readonly loads: readonly string[]; readonly sends: readonly string[] },
+  forms: readonly ServerForm[],
+  connect: readonly string[],
+): OutputFile[] {
   const moduleFile = `${server.module.name}.ts`;
-  const exports = called.length === 0 ? "" : `\n// Functions the pages call (D-44).\nexport { ${called.map((name) => `k_${name} as ${name}`).join(", ")} };\n`;
+  const all = [...called.loads, ...called.sends.filter((name) => !called.loads.includes(name))];
+  const exports = all.length === 0 ? "" : `\n// Functions the pages call (D-44).\nexport { ${all.map((name) => `k_${name} as ${name}`).join(", ")} };\n`;
+  const sends = called.sends.map((name) => {
+    const fn = server.module.functions.find((candidate) => candidate.name === name)!;
+    const type = fn.parameters[0]!.type as { name: string };
+    const record = server.module.records.find((candidate) => candidate.name === type.name)!;
+    return { name, fields: record.fields.map((field) => [field.name, field.type.kind] as const) };
+  });
   return [
     { path: `server/${moduleFile}`, contents: `${server.code.replace(/\n*$/, "\n")}${exports}`, kind: "asset" },
-    { path: "server/server.ts", contents: serverEntry(moduleFile, called, connect), kind: "asset" },
+    { path: "server/server.ts", contents: serverEntry(moduleFile, called.loads, sends, forms, connect), kind: "asset" },
   ];
 }
 
-function serverEntry(moduleFile: string, called: readonly string[], connect: readonly string[]): string {
+function serverEntry(
+  moduleFile: string,
+  called: readonly string[],
+  sends: readonly { readonly name: string; readonly fields: readonly (readonly [string, string])[] }[],
+  forms: readonly ServerForm[],
+  connect: readonly string[],
+): string {
   const policy = ["default-src 'self'", "script-src 'self'", "style-src 'self'", "img-src 'self' data: https:", "font-src 'self'", `connect-src ${["'self'", ...connect].join(" ")}`, "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'self'"].join("; ");
   return `// Generated by Kadam. Do not edit.
 // The server for this site (D-44). It needs only Node.js:
@@ -164,6 +277,17 @@ const loads: Readonly<Record<string, () => unknown>> = {
 ${called.map((name) => `  ${JSON.stringify(name)}: app.${name},`).join("\n")}
 };
 
+/** Functions forms send to, with the fields of the record each takes. */
+const sends: Readonly<Record<string, { readonly call: (value: never) => void; readonly fields: readonly (readonly [string, string])[] }>> = {
+${sends.map((send) => `  ${JSON.stringify(send.name)}: { call: app.${send.name} as (value: never) => void, fields: ${JSON.stringify(send.fields)} },`).join("\n")}
+};
+
+/** Each form's page and states, to answer a form posted without JavaScript. */
+const forms: Readonly<Record<string, readonly [string, string, string]>> = {
+${forms.map((form) => `  ${JSON.stringify(form.form)}: ${JSON.stringify([form.html, form.sent, form.failed])},`).join("\n")}
+};
+const LIMIT = 64 * 1024;
+
 const TYPES: Readonly<Record<string, string>> = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -183,6 +307,86 @@ function toJson(value: unknown): unknown {
     return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key.replace(/^k_/, ""), toJson(inner)]));
   }
   return value;
+}
+
+/** Only this site's pages may send forms: a same-site Origin (or Referer) is required. */
+function sameOrigin(request: import("node:http").IncomingMessage): boolean {
+  const from = request.headers.origin ?? request.headers.referer;
+  if (typeof from !== "string" || from === "null") return false;
+  try {
+    return new URL(from).host === request.headers.host;
+  } catch {
+    return false;
+  }
+}
+
+function readBody(request: import("node:http").IncomingMessage): Promise<string | null> {
+  return new Promise((resolveBody, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    // Past the limit the rest is read and dropped, so the 413 reaches the client.
+    request.on("data", (chunk: Buffer) => {
+      size += chunk.length;
+      if (size <= LIMIT) chunks.push(chunk);
+      else if (size > 16 * LIMIT) request.destroy();
+    });
+    request.on("end", () => resolveBody(size > LIMIT ? null : Buffer.concat(chunks).toString("utf8")));
+    request.on("error", reject);
+  });
+}
+
+/** The record a form sends, built field by field from its declared types; null when the body does not fit. */
+function formRecord(body: string, fields: readonly (readonly [string, string])[]): Record<string, string | boolean> | null {
+  const values = new URLSearchParams(body);
+  const record: Record<string, string | boolean> = {};
+  for (const [name, type] of fields) {
+    if (type === "boolean") record["k_" + name] = values.has(name);
+    else {
+      const value = values.get(name);
+      if (value === null) return null;
+      record["k_" + name] = value;
+    }
+  }
+  return Object.freeze(record);
+}
+
+/** The page the form is on, with its sent or failed state shown. */
+async function answerPage(form: string | null, ok: boolean): Promise<string | null> {
+  const entry = form !== null && Object.hasOwn(forms, form) ? forms[form] : undefined;
+  if (entry === undefined) return null;
+  const [html, sent, failed] = entry;
+  const page = await readFile(join(site, html), "utf8");
+  const shown = ok ? sent : failed;
+  return page.replace(new RegExp(\`(data-kdm-id="\${shown}"[^>]*?) data-kdm-hidden(="")?\`), "$1");
+}
+
+async function send(request: import("node:http").IncomingMessage, response: import("node:http").ServerResponse, name: string, form: string | null): Promise<void> {
+  const target = sends[name]!;
+  const scripted = request.headers["x-kadam"] === "1";
+  const reply = (status: number, error: string | null): void => {
+    response.writeHead(status, { ...SECURITY, "content-type": "application/json" }).end(error === null ? '{"ok":true}' : JSON.stringify({ error }));
+  };
+  if (request.method !== "POST") {
+    response.writeHead(405, { ...SECURITY, allow: "POST" }).end();
+    return;
+  }
+  if (!sameOrigin(request)) return reply(403, "forms can only be sent from this site");
+  if (!String(request.headers["content-type"] ?? "").startsWith("application/x-www-form-urlencoded")) return reply(415, "send the form as application/x-www-form-urlencoded");
+  const body = await readBody(request);
+  if (body === null) return reply(413, "the form is too large");
+  const record = formRecord(body, target.fields);
+  if (record === null) return reply(400, "the form does not match what the server function takes");
+  let ok = true;
+  try {
+    target.call(record as never);
+  } catch (error) {
+    ok = false;
+    console.error(\`kadam: the server function \${name} failed\`, error);
+  }
+  if (scripted) return reply(ok ? 200 : 500, ok ? null : "the server function failed");
+  const page = await answerPage(form, ok);
+  if (page === null) return reply(ok ? 200 : 500, ok ? null : "the server function failed");
+  response.writeHead(ok ? 200 : 500, { ...SECURITY, "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }).end(page);
 }
 
 async function file(path: string): Promise<string | null> {
@@ -209,6 +413,10 @@ const server = createServer(async (request, response) => {
   }
   if (path.startsWith("/_kadam/")) {
     const name = path.slice("/_kadam/".length);
+    if (Object.hasOwn(sends, name)) {
+      await send(request, response, name, new URL(request.url ?? "/", "http://localhost").searchParams.get("form"));
+      return;
+    }
     const load = Object.hasOwn(loads, name) ? loads[name] : undefined;
     if (load === undefined) {
       response.writeHead(404, { ...SECURITY, "content-type": "application/json" }).end('{"error":"not found"}');

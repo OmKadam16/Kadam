@@ -74,3 +74,59 @@ test("a failing server function shows the error state, and the server keeps runn
   await expect.poll(() => logged).toContain("the server function listProducts failed");
   child.kill();
 });
+
+// D-44 step 2: forms.
+
+test("a form sends a typed record to the server function and shows the sent state", async ({ page }) => {
+  const { child, origin } = await start();
+  let logged = "";
+  child.stdout.on("data", (chunk) => { logged += chunk; });
+  const errors = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto(`${origin}/`);
+  await expect(page.getByText("Thanks, you are signed up.")).toBeHidden();
+  await page.getByLabel("Email").fill("ada@example.com");
+  await page.getByLabel("Plan").selectOption("Pro");
+  await page.getByLabel("Send me news").check();
+  await page.getByRole("button", { name: "Sign up" }).click();
+  await expect(page.getByText("Thanks, you are signed up.")).toBeVisible();
+  await expect(page.getByText("Sorry, that did not work.")).toBeHidden();
+  await expect(page.getByRole("status").filter({ hasText: "Thanks" })).toBeVisible();
+  // The page stayed put and the form was cleared.
+  expect(new URL(page.url()).pathname).toBe("/");
+  await expect(page.getByLabel("Email")).toHaveValue("");
+  await expect.poll(() => logged).toContain("signup: ada@example.com (Pro)");
+  // The browser's own checks still run first: an empty required field sends nothing.
+  await page.getByRole("button", { name: "Sign up" }).click();
+  expect(logged.match(/signup:/g)).toHaveLength(1);
+  expect(errors).toEqual([]);
+  child.kill();
+});
+
+test("a failing form function shows the failed state", async ({ page }) => {
+  const { child, origin } = await start((text) => text.replace(/output "signup: "[^\n]*\n/, "let codes be [1]\n        output codes[5]\n"));
+  await page.goto(`${origin}/`);
+  await page.getByLabel("Email").fill("ada@example.com");
+  await page.getByRole("button", { name: "Sign up" }).click();
+  await expect(page.getByRole("alert")).toHaveText("Sorry, that did not work. Try again.");
+  await expect(page.getByText("Thanks, you are signed up.")).toBeHidden();
+  child.kill();
+});
+
+test("without JavaScript the form still sends, and the server shows the sent state", async ({ browser }) => {
+  const { child, origin } = await start();
+  let logged = "";
+  child.stdout.on("data", (chunk) => { logged += chunk; });
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto(`${origin}/`);
+  await expect(page.getByText("Thanks, you are signed up.")).toBeHidden();
+  await expect(page.getByText("Sorry, that did not work.")).toBeHidden();
+  await page.getByLabel("Email").fill("grace@example.com");
+  await page.getByRole("button", { name: "Sign up" }).click();
+  await expect(page.getByText("Thanks, you are signed up.")).toBeVisible();
+  await expect(page.getByText("Sorry, that did not work.")).toBeHidden();
+  await expect.poll(() => logged).toContain("signup: grace@example.com (Free)");
+  await context.close();
+  child.kill();
+});

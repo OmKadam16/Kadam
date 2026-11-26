@@ -160,6 +160,14 @@ export function matchF1State(tokens: readonly Token[]): Body {
 export function matchFormAction(tokens: readonly Token[]): Body {
   if (!words(tokens, "it", "sends", "to")) return null;
   const url = tokens[3];
+  // D-44: it sends to the server function signUp
+  if (isKeyword(tokens[3], "the") && tokens[4]?.text.toLowerCase() === "server") {
+    const fn = tokens[6];
+    if (tokens.length !== 7 || tokens[5]?.text.toLowerCase() !== "function" || fn === undefined || !/^[a-z][A-Za-z0-9]{0,63}$/.test(fn.text) || isString(fn)) {
+      return fail("write: it sends to the server function <function>", tokens, "for example: it sends to the server function signUp");
+    }
+    return ok({ type: "form-action", url: `/_kadam/${fn.text}`, urlSpan: fn.span, server: fn.text, span: spanFromTokens(tokens) });
+  }
   const hint = 'for example: it sends to "https://example.com/subscribe"';
   if (tokens.length !== 4 || !isString(url)) return fail("a form sends to one quoted URL", tokens, hint);
   if (!isAbsoluteHttpUrl(url.value)) {

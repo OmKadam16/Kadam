@@ -380,7 +380,9 @@ export type F6Statement =
       readonly fileSpan: Span;
     })
   // `external trackEvent from "analytics.js" takes text and returns nothing`
-  | ExternalDeclaration;
+  | ExternalDeclaration
+  // D-44: `when it is sent, it shows thanksNote` / `when sending fails, it shows sorryNote`
+  | (NodeBase & { readonly type: "form-state"; readonly state: "sent" | "failed"; readonly target: string; readonly targetSpan: Span });
 
 /** kadam 0.3 (F6, D-42): a typed function from a local JavaScript module. */
 export interface ExternalDeclaration extends NodeBase {
@@ -448,7 +450,13 @@ export type F1Statement =
       readonly bound: "min" | "max";
       readonly value: number;
     })
-  | (NodeBase & { readonly type: "form-action"; readonly url: string; readonly urlSpan: Span })
+  | (NodeBase & {
+      readonly type: "form-action";
+      readonly url: string;
+      readonly urlSpan: Span;
+      /** D-44: `it sends to the server function signUp`; the url is then `/_kadam/<function>`. */
+      readonly server?: string | undefined;
+    })
   | (NodeBase & { readonly type: "submit" })
   | (NodeBase & {
       readonly type: "text-span";

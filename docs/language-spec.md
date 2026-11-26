@@ -1536,6 +1536,64 @@ The compiler never runs the module; only the generated server does.
 
 ---
 
+### 6.27 Forms that send to the server (*kadam 0.3*, D-44 step 2)
+
+A form can send to a function in the server module (6.26):
+
+```kdm
+signupForm {
+    a form
+    it sends to the server function signUp
+    when it is sent, it shows thanksNote
+    when sending fails, it shows sorryNote
+    address {
+        a text field
+        the label says "Email"
+        it accepts email addresses
+        it is required
+    }
+    news {
+        a checkbox
+        the label says "Send me news"
+    }
+    ...
+}
+```
+
+```kdm
+record Signup {
+    address as text
+    news as boolean
+}
+function signUp takes signup as Signup and returns nothing { ... }
+```
+
+- The function takes one record and returns `nothing` (`KDM3061`).
+- The form's controls are exactly the record's fields, by name: a field
+  without a control and a control without a field are both `KDM3061`. A
+  `text` field is a text field, text area, dropdown or radio group; a
+  `boolean` field is a checkbox (checked is `true`). `number` fields wait for
+  a number input.
+- `when it is sent, it shows <element>` and `when sending fails, it shows
+  <element>` are both required and name two different elements inside the
+  form (`KDM3061`, `KDM3012`). They start hidden; the sent element is a
+  polite status and the failed element an alert. On a form that sends to a
+  URL they are `KDM3061`.
+- The browser's own checks (`it is required`, `it accepts email addresses`)
+  run before anything is sent. The page stays where it is; after a success
+  the form is cleared.
+- **Without JavaScript** the form posts normally, and the server answers with
+  the same page with the sent or failed element shown.
+
+The generated server accepts a form only from the same site (an `Origin` or
+`Referer` matching the host), only as `application/x-www-form-urlencoded`,
+and only up to 64 KB (`403`, `415`, `413`). It builds the record field by
+field from its types before calling the function; a body that does not fit
+is `400`. A function that fails is logged on the server and shows the failed
+state.
+
+---
+
 ## 7. Events and interactions
 
 Events are declarative. There are no handlers, expressions, or user-written
@@ -2143,6 +2201,7 @@ error[KDM3003]: borders are not supported on a divider
 | KDM3053 | Strict mode bans an escape hatch (*kadam 0.3*, D-42) |
 | KDM3054 | A component cannot become a web component: unsupported parameter type, clashing tag, or no components (*kadam 0.3*, D-43) |
 | KDM3055 | A web component uses state or events other than tell the page (*kadam 0.3*, D-43) |
+| KDM3061 | A server form's function, controls, field types or sent and failed states do not match (*kadam 0.3*, D-44) |
 | KDM3060 | A server load names a missing function, one that takes values or does not return a list of flat records, or the project has no server module (*kadam 0.3*, D-44) |
 
 **Project (`KDM4xxx`)**

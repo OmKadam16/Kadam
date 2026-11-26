@@ -219,3 +219,23 @@ export function matchExternal(tokens: readonly Token[]): Body {
   };
   return { statement, diagnostics: [] };
 }
+
+// D-44: when it is sent, it shows thanksNote / when sending fails, it shows sorryNote
+export function matchFormState(tokens: readonly Token[]): Body {
+  if (tokens[0]?.text.toLowerCase() !== "when") return null;
+  const words = tokens.map((token) => token.text.toLowerCase());
+  const sent = words[1] === "it" && words[2] === "is" && words[3] === "sent";
+  const failed = words[1] === "sending" && words[2] === "fails";
+  if (!sent && !failed) return null;
+  const at = sent ? 4 : 3;
+  const target = tokens[at + 3];
+  if (
+    tokens[at]?.kind !== "comma" || words[at + 1] !== "it" || words[at + 2] !== "shows" ||
+    tokens.length !== at + 4 || target === undefined || !/^[a-z][A-Za-z0-9]{0,63}$/.test(target.text) || isString(target)
+  ) {
+    return fail("KDM3005", `write: ${sent ? "when it is sent" : "when sending fails"}, it shows <element name>`, undefined, tokens,
+      sent ? "for example: when it is sent, it shows thanksNote" : "for example: when sending fails, it shows sorryNote");
+  }
+  const statement: F6Statement = { type: "form-state", state: sent ? "sent" : "failed", target: target.text, targetSpan: target.span, span: spanFromTokens(tokens) };
+  return { statement, diagnostics: [] };
+}

@@ -385,12 +385,19 @@ reference site still writes its pages by hand.
   (`server/server.ts`). Tested end to end: the CLI builds a fixture, Node runs
   the generated server, and the browser shows the filtered, sorted records;
   a failing function shows the error state. Spec section 6.26.
-- **Step 2, next: forms** that send to a server function taking one record.
+- **Step 2, shipped: forms.** `it sends to the server function signUp` with
+  `when it is sent` / `when sending fails` states. Controls must be exactly
+  the fields of the function's record, with matching types. The runtime sends
+  the form with `fetch`; without JavaScript the server answers with the page
+  and the state shown. The server checks the origin, content type, size and
+  types before calling. Browser tests cover sending, a failing function, and
+  JavaScript off. Spec section 6.27.
 - **Step 3:** `kadam dev` runs the server module and restarts it on change.
 - **Step 4:** the Python target.
 
-**Known gaps:** server loads ignore `basePath`; record text fields cannot fill
-url parameters.
+**Known gaps:** server loads and forms ignore `basePath`; record text fields
+cannot fill url parameters; forms cannot send numbers yet; without JavaScript
+the answered page shows the `/_kadam/` address.
 
 **Web Components known gaps:** image, length, color and page parameters;
 components with their own state, dialogs or other events; custom fonts and

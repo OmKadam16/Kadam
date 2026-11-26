@@ -585,6 +585,9 @@ function checkCapability(
     case "form-action":
       if (kindName !== "form") reject("it sends to applies only to a form");
       return;
+    case "form-state":
+      if (kindName !== "form") reject("sent and failed states apply only to a form");
+      return;
     case "submit":
       if (kindName !== "button") reject("it submits the form applies only to a button");
       return;
@@ -986,6 +989,8 @@ function describeStatement(statement: StatementNode): string {
       return `a class ${statement.className} statement`;
     case "external":
       return `an external ${statement.name} statement`;
+    case "form-state":
+      return `a ${statement.state === "sent" ? "when it is sent" : "when sending fails"} statement`;
     case "fluid-text":
       return "a fluid text statement";
     case "flex-rule":
@@ -1200,6 +1205,8 @@ function propertyKeys(statement: StatementNode): string[] {
       return [`class-${statement.className}`];
     case "external":
       return [`external-${statement.name}`];
+    case "form-state":
+      return [`form-state-${statement.state}`];
     case "self-center":
       // It sets both side margins.
       return ["margin-left", "margin-right"];

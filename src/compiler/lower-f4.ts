@@ -89,6 +89,8 @@ export interface IrRuntime {
   readonly addressed: readonly (readonly [string, string])[];
   /** F6 (D-42): addresses of the external modules calls import. */
   readonly externals: readonly string[];
+  /** D-44: forms that send to a server function, as [form id, sent id, failed id, function]. */
+  readonly forms: readonly (readonly [string, string, string, string])[];
 }
 
 export interface RuntimeLowering {
@@ -259,6 +261,24 @@ export function lowerRuntime(
     list.push(element);
     templates.set(element.runtimeList.source, list);
   });
+  // D-44: forms that send to a server function; both states start hidden.
+  const forms: (readonly [string, string, string, string])[] = [];
+  visit(elements, (element) => {
+    const action = element.statements.find((s) => s.type === "form-action");
+    if (action?.type !== "form-action" || action.server === undefined) return;
+    const stateOf = (want: "sent" | "failed"): ElementNode => {
+      const state = element.statements.find((s) => s.type === "form-state" && s.state === want);
+      if (state?.type !== "form-state") throw new InternalCompilerError(`a ${want} state reached lowering unresolved`, action.span);
+      return elementFor({ name: state.target, span: state.targetSpan }, element);
+    };
+    const sent = stateOf("sent");
+    const failed = stateOf("failed");
+    addAttribute(sent, "data-kdm-hidden");
+    addAttribute(sent, "role", "status");
+    addAttribute(failed, "data-kdm-hidden");
+    addAttribute(failed, "role", "alert");
+    forms.push([nodeIdOf(element), nodeIdOf(sent), nodeIdOf(failed), action.server]);
+  });
   visit(elements, (element) => {
     const load = element.statements.find((s) => s.type === "data-load");
     if (load === undefined || load.type !== "data-load") return;
@@ -316,6 +336,7 @@ export function lowerRuntime(
         .filter((declared) => declared.owner.statements.some((s) => s.type === "remember" && s.name === declared.name && s.inAddress === true))
         .map((declared) => [keyOf(declared), declared.name] as const),
       externals: modules,
+      forms,
     },
     attributes,
     texts,
