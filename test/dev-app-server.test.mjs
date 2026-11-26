@@ -8,9 +8,11 @@ import { createDevServer } from "../dist/server/dev-server.js";
 
 // D-44 step 3: kadam dev runs the server module and sends /_kadam/ requests to it.
 
-function copyFixture() {
+function copyFixture(target = "typescript") {
   const root = mkdtempSync(join(tmpdir(), "kadam-dev-app-"));
   cpSync("test/fixtures/server-shop", root, { recursive: true });
+  const manifest = join(root, "kadam.json");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace('"target": "typescript"', `"target": "${target}"`));
   return root;
 }
 
@@ -77,4 +79,22 @@ test("the server module is watched as an input", async (t) => {
   assert.ok(session.watchPaths.includes("server/shop.kdm"));
   assert.ok(!session.watchPaths.some((path) => path.startsWith("server/") && path.endsWith(".ts")));
   assert.ok(!session.snapshot.files.has("server/server.ts"));
+});
+
+test("kadam dev runs a python server module the same way", async (t) => {
+  const root = copyFixture("python");
+  const { server, lines } = await start(t, root);
+  assert.deepEqual(await names(server.origin), ["Lamp", "Desk", "Chair", "Shelf"]);
+  const sent = await fetch(`${server.origin}/_kadam/signUp?form=home-signupForm`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", "x-kadam": "1", origin: server.origin },
+    body: "address=py%40example.com&plan=Free&news=on",
+  });
+  assert.deepEqual(await sent.json(), { ok: true });
+  for (let i = 0; i < 50 && !lines.includes("[server] signup: py@example.com (Free)"); i += 1) await new Promise((r) => setTimeout(r, 20));
+  assert.ok(lines.includes("[server] signup: py@example.com (Free)"), lines.join("\n"));
+  const module = join(root, "server", "shop.kdm");
+  writeFileSync(module, readFileSync(module, "utf8").replace('name: "Lamp"', 'name: "Torch"'));
+  assert.equal(server.rebuild().ok, true);
+  assert.equal((await names(server.origin))[0], "Torch");
 });

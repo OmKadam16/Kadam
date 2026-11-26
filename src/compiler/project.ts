@@ -221,7 +221,7 @@ export function compileProject(
       projectRoot, realProjectRoot, outDir, sourcePath: manifest.server.module, kind: "server", code: "KDM4012",
       missingSpan: manifestSpan, overrides: options.sourceOverrides, diagnostics, sources,
     });
-    if (serverSource !== null) server = compileServerModule(manifest.server.module, serverSource.text, diagnostics).server;
+    if (serverSource !== null) server = compileServerModule(manifest.server.module, serverSource.text, manifest.server.target, diagnostics).server;
     if (server === null) {
       // Page errors about server loads would only repeat this one.
       return { ok: false, diagnostics: diagnostics.sorted(), manifest, pages: [], files: [], outDir, sources };

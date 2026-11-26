@@ -69,7 +69,7 @@ export interface KadamManifest {
   /** kadam 0.3 (F6, D-42): ban every escape hatch. */
   readonly strict?: boolean | undefined;
   /** D-44: the kadam 0.2 module pages call, and the target its server is generated for. */
-  readonly server?: { readonly module: string; readonly target: "typescript" } | undefined;
+  readonly server?: { readonly module: string; readonly target: "typescript" | "python" } | undefined;
   /** kadam 0.3 (F5): data names to project-relative JSON files, e.g. { "projects": "data/projects.json" }. */
   readonly data?: Readonly<Record<string, string>> | undefined;
 }
@@ -479,8 +479,8 @@ export function loadManifest(
       diagnostics.error("KDM4001", "'server' in kadam.json must be an object with module and target", rootSpan, hint);
     } else if (typeof value.module !== "string" || !value.module.endsWith(".kdm") || value.module.startsWith("/") || value.module.split("/").includes("..")) {
       diagnostics.error("KDM4001", "server module must be a project-relative .kdm path", rootSpan, hint);
-    } else if (value.target !== "typescript") {
-      diagnostics.error("KDM4001", `server target ${JSON.stringify(value.target)} is not supported yet; use "typescript"`, rootSpan, hint);
+    } else if (value.target !== "typescript" && value.target !== "python") {
+      diagnostics.error("KDM4001", `server target ${JSON.stringify(value.target)} is not supported; use "typescript" or "python"`, rootSpan, hint);
     }
   }
 
@@ -860,7 +860,7 @@ export function loadManifest(
     strict: raw.strict === true ? true : undefined,
     server:
       typeof raw.server === "object" && raw.server !== null && typeof (raw.server as Record<string, unknown>).module === "string"
-        ? { module: (raw.server as { module: string }).module, target: "typescript" }
+        ? { module: (raw.server as { module: string }).module, target: (raw.server as { target: unknown }).target === "python" ? "python" : "typescript" }
         : undefined,
     data:
       typeof raw.data === "object" && raw.data !== null && !Array.isArray(raw.data)

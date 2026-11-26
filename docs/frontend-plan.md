@@ -396,7 +396,15 @@ reference site still writes its pages by hand.
   as a child process; `/_kadam/` requests are forwarded to it; editing the
   module restarts it; a failed build keeps the last good one. Tests in
   `test/dev-app-server.test.mjs`. See `docs/dev-server.md` 5.4a.
-- **Step 4:** the Python target.
+- **Step 4, shipped: the Python target.** `"target": "python"` writes the
+  module and `server/server.py`, a standard-library WSGI application that
+  behaves like the Node server (same JSON, same checks, same answers without
+  JavaScript). Every server browser test and the dev server test run against
+  both targets.
+
+**D-44 is complete.** Next candidates: arguments for loads (filters sent to
+the server), number inputs in forms, `basePath` for server routes, and then
+auth and sessions (a new decision), or F9's library.
 
 **Known gaps:** server loads and forms ignore `basePath`; record text fields
 cannot fill url parameters; forms cannot send numbers yet; without JavaScript

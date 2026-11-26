@@ -1518,13 +1518,16 @@ catalog {
   `/_kadam` (`KDM4012`).
 - A single file built without a project has no server (`KDM3060`).
 
-`kadam build` writes `server/<module>.ts` (the module compiled by the
-TypeScript target, plus an export list of only the functions pages load from)
-and `server/server.ts`, a server that uses only Node's standard library:
+`kadam build` writes the module compiled by its target and a server that uses
+only that target's standard library:
 
-```bash
-node --experimental-strip-types dist/server/server.ts
-```
+| `target` | Files | Run |
+| --- | --- | --- |
+| `typescript` | `server/<module>.ts` (with an export list of only the functions pages call), `server/server.ts` (Node `http`) | `node --experimental-strip-types dist/server/server.ts` |
+| `python` | `server/<module>.py`, `server/server.py` (a WSGI `application`, served by `wsgiref` when run directly) | `python3 dist/server/server.py` |
+
+Both servers behave the same, byte for byte in their JSON, and pass the same
+browser tests. The module cannot be named `server` (`KDM3060`).
 
 It serves the site with a strict Content-Security-Policy and answers
 `GET /_kadam/<function>` with the function's records as JSON, using the

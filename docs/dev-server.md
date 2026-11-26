@@ -335,8 +335,9 @@ when a developer mistypes a URL.
 ### 5.4a Server functions (D-44 step 3)
 
 When `kadam.json` names a server module, the dev server runs the generated
-server (`server/server.ts`) as a child process with
-`node --experimental-strip-types`, on a free local port, from a temporary copy
+server as a child process on a free local port (`server/server.ts` with
+`node --experimental-strip-types`, or `server/server.py` with `python3 -u`,
+which `KADAM_PYTHON` can replace), from a temporary copy
 of the server files and built pages. Requests under `/_kadam/` (loads and
 form posts) are forwarded to it with their original `Host` and `Origin`, so
 the generated server's same-site check sees the dev origin. Its output is

@@ -57,7 +57,7 @@ MyWebsite/
 | `connect` | array | no | — | *kadam 0.3.* Origins pages may load data from at run time, e.g. `["https://api.example.com"]` (D-41). Each is an `https` origin with no path (`http` only for localhost); at most 16. `kadam dev` sends them as `connect-src`. |
 | `stylesheets` | array | no | — | *kadam 0.3.* Existing `.css` files whose classes elements may use with `it also uses the class "x" from "styles/legacy.css"` (D-42). Project-relative; at most 16. Only used files are copied and linked, before Kadam's CSS. |
 | `strict` | boolean | no | `false` | *kadam 0.3.* Ban every escape hatch: raw css, stylesheet classes and externals (`KDM3053`), as `kadam check --strict` does. |
-| `server` | object | no | — | *kadam 0.3.* `{ "module": "server/shop.kdm", "target": "typescript" }`: the `kadam 0.2` module pages load from with `it loads <name> from the server function <function>` (D-44). The build writes `server/<module>.ts` and `server/server.ts`; run it with `node --experimental-strip-types dist/server/server.ts`. Only `typescript` for now. |
+| `server` | object | no | — | *kadam 0.3.* `{ "module": "server/shop.kdm", "target": "typescript" }`: the `kadam 0.2` module pages load from with `it loads <name> from the server function <function>` (D-44). The build writes the compiled module and a standard-library server in `server/`. `target` is `typescript` (run with `node --experimental-strip-types dist/server/server.ts`) or `python` (`python3 dist/server/server.py`, or any WSGI server with `server.server:application`). |
 
 Unknown top-level keys and unknown page keys are errors, so a typo is never
 silently ignored.

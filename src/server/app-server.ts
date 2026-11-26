@@ -25,6 +25,7 @@ export class AppServer {
   #child: ChildProcess | null = null;
   #ready: Promise<number | null> = Promise.resolve(null);
   #code = "";
+  #python = false;
   #closed = false;
 
   constructor(logger: (message: string) => void) {
@@ -51,6 +52,7 @@ export class AppServer {
       writeFileSync(target, file.contents);
     }
     const code = server.map((file) => `${file.path}\n${String(file.contents)}`).join("\n");
+    this.#python = server.some((file) => file.path === "server/server.py");
     if (code === this.#code && this.#child !== null) return;
     this.#code = code;
     this.#stop();
@@ -58,7 +60,12 @@ export class AppServer {
   }
 
   #start(): void {
-    const child = spawn(process.execPath, ["--experimental-strip-types", "--no-warnings", join(this.#dir, "server", "server.ts")], {
+    // The TypeScript server runs on this Node; the Python one on python3 (or $KADAM_PYTHON), unbuffered.
+    const python = this.#python;
+    const [command, args] = python
+      ? [process.env.KADAM_PYTHON ?? "python3", ["-u", join(this.#dir, "server", "server.py")]]
+      : [process.execPath, ["--experimental-strip-types", "--no-warnings", join(this.#dir, "server", "server.ts")]];
+    const child = spawn(command, args, {
       env: { ...process.env, PORT: "0", HOST: "127.0.0.1" },
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -84,6 +91,11 @@ export class AppServer {
       };
       lines(child.stdout!, false);
       lines(child.stderr!, true);
+      child.on("error", (error) => {
+        if (this.#child === child) this.#child = null;
+        resolveReady(null);
+        this.#logger(`[server] could not start ${command}: ${error.message}`);
+      });
       child.on("exit", (code) => {
         if (this.#child === child) this.#child = null;
         resolveReady(null);
