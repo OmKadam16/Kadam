@@ -27,8 +27,11 @@ test("every template creates a project that builds without errors", () => {
     assert.equal(run.status, 0, run.stderr);
     assert.match(run.stdout, new RegExp(`from the ${template.name} template`));
     assert.match(run.stdout, /kadam dev\n$/);
-    const manifest = JSON.parse(readFileSync(join(dir, "kadam.json"), "utf8"));
-    assert.equal(manifest.name, `my-${template.name}-site`);
+    // A kadam 0.4 template needs no kadam.json: its pages folder is the site.
+    if (template.files["kadam.json"] !== undefined) {
+      const manifest = JSON.parse(readFileSync(join(dir, "kadam.json"), "utf8"));
+      assert.equal(manifest.name, `my-${template.name}-site`);
+    }
     const result = compileProject({ projectRoot: dir, write: false });
     assert.deepEqual(result.diagnostics.filter((d) => d.severity === "error").map((d) => d.message), [], template.name);
   }

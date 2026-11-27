@@ -24,6 +24,8 @@ import { runFormatCommand } from "./format-command.js";
 import { runNewCommand } from "./new-command.js";
 import { runExplainCommand } from "./explain-command.js";
 import { runEjectCommand } from "./library-command.js";
+import { runFixCommand } from "./fix-command.js";
+import { runFontsCommand } from "./fonts-command.js";
 import { compileWebComponents } from "../compiler/web-components.js";
 import { compileProject } from "../compiler/project.js";
 import { formatDiagnostics } from "../core/diagnostics/format.js";
@@ -104,6 +106,13 @@ if (first === "explain") {
   process.exit(runExplainCommand(args.slice(1)));
 }
 
+if (first === "fix") {
+  process.exit(await runFixCommand(args.slice(1)));
+}
+
+if (first === "fonts") {
+  process.exit(await runFontsCommand(args.slice(1)));
+}
 if (first === "eject") {
   process.exit(runEjectCommand(args.slice(1)));
 }
@@ -283,7 +292,7 @@ if (first === "build") {
 
 console.error(
   `kadam: '${args.join(" ")}' is not available.\n` +
-    "The CLI provides build, check, dev, eject, explain, format, keywords, lsp, new, and parse. Run kadam --help for usage.\n" +
+    "The CLI provides build, check, dev, eject, explain, fix, format, keywords, lsp, new, and parse. Run kadam --help for usage.\n" +
     "See docs/roadmap.md for the implementation plan.",
 );
 process.exit(1);
@@ -614,8 +623,14 @@ Commands:
            --properties|--all]        (add --json for JSON)
   explain [code...] [--json]          Explain a diagnostic code, such as KDM3005,
                                        a library component, such as Card, or list
-                                       every code (--library lists the components)
+                                       every code (--library lists the components;
+                                       --blocks page.kdm prints a kadam 0.4 page as blocks)
   eject <Component...> [-p <dir>]     Copy a library component into the project to change it
+  fonts list|info|add <Family>        See the 2,000+ free fonts (150 are built in), or
+                                       download one into fonts/ (the only command that
+                                       uses the network; builds never do)
+  fix [path] [--first]                Apply the fixes the checker offers: choose each one,
+                                       or take fix 1 for every problem with --first
   new <dir> [--template <name>]       Start a project from a template (--list shows them)
   format [paths...] [--check]         Rewrite .kdm files in the canonical layout;
                                        --check only reports, for CI

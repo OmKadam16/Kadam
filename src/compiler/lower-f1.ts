@@ -170,6 +170,11 @@ export function lowerTextSegments(
       const css = effect.color.kind === "token" ? `var(--kdm-color-${effect.color.value})` : effect.color.value;
       const key = (effect.color.kind === "token" ? effect.color.value : effect.color.value.replace(/^#/, "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       segments.push({ type: "color", text: words, color: css, className: `kdm-words-${key}` });
+    } else if (effect.type === "highlight") {
+      // D-50: a highlight sweeps under the words.
+      const css = effect.color.kind === "token" ? `var(--kdm-color-${effect.color.value})` : effect.color.value;
+      const key = (effect.color.kind === "token" ? effect.color.value : effect.color.value.replace(/^#/, "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      segments.push({ type: "highlight", text: words, color: css, className: `kdm-highlight-${key}` });
     } else if (effect.type === "external") {
       segments.push({ type: "link", text: words, href: effect.url, external: true });
     } else {
@@ -253,9 +258,11 @@ export function lowerPageMeta(
   const icon = value("icon");
   const shareImage = value("share image");
   const direction = value("direction") as "rtl" | "ltr" | null;
+  const enter = value("enter") as "fade" | "slide" | null;
+  const transition = value("transition") as "cross-fade" | null;
   const site = siteUrl?.replace(/\/$/, "");
   const canonicalUrl = site === undefined ? null : `${site}${routeUrl(route, basePath)}`;
-  if (description === null && language === null && icon === null && shareImage === null && canonicalUrl === null && direction === null) {
+  if (description === null && language === null && icon === null && shareImage === null && canonicalUrl === null && direction === null && enter === null && transition === null) {
     return undefined;
   }
   return {
@@ -265,5 +272,7 @@ export function lowerPageMeta(
     shareImageUrl: shareImage === null || site === undefined ? null : `${site}${assetUrl(shareImage, basePath)}`,
     canonicalUrl,
     ...(direction === null ? {} : { direction }),
+    ...(enter === null ? {} : { enter }),
+    ...(transition === null ? {} : { transition }),
   };
 }

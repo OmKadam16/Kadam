@@ -15,6 +15,8 @@ export interface TemplateContext {
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
   /** kadam 0.3 theme color names declared so far (D-38). */
   readonly colorTokens?: ReadonlySet<string> | undefined;
+  /** Only whether the line matches: skip the "did you mean" search (D-50). */
+  readonly quick?: boolean | undefined;
 }
 
 /**

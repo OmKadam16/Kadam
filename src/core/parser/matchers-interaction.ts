@@ -1,3 +1,4 @@
+import { isHoverEffect } from "./matchers-effects.js";
 import type {
   ClickStatement,
   DurationValue,
@@ -40,6 +41,8 @@ export function matchHover(tokens: readonly Token[], minScale = 100): StatementM
   // kadam 0.3 (F8): `when hovered, it is in color` is an F3 state sentence too.
   if (isKeyword(tokens[3], "it") && tokens[4]?.text.toLowerCase() === "is" && tokens[5]?.text.toLowerCase() === "in") return null;
   if (isKeyword(tokens[3], "it") && tokens[4]?.text.toLowerCase() === "tilts") return null;
+  // D-50: `when hovered, a white fill slides in from the left` is an effect.
+  if (isHoverEffect(tokens)) return null;
   const span = spanFromTokens(tokens);
   if (!isComma(tokens[2])) {
     return {

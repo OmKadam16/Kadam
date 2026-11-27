@@ -338,6 +338,10 @@ function textElement(element: IrElement, tag: string, indent: string, classAttri
 
 function renderText(element: IrElement): string {
   const segments = element.text?.segments;
+  // D-50: one span per word, so the words can come in one after another.
+  if (segments === undefined && element.wordByWord === true) {
+    return requireText(element).split(/\s+/).filter(Boolean).map((word) => `<span class="kdm-word">${escapeText(word)}</span>`).join(" ");
+  }
   if (segments === undefined) return escapeText(requireText(element));
   return segments.map(renderSegment).join("");
 }
@@ -358,6 +362,8 @@ function renderSegment(segment: IrTextSegment): string {
       return `<span class="kdm-inline-underline">${escapeText(segment.text)}</span>`;
     case "color":
       return `<span class="${segment.className}">${escapeText(segment.text)}</span>`;
+    case "highlight":
+      return `<mark class="kdm-highlight ${segment.className}">${escapeText(segment.text)}</mark>`;
     case "link": {
       const external = segment.external ? ' target="_blank" rel="noopener noreferrer"' : "";
       return `<a class="kdm-inline-link" href="${escapeAttribute(segment.href)}"${external}>${escapeText(segment.text)}</a>`;

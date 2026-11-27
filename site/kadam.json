@@ -2,12 +2,42 @@
   "kadam": "0.3",
   "name": "kadam-docs",
   "theme": "theme.kdm",
-  "components": ["components/SiteHeader.kdm", "components/GuideCard.kdm", "components/GuideLink.kdm", "components/SentenceRow.kdm", "components/CodeRow.kdm"],
-  "data": { "guides": "data/guides.json", "sentences": "data/sentences.json", "codes": "data/codes.json" },
+  "components": [
+    "components/SiteHeader.kdm",
+    "components/GuideCard.kdm",
+    "components/GuideLink.kdm",
+    "components/SentenceRow.kdm",
+    "components/CodeRow.kdm"
+  ],
+  "data": {
+    "guides": "data/guides.json",
+    "sentences": "data/sentences.json",
+    "codes": "data/codes.json"
+  },
   "pages": [
-    { "source": "pages/index.kdm", "route": "/" },
-    { "source": "pages/guide.kdm", "route": "/guide/:slug" },
-    { "source": "pages/sentences.kdm", "route": "/sentences" },
-    { "source": "pages/errors.kdm", "route": "/errors" }
+    {
+      "source": "pages/index.kdm",
+      "route": "/"
+    },
+    {
+      "source": "pages/guide.kdm",
+      "route": "/guide/:slug"
+    },
+    {
+      "source": "pages/sentences.kdm",
+      "route": "/sentences"
+    },
+    {
+      "source": "pages/errors.kdm",
+      "route": "/errors"
+    },
+    {
+      "source": "pages/paragraphs.kdm",
+      "route": "/paragraphs"
+    },
+    {
+      "source": "pages/fonts.kdm",
+      "route": "/fonts"
+    }
   ]
 }

@@ -1,0 +1,26 @@
+kadam 0.4
+
+The page fades in when it opens.
+Pages fade into each other when you move between them.
+
+Hero section:
+    It has 64px padding. It is at least 360px tall.
+    The background is a #1E3A8A to #3B82F6 gradient from left to right.
+    When the cursor moves over it, white pixels pop out around the cursor.
+    A big white heading says "Meet Lumen." It appears word by word.
+    White text, 18px, says "Lumen helps you get the most out of AI for the least spent."
+    A highlight sweeps under "least spent".
+    A big white button with black text says "Download". When hovered, a #DBEAFE fill slides in from the left. It ripples when pressed.
+
+Glow section:
+    It has 64px padding. It has a #111827 background.
+    When the cursor moves over it, a #A78BFA glow follows the cursor.
+    A big heading says "Glow". Its text is a #A78BFA to #F472B6 gradient.
+    White text says "Grain, glow and spotlight follow the cursor." It types itself.
+    A black button says "Shine". When hovered, a shine sweeps across it. It pulls toward the cursor.
+    A #C4B5FD link says "Border". When hovered, its border draws itself. When clicked, go to page "Home".
+
+Cards section:
+    It has 64px padding.
+    A heading says "Cards". It scrambles into place.
+    Text says "This line tilts as you scroll." It tilts as you scroll.

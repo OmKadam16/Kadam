@@ -1,3 +1,4 @@
+import { isHoverEffect } from "./matchers-effects.js";
 import type {
   BorderStatement,
   ColorValue,
@@ -94,6 +95,12 @@ function readSides(tokens: readonly Token[]): Side[] | null {
 }
 
 export function matchF3Border(tokens: readonly Token[]): Body {
+  // D-50: `has no border on the top` removes one side (a card without the top line).
+  if (isKeyword(tokens[0], "has") && text(tokens[1]) === "no" && isKeyword(tokens[2], "border") && isKeyword(tokens[3], "on")) {
+    const sides = readSides(tokens.slice(3));
+    if (sides === null) return fail("write: has no border on the top, the bottom, the left or the right", tokens, "for example: has no border on the top");
+    return ok({ type: "side-border", sides, width: { type: "length", value: 0, unit: null, raw: "0" }, color: { type: "color", kind: "hex", value: "#00000000", raw: "#00000000" }, line: "solid", span: spanFromTokens(tokens) });
+  }
   if (!isF3Border(tokens)) return null;
   const borderIndex = tokens.findIndex((token) => isKeyword(token, "border"));
   const head = tokens.slice(2, borderIndex);
@@ -480,6 +487,8 @@ const STATES: Readonly<Record<string, InteractionState>> = {
  */
 export function matchState(tokens: readonly Token[]): Body {
   if (!isKeyword(tokens[0], "when")) return null;
+  // D-50: hover effects and cursor effects have their own sentences.
+  if (isHoverEffect(tokens) || tokens[1]?.text.toLowerCase() === "the") return null;
   const word = text(tokens[1]);
   const hoverRotate = word === "hovered" && isKeyword(tokens[3], "it") && (text(tokens[4]) === "rotates" || text(tokens[4]) === "tilts" || (text(tokens[4]) === "is" && text(tokens[5]) === "in"));
   const state = hoverRotate ? "hovered" : STATES[word];

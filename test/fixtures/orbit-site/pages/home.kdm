@@ -1,0 +1,42 @@
+kadam 0.4
+
+The page is called "Orbit".
+The page fades in when it opens.
+
+Nav bar:
+    The word "Orbit" in bold on the left.
+    A link says "Pricing" on the right that goes to the pricing page.
+    A small black button says "Sign up" on the right. Give it rounded corners.
+
+Hero section, centered:
+    The background is a gradient with #EEF2FF on the left and white on the right.
+    When the mouse moves over it, a spotlight follows the cursor.
+    Give it 120px padding on the top and bottom.
+
+    Add a big heading that says "Plan your week in one minute." It appears word by word.
+    After that, a small gap.
+    Show gray text, 20px, saying "Orbit turns your calendar into a plan you can actually follow."
+    After that, a forty pixel gap.
+
+    Side by side with 12px gap:
+        A big black button says "Start free". When hovered, a white fill slides in from the left. Make the text white.
+        An outlined button says "See how it works". It goes to the pricing page.
+
+Features section:
+    Give it 64px padding.
+    A heading says "Why Orbit".
+    In three columns with 24px gap:
+        A Feature with the title "Fast" and the description "Plans in seconds.".
+        A Feature with the title "Calm" and the description "No notifications you did not ask for.".
+        A Feature with the title "Private" and the description "Your calendar never leaves your device.".
+
+Quotes section:
+    It has 64px padding. The background is #F9FAFB.
+    A heading says "People like it".
+    Side by side:
+        A Quote with the quote "It gave me my evenings back." and the name "Sam".
+        A Quote with the quote "Finally a plan I stick to." and the name "Ana".
+
+Footer:
+    Give it 32px padding.
+    Small gray text says "© 2026 Orbit". Center the text.

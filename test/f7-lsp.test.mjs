@@ -88,7 +88,7 @@ test("the server reports the same problems as kadam check, as you type", async (
   const lsp = client();
   t.after(() => lsp.kill());
   const init = await lsp.request("initialize", { capabilities: {} });
-  assert.deepEqual(Object.keys(init.result.capabilities).sort(), ["completionProvider", "definitionProvider", "documentFormattingProvider", "hoverProvider", "textDocumentSync"]);
+  assert.deepEqual(Object.keys(init.result.capabilities).sort(), ["codeActionProvider", "completionProvider", "definitionProvider", "documentFormattingProvider", "hoverProvider", "textDocumentSync"]);
   lsp.notify("initialized", {});
   const file = join(root, "pages", "home.kdm");
   const uri = pathToFileURL(file).href;
@@ -164,5 +164,21 @@ test("formatting through the server matches kadam format", async (t) => {
   lsp.notify("textDocument/didOpen", { textDocument: { uri, languageId: "kadam", version: 1, text: 'kadam 0.3\npage "A" {\n  t1 {\n      a paragraph\n  the text says "x"\n  }\n}' } });
   const edits = await lsp.request("textDocument/formatting", { textDocument: { uri }, options: { tabSize: 4, insertSpaces: true } });
   assert.equal(edits.result[0].newText, 'kadam 0.3\npage "A" {\n    t1 {\n        a paragraph\n        the text says "x"\n    }\n}\n');
+  await lsp.close();
+});
+
+test("D-50: the fixes the checker offers are quick fixes in the editor", async (t) => {
+  const lsp = client();
+  t.after(() => lsp.kill());
+  await lsp.request("initialize", { capabilities: {} });
+  const dir = mkdtempSync(join(tmpdir(), "kadam-lsp-fix-"));
+  const uri = pathToFileURL(join(dir, "home.kdm")).href;
+  lsp.notify("textDocument/didOpen", { textDocument: { uri, languageId: "kadam", version: 1, text: 'kadam 0.4\n\nA big blck button says "Go".\n' } });
+  const diagnostics = await lsp.diagnosticsFor(uri);
+  assert.equal(diagnostics.length, 1);
+  const actions = (await lsp.request("textDocument/codeAction", { textDocument: { uri }, range: diagnostics[0].range, context: { diagnostics } })).result;
+  assert.deepEqual(actions.map((action) => action.title), ['Fix: A big black button says "Go"']);
+  assert.equal(actions[0].isPreferred, true);
+  assert.deepEqual(actions[0].edit.changes[uri], [{ range: { start: { line: 2, character: 6 }, end: { line: 2, character: 10 } }, newText: "black" }]);
   await lsp.close();
 });

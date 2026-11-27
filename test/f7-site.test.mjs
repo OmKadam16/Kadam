@@ -20,8 +20,8 @@ test("the documentation site builds with no errors or warnings", () => {
   assert.deepEqual(result.diagnostics.map((d) => `${d.code} ${d.span.file}:${d.span.start.line} ${d.message}`), []);
   const pages = result.files.filter((f) => f.path.endsWith("index.html")).map((f) => f.path).sort();
   assert.deepEqual(pages, [
-    "errors/index.html", "guide/data-and-state/index.html", "guide/getting-started/index.html", "guide/language-tour/index.html",
-    "guide/server/index.html", "guide/tooling/index.html", "index.html", "sentences/index.html",
+    "errors/index.html", "fonts/index.html", "guide/data-and-state/index.html", "guide/getting-started/index.html", "guide/language-tour/index.html",
+    "guide/server/index.html", "guide/tooling/index.html", "index.html", "paragraphs/index.html", "sentences/index.html",
   ]);
   const errors = String(result.files.find((f) => f.path === "errors/index.html").contents);
   assert.equal(errors.match(/>KDM\d{4}</g).length, JSON.parse(readFileSync("site/data/codes.json", "utf8")).length);

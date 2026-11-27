@@ -112,6 +112,7 @@ import type {
 } from "./statement-types.js";
 import { describeTokens, isAnyWord, isKeyword, readLength, spanFromTokens } from "./values.js";
 import { matchExternal, matchFormState, matchRawCss, matchStylesheetClass } from "./matchers-f6.js";
+import { matchCursorEffect, matchHighlight, matchHoverEffect, matchPageMotion, matchPressEffect, matchScrollMotion, matchTextEffect } from "./matchers-effects.js";
 import { matchAdjustment, matchBackgroundPlay, matchColorFilter, matchEmbed, matchGenerativeBackground, matchGrain, matchLightbox, matchPattern, matchMasonry, matchNamedIcon, matchOverlay, matchScrollEffect, matchShape, matchSnap } from "./matchers-f8.js";
 import {
   LATEST_UI_LANGUAGE_VERSION,
@@ -194,6 +195,21 @@ const F8_TEMPLATES: readonly StatementTemplate[] = [
     examples: ["it has a mesh background of teal, violet and pink", "it has an aurora background of #0F766E and #7C3AED"], match: (tokens) => matchGenerativeBackground(tokens) },
   { id: "pattern", description: "Background pattern", since: "0.3",
     examples: ["it has a dotted pattern", "it has a grid pattern in #CBD5E1", "it has a lined pattern"], match: (tokens) => matchPattern(tokens) },
+  { id: "cursor-effect", description: "Cursor effect", since: "0.3",
+    examples: ["when the cursor moves over it, white pixels pop out around the cursor", "when the cursor moves over it, grain surrounds the cursor within 10px",
+      "when the cursor moves over it, a glow follows the cursor", "when the cursor moves over it, a spotlight follows the cursor"], match: (tokens) => matchCursorEffect(tokens) },
+  { id: "hover-effect", description: "Button hover effect", since: "0.3",
+    examples: ["when hovered, a white fill slides in from the left", "when hovered, a shine sweeps across it", "when hovered, its border draws itself"], match: (tokens) => matchHoverEffect(tokens) },
+  { id: "press-effect", description: "Magnetic pull or ripple", since: "0.3",
+    examples: ["it pulls toward the cursor", "it ripples when pressed"], match: (tokens) => matchPressEffect(tokens) },
+  { id: "scroll-motion", description: "Tilt, parallax or reveal on scroll", since: "0.3",
+    examples: ["it tilts as you scroll", "it moves slower than the page", "it appears as you scroll"], match: (tokens) => matchScrollMotion(tokens) },
+  { id: "text-effect", description: "Text motion or gradient", since: "0.3",
+    examples: ["it types itself", "it appears word by word", "it scrambles into place", "its text is a blue to purple gradient"], match: (tokens) => matchTextEffect(tokens) },
+  { id: "highlight", description: "Highlight sweeping under words", since: "0.3",
+    examples: ['a highlight sweeps under "least spent"', 'a yellow highlight sweeps under "least spent"'], match: (tokens) => matchHighlight(tokens) },
+  { id: "page-motion", description: "Page entrance and page-to-page transition", since: "0.3",
+    examples: ["the page fades in when it opens", "the page slides up when it opens", "pages fade into each other when you move between them"], match: (tokens) => matchPageMotion(tokens) },
   { id: "grain", description: "Grain texture", since: "0.3",
     examples: ["it has a grain texture"], match: (tokens) => matchGrain(tokens) },
 ];
@@ -269,7 +285,7 @@ const F2_TEMPLATES: readonly StatementTemplate[] = [
 /** kadam 0.3 (F3) styling, state, and motion templates. */
 const F3_TEMPLATES: readonly StatementTemplate[] = [
   { id: "styled-border", description: "Dashed, dotted, or per-side border", since: "0.3",
-    examples: ["has a 2px dashed red border", "has a 1px #E5E5E5 border on the bottom", "has a dotted blue border on the left and right"],
+    examples: ["has a 2px dashed red border", "has a 1px #E5E5E5 border on the bottom", "has a dotted blue border on the left and right", "has no border on the top"],
     match: (tokens) => matchF3Border(tokens) },
   { id: "corner-radius", description: "Per-corner rounding", since: "0.3",
     examples: ["has 12px rounded corners on the top", "has fully rounded corners on the left"],
@@ -390,6 +406,8 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
       "a navigation bar",
     ],
     match: (tokens, context) => {
+      // D-50: `a highlight sweeps under "..."` and `a glow follows the cursor` are effects.
+      if (/^an? (?:\S+ )?(?:highlight sweeps under|glow follows the cursor|spotlight follows the cursor)/.test(tokens.map((token) => token.text.toLowerCase()).join(" "))) return null;
       const result = matchKindStatement(tokens);
       if (result === null) return null;
       const kind = result.kind;
@@ -431,9 +449,17 @@ export const STATEMENT_TEMPLATES: readonly StatementTemplate[] = [
   {
     id: "page-font",
     description: "Page default font family",
-    examples: ["the page font is sans serif"],
+    examples: ["the page font is sans serif", 'the page font is "Lora"'],
     match: (tokens) =>
-      isKeyword(tokens[2], "font") ? matchPageSetting(tokens) : null,
+      isKeyword(tokens[2], "font") && !isKeyword(tokens[1], "heading") && !isKeyword(tokens[1], "headings") ? matchPageSetting(tokens) : null,
+  },
+  {
+    id: "heading-font",
+    description: "Font for every heading on the page (D-51)",
+    since: "0.3",
+    examples: ['the heading font is "Playfair Display"'],
+    match: (tokens) =>
+      (isKeyword(tokens[1], "heading") || isKeyword(tokens[1], "headings")) && isKeyword(tokens[2], "font") ? matchPageSetting(tokens) : null,
   },
   {
     id: "text",
@@ -766,7 +792,7 @@ function matchLineStatements(
   if (matches.length === 0) {
     return {
       matches,
-      diagnostics: [unrecognizedStatement(tokens)],
+      diagnostics: [unrecognizedStatement(tokens, context.quick === true)],
       selected: null,
     };
   }
@@ -831,10 +857,11 @@ function matchScopedInner(
     allowResponsive: false,
     languageVersion: context.languageVersion,
     breakpoints: context.breakpoints,
+    ...(context.quick === true ? { quick: true } : {}),
   };
   const innerMatches = collectMatches(innerTokens, innerContext, templates);
   if (innerMatches.length === 0) {
-    diagnostics.push(unrecognizedStatement(innerTokens));
+    diagnostics.push(unrecognizedStatement(innerTokens, context.quick === true));
     return null;
   }
   if (innerMatches.length > 1) {
@@ -1263,8 +1290,9 @@ function matchResponsiveLine(
   };
 }
 
-function unrecognizedStatement(tokens: readonly Token[]): DiagnosticSpec {
-  const suggestions = closestMatches(
+function unrecognizedStatement(tokens: readonly Token[], quick = false): DiagnosticSpec {
+  // A yes-or-no check (D-50's paragraph front end) needs no suggestions.
+  const suggestions = quick ? [] : closestMatches(
     describeTokens(tokens),
     templateExamples(),
     3,

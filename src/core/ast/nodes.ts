@@ -350,10 +350,18 @@ export type PageSettingNode =
       readonly property: "font";
       readonly value: FontFamily;
     })
+  // D-51: `the page font is "Lora"`, `the heading font is "Playfair Display"`
+  | (NodeBase & {
+      readonly type: "page-setting";
+      readonly property: "custom font";
+      readonly target: "page" | "headings";
+      readonly name: string;
+      readonly nameSpan: Span;
+    })
   // kadam 0.3 page metadata
   | (NodeBase & {
       readonly type: "page-setting";
-      readonly property: "description" | "language" | "icon" | "share image" | "direction";
+      readonly property: "description" | "language" | "icon" | "share image" | "direction" | "enter" | "transition";
       readonly value: string;
       readonly valueSpan: Span;
     });
@@ -411,7 +419,7 @@ export type F8Statement =
   // it plays in the background (a video)
   | (NodeBase & { readonly type: "background-play" })
   // it scrolls slower than the page | it shows how far the page has scrolled
-  | (NodeBase & { readonly type: "scroll-effect"; readonly effect: "parallax" | "progress" })
+  | (NodeBase & { readonly type: "scroll-effect"; readonly effect: "parallax" | "progress" | "tilt" })
   // it arranges its children in 3 masonry columns
   | (NodeBase & { readonly type: "masonry"; readonly columns: number })
   // its children snap into place
@@ -427,7 +435,13 @@ export type F8Statement =
   // it has a dotted pattern | it has a grid pattern in #CBD5E1
   | (NodeBase & { readonly type: "pattern"; readonly pattern: "dotted" | "grid" | "lined"; readonly color: ColorValue | null })
   // it has a grain texture
-  | (NodeBase & { readonly type: "grain" });
+  | (NodeBase & { readonly type: "grain" })
+  // D-50: when the cursor moves over it, white pixels pop out around the cursor
+  | (NodeBase & { readonly type: "cursor-effect"; readonly effect: "pixels" | "grain" | "glow" | "spotlight"; readonly color: ColorValue | null; readonly radius: number | null })
+  // D-50: when hovered, a white fill slides in from the left | it pulls toward the cursor
+  | (NodeBase & { readonly type: "button-effect"; readonly effect: "slide-fill" | "shine" | "draw-border" | "magnetic" | "ripple"; readonly color: ColorValue | null; readonly side: "left" | "right" | "top" | "bottom" | null })
+  // D-50: it types itself | it appears word by word | it scrambles into place | its text is a blue to purple gradient
+  | (NodeBase & { readonly type: "text-effect"; readonly effect: "type" | "words" | "scramble" | "gradient"; readonly colors: readonly ColorValue[] });
 
 export type ShapeName = "circle" | "ellipse" | "hexagon" | "diamond" | "triangle" | "blob" | "arch";
 
@@ -754,6 +768,8 @@ export type StatementScope =
     };
 
 export type TextSpanEffect =
+  // D-50: a highlight sweeps under "words"
+  | { readonly type: "highlight"; readonly color: ColorValue }
   | { readonly type: "bold" }
   | { readonly type: "italic" }
   /** Inline code: `the words "Amount" are code`, or Markdown backticks. */

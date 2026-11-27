@@ -1,0 +1,28 @@
+kadam 0.4
+
+The page is called "Dashboard".
+
+Side by side:
+    Sidebar:
+        Give it 24px padding. It is 220px wide. The background is #F3F4F6.
+        The word "Acme" in bold.
+        A link says "Overview" that goes to page "Dashboard".
+        A link says "Docs" that goes to the docs page.
+
+    Main section:
+        Give it 32px padding. It takes the full width.
+        A big heading says "Overview".
+        In 3 columns:
+            A Stat with the label "Users" and the value "1,204".
+            A Stat with the label "Revenue" and the value "$8,310".
+            A Stat with the label "Churn" and the value "2.1%".
+        A heading says "Recent orders".
+        A table of recent orders:
+            A header row:
+                A cell says "Order".
+                A cell says "Status".
+            A row:
+                A cell says "#1042".
+                A cell says "Paid".
+            A row says "#1043", "Pending".
+        A green badge says "All systems normal".

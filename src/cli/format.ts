@@ -9,12 +9,15 @@
  *   just inside a brace, LF line endings, and one final newline.
  */
 
+import { isProseSource } from "../core/prose/translate.js";
+
 export type FormatResult =
   | { readonly ok: true; readonly text: string; readonly changed: boolean }
   | { readonly ok: false; readonly line: number; readonly message: string };
 
 export function formatKadam(source: string): FormatResult {
   const text = source.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+  if (isProseSource(text)) return formatProse(source, text);
   const out: string[] = [];
   let depth = 0;
   let blank = false;
@@ -88,4 +91,28 @@ function opensBlock(line: string): boolean {
     index += 1;
   }
   return last === "{";
+}
+
+/**
+ * D-50: a paragraph page keeps its indentation (it says which lines belong to
+ * a section). Indentation is rounded to steps of four spaces, trailing spaces
+ * go, and runs of blank lines become one.
+ */
+function formatProse(source: string, text: string): FormatResult {
+  const out: string[] = [];
+  const stack: number[] = [];
+  for (const raw of text.split("\n")) {
+    if (raw.trim() === "") {
+      if (out.length > 0 && out.at(-1) !== "") out.push("");
+      continue;
+    }
+    const width = raw.slice(0, raw.length - raw.trimStart().length).replaceAll("\t", "    ").length;
+    while (stack.length > 0 && stack.at(-1)! >= width) stack.pop();
+    const depth = stack.length;
+    if (raw.trimEnd().endsWith(":")) stack.push(width);
+    out.push(`${"    ".repeat(depth)}${raw.trim()}`);
+  }
+  while (out.at(-1) === "") out.pop();
+  const formatted = out.length === 0 ? "" : `${out.join("\n")}\n`;
+  return { ok: true, text: formatted, changed: formatted !== source };
 }

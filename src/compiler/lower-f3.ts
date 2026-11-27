@@ -40,6 +40,10 @@ export const LOOP_KEYFRAMES: Readonly<Record<string, { readonly timing: string; 
 export const SCROLL_KEYFRAMES: Readonly<Record<string, readonly (readonly [string, readonly (readonly [string, string])[]])[]>> = {
   "kdm-parallax": [["from", [["translate", "0 -40px"]]], ["to", [["translate", "0 40px"]]]],
   "kdm-scroll-progress": [["from", [["scale", "0 1"]]], ["to", [["scale", "1 1"]]]],
+  // D-50 effects; emitted only when an element's rule uses them.
+  "kdm-scroll-tilt": [["from", [["transform", "perspective(900px) rotateX(16deg)"]]], ["to", [["transform", "none"]]]],
+  "kdm-type": [["from", [["clip-path", "inset(0 100% 0 0)"]]], ["to", [["clip-path", "inset(0 0 0 0)"]]]],
+  "kdm-word-in": [["from", [["opacity", "0"], ["translate", "0 0.4em"]]], ["to", [["opacity", "1"], ["translate", "0 0"]]]],
   // F8: the aurora background drifts slowly; it is not scroll-driven, but is emitted the same way.
   "kdm-aurora": [["from", [["background-position", "0% 0%"]]], ["to", [["background-position", "100% 100%"]]]],
 };
@@ -93,7 +97,7 @@ const SHADOW_GEOMETRY: Readonly<Record<"soft" | "medium" | "strong", string>> = 
 };
 
 function fontStack(name: string, context: F3Context): string {
-  return `"${name.replaceAll('"', "")}", ${context.fonts.get(name) ?? FONT_STACKS["sans serif"]}`;
+  return context.fonts.get(name) ?? `"${name.replaceAll('"', "")}", ${FONT_STACKS["sans serif"]}`;
 }
 
 /** CSS declarations for one scope's F3 statements. */
@@ -258,6 +262,27 @@ export function f3ScopeDeclarations(statements: readonly StatementNode[], contex
       case "grain":
         layers.push({ image: GRAIN, size: "160px 160px", order: 0 });
         break;
+      case "cursor-effect": {
+        // D-50: the runtime puts the cursor position in --kdm-cx and --kdm-cy.
+        if (!statements.some((other) => other.type === "position")) d("position", "relative");
+        d("isolation", "isolate");
+        if (statement.effect === "pixels") d("--kdm-pixel-color", statement.color === null ? "#FFFFFF" : color(statement.color));
+        break;
+      }
+      case "button-effect":
+        if (statement.effect === "magnetic") break;
+        if (!statements.some((other) => other.type === "position")) d("position", "relative");
+        d("isolation", "isolate");
+        if (statement.effect !== "draw-border") d("overflow", "hidden");
+        break;
+      case "text-effect":
+        if (statement.effect === "gradient") {
+          d("background-image", `linear-gradient(90deg, ${statement.colors.map(color).join(", ")})`);
+          d("-webkit-background-clip", "text");
+          d("background-clip", "text");
+          d("color", "transparent");
+        }
+        break;
       case "embed":
         // F8: an embed keeps a video shape unless the author gives one.
         if (!statements.some((other) => other.type === "aspect-ratio")) d("aspect-ratio", "16 / 9");
@@ -416,6 +441,95 @@ export function lowerExtraRules(element: ElementNode, context: F3Context): IrRul
           { property: "animation", value: `${name} linear both` },
           { property: "animation-timeline", value: "view()" },
           { property: "animation-range", value: "entry 0% entry 100%" },
+        ],
+        reducedMotion: true,
+      });
+    } else if (statement.type === "cursor-effect" && statement.effect !== "pixels") {
+      // D-50: grain, glow and spotlight are a layer that follows the cursor.
+      const at = "var(--kdm-cx, 50%) var(--kdm-cy, 50%)";
+      const layer: IrDeclaration[] = [
+        { property: "content", value: '""' },
+        { property: "position", value: "absolute" },
+        { property: "inset", value: "0" },
+        { property: "z-index", value: "1" },
+        { property: "pointer-events", value: "none" },
+        { property: "border-radius", value: "inherit" },
+        { property: "opacity", value: "0" },
+        { property: "transition", value: "opacity 200ms ease-out" },
+      ];
+      if (statement.effect === "grain") {
+        layer.push({ property: "background-image", value: GRAIN }, { property: "background-size", value: "160px 160px" },
+          { property: "mask-image", value: `radial-gradient(circle ${statement.radius ?? 60}px at ${at}, #000 0%, transparent 100%)` });
+      } else if (statement.effect === "glow") {
+        const glow = statement.color === null ? "rgb(255 255 255 / 0.45)" : `color-mix(in srgb, ${color(statement.color)} 45%, transparent)`;
+        layer.push({ property: "background-image", value: `radial-gradient(circle 180px at ${at}, ${glow}, transparent 70%)` });
+      } else {
+        layer.push({ property: "background-image", value: `radial-gradient(circle 240px at ${at}, transparent 0%, rgb(0 0 0 / 0.55) 100%)` });
+      }
+      rules.push({ at: null, selector: `${base}::after`, declarations: layer, reducedMotion: false });
+      rules.push({ at: null, selector: `${base}[data-kdm-cursor]::after`, declarations: [{ property: "opacity", value: "1" }], reducedMotion: false });
+    } else if (statement.type === "button-effect" && (statement.effect === "slide-fill" || statement.effect === "shine" || statement.effect === "draw-border")) {
+      // D-50: the effect is a ::before layer behind the content.
+      const layer: IrDeclaration[] = [
+        { property: "content", value: '""' },
+        { property: "position", value: "absolute" },
+        { property: "inset", value: "0" },
+        { property: "z-index", value: "-1" },
+        { property: "pointer-events", value: "none" },
+        { property: "border-radius", value: "inherit" },
+      ];
+      let hovered: IrDeclaration[];
+      if (statement.effect === "slide-fill") {
+        const horizontal = statement.side === "left" || statement.side === "right";
+        const origin = { left: "left center", right: "right center", top: "center top", bottom: "center bottom" }[statement.side ?? "left"];
+        layer.push(
+          { property: "background-color", value: statement.color === null ? "color-mix(in srgb, currentColor 18%, transparent)" : color(statement.color) },
+          { property: "transform", value: horizontal ? "scaleX(0)" : "scaleY(0)" },
+          { property: "transform-origin", value: origin },
+          { property: "transition", value: "transform 300ms ease-out" },
+        );
+        hovered = [{ property: "transform", value: "none" }];
+      } else if (statement.effect === "shine") {
+        layer.splice(3, 1, { property: "z-index", value: "1" });
+        layer.push(
+          { property: "background-image", value: "linear-gradient(120deg, transparent 30%, rgb(255 255 255 / 0.45) 50%, transparent 70%)" },
+          { property: "transform", value: "translateX(-100%)" },
+          { property: "transition", value: "transform 700ms ease-out" },
+        );
+        hovered = [{ property: "transform", value: "translateX(100%)" }];
+      } else {
+        const line = "linear-gradient(currentColor, currentColor)";
+        layer.push(
+          { property: "background", value: `${line} left top / 0 2px no-repeat, ${line} right top / 2px 0 no-repeat, ${line} right bottom / 0 2px no-repeat, ${line} left bottom / 2px 0 no-repeat` },
+          { property: "transition", value: "background-size 400ms ease-out" },
+        );
+        hovered = [{ property: "background-size", value: "100% 2px, 2px 100%, 100% 2px, 2px 100%" }];
+      }
+      rules.push({ at: null, selector: `${base}::before`, declarations: layer, reducedMotion: false });
+      rules.push({ at: null, selector: `${base}:hover::before,\n${base}:focus-visible::before`, declarations: hovered, reducedMotion: false });
+      rules.push({ at: "@media (prefers-reduced-motion: reduce)", selector: `${base}::before`, declarations: [{ property: "transition", value: "none" }], reducedMotion: false });
+    } else if (statement.type === "text-effect" && statement.effect === "type") {
+      // D-50: typing, as a clip that opens in steps; the whole text is always in the page.
+      const text = element.statements.find((other) => other.type === "text");
+      const count = Math.min(60, Math.max(4, text?.type === "text" ? Array.from(text.value).length : 20));
+      const duration = Math.min(2800, Math.max(600, count * 45));
+      rules.push({ at: null, selector: base, declarations: [{ property: "animation", value: `kdm-type ${duration}ms steps(${count}) both` }], reducedMotion: true });
+    } else if (statement.type === "text-effect" && statement.effect === "words") {
+      // D-50: each word is a span; they rise in one after another.
+      const text = element.statements.find((other) => other.type === "text");
+      const count = text?.type === "text" ? text.value.split(/\s+/).filter(Boolean).length : 0;
+      rules.push({ at: null, selector: `${base} .kdm-word`, declarations: [{ property: "display", value: "inline-block" }, { property: "animation", value: "kdm-word-in 500ms ease-out both" }], reducedMotion: true });
+      for (let index = 2; index <= Math.min(count, 40); index += 1) {
+        rules.push({ at: null, selector: `${base} .kdm-word:nth-child(${index})`, declarations: [{ property: "animation-delay", value: `${(index - 1) * 70}ms` }], reducedMotion: false });
+      }
+    } else if (statement.type === "scroll-effect" && statement.effect === "tilt") {
+      rules.push({
+        at: "@supports (animation-timeline: view())",
+        selector: base,
+        declarations: [
+          { property: "animation", value: "kdm-scroll-tilt linear both" },
+          { property: "animation-timeline", value: "view()" },
+          { property: "animation-range", value: "entry 0% cover 40%" },
         ],
         reducedMotion: true,
       });

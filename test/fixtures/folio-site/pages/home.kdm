@@ -1,0 +1,39 @@
+kadam 0.4
+
+The page is called "Mira Chen".
+The page is dark when the system is dark.
+
+Nav bar:
+    The word "Mira Chen" in bold on the left.
+    A link says "Work" on the right that goes to page "Mira Chen".
+    A link says "About" on the right that goes to the about page.
+
+Hero section:
+    Give it 96px padding on the top and bottom and 24px padding on the left and right.
+    A big heading says "I design calm interfaces." Its text is a #6366F1 to #EC4899 gradient.
+    Gray text says "Product designer in Lisbon. Currently at Northwind." Make it 20px.
+
+Work section:
+    Give it 24px padding on the left and right.
+    A heading says "Selected work".
+    In two columns with 24px gap:
+        A photo of a banking app shows "assets/1.png". It has rounded corners. It opens larger when clicked.
+        A photo of a travel site shows "assets/2.png". It has rounded corners. It opens larger when clicked.
+        A photo of a fitness tracker shows "assets/3.png". It has rounded corners. It opens larger when clicked.
+        A photo of a music player shows "assets/4.png". It has rounded corners. It opens larger when clicked.
+
+Contact section:
+    Give it 64px padding.
+    A heading says "Say hello".
+    A form:
+        It sends to "https://example.com/contact".
+        An input labelled "Your email". It accepts email addresses. It is required.
+        A text area labelled "Message". It is required.
+        A black button says "Send". It submits the form.
+
+Footer:
+    Give it 32px padding.
+    Side by side:
+        An icon shows the icon "mail". The description says "Email". It is 20px tall.
+        A link says "Dribbble". When clicked, open "https://dribbble.com" in a new tab.
+    Small gray text says "© 2026 Mira Chen".

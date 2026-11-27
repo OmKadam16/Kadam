@@ -1,0 +1,22 @@
+kadam 0.4
+
+The page is called "Shop".
+
+Products section:
+    Give it 32px padding.
+    A big heading says "All products".
+    In 3 columns:
+        For each product in products:
+            Sorted by the year of the product, newest first.
+            A card:
+                Give it 16px padding.
+                A heading says "{the name of the product}". The text is 20px.
+                Gray text says "${the price of the product}".
+
+Featured section:
+    Give it 32px padding.
+    A heading says "Featured".
+    Side by side:
+        A ProductCard for each product in products, with the name of the product and the price of the product.
+        Only where the featured of the product is true.
+        Showing at most 2.

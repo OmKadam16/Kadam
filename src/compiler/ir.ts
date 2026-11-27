@@ -195,9 +195,11 @@ export interface IrRule {
 export interface IrFontFace {
   readonly family: string;
   readonly url: string;
-  readonly format: "woff2" | "woff";
+  readonly format: "woff2" | "woff" | "truetype" | "opentype";
   readonly weight: string;
   readonly style: "normal" | "italic";
+  /** D-51: the characters this file covers, so visitors download only what a page uses. */
+  readonly unicodeRange?: string | undefined;
 }
 
 export interface IrTextProperty {
@@ -266,6 +268,8 @@ export type IrTextSegment =
   | { readonly type: "bold" | "italic" | "code" | "underline"; readonly text: string }
   /** kadam 0.3: colored words; `className` names the page CSS rule that colors them. */
   | { readonly type: "color"; readonly text: string; readonly color: string; readonly className: string }
+  /** D-50: a highlight that sweeps under the words; `className` names its rule. */
+  | { readonly type: "highlight"; readonly text: string; readonly color: string; readonly className: string }
   | { readonly type: "link"; readonly text: string; readonly href: string; readonly external: boolean };
 
 /** kadam 0.3 content for kinds that need more than text, image, or field. */
@@ -390,6 +394,8 @@ export interface IrElement {
   readonly scrollable?: true;
   /** kadam 0.3 (D-41): emitted inside a `<template>` the runtime clones per record. */
   readonly template?: true;
+  /** D-50: `it appears word by word`; the text is written as one span per word. */
+  readonly wordByWord?: true;
   /** kadam 0.3 (F4 step 2): runtime attributes, emitted after data-kdm-id. */
   readonly attributes?: readonly (readonly [string, string])[];
   /** kadam 0.3 (F3) interaction states. */
@@ -415,6 +421,10 @@ export interface IrPageStyle {
   readonly dark?: { readonly background?: IrColor; readonly text?: IrColor };
   /** kadam 0.3: `the page is dark when the system is dark` (D-38). */
   readonly autoDark?: true;
+  /** D-51: `the page font is "Lora"`, as a full font-family stack. */
+  readonly fontStack?: string;
+  /** D-51: `the heading font is "Playfair Display"`, as a full font-family stack. */
+  readonly headingFontStack?: string;
 }
 
 /** A theme color (D-38): a CSS custom property with light and dark values. */
@@ -474,4 +484,7 @@ export interface IrPageMeta {
   readonly canonicalUrl: string | null;
   /** kadam 0.3 (F8): the page's writing direction, when the page says it. */
   readonly direction?: "rtl" | "ltr";
+  /** D-50: how the page comes in, and how it hands over to the next page. */
+  readonly enter?: "fade" | "slide";
+  readonly transition?: "cross-fade";
 }

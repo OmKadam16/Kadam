@@ -35,7 +35,7 @@ function normalize(text: string): string {
     .trim();
 }
 
-function editDistance(a: string, b: string): number {
+export function editDistance(a: string, b: string): number {
   if (a === b) return 0;
   const previous = new Array<number>(b.length + 1);
   const current = new Array<number>(b.length + 1);

@@ -580,6 +580,14 @@ component library, the 3D model viewer, build-time image processing, and
 Lottie. D-46 is implemented: twelve library components, `kadam explain
 Card` and `kadam eject Card`.
 
+**kadam 0.4 (D-50, 2026-11-26), before F9.** Pages can be written as
+paragraphs (spec section 17): reading order is layout, describing words in any
+order, sections by indentation, gaps, names, file routes without kadam.json,
+`components.kdm` with fill-in-the-blank components and `but`/`without`
+changes, effects (cursor, button, scroll and page, text), fixes offered and
+applied by `kadam fix` and the editor, and `kadam new --template paragraphs`.
+The reference page is `examples/paragraphs/lumen`.
+
 ### F9 — No ceiling: the Kadam library and escape hatches (later; registry after F6)
 
 **Goal (2026-11-25):** like HTML and CSS, Kadam must have no ceiling. Anything

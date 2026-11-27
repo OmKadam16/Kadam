@@ -1,0 +1,6 @@
+[
+  { "name": "Desk lamp", "price": 49, "featured": true, "year": 2024 },
+  { "name": "Notebook", "price": 9, "featured": false, "year": 2025 },
+  { "name": "Pen set", "price": 15, "featured": true, "year": 2023 },
+  { "name": "Mug", "price": 12, "featured": true, "year": 2026 }
+]

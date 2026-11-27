@@ -1,6 +1,6 @@
 import { UI_LANGUAGE_VERSIONS, isUiLanguageVersion } from "../version.js";
-import { existsSync, readFileSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { basename, isAbsolute, join, resolve } from "node:path";
 import {
   DiagnosticBag,
   type Diagnostic,
@@ -35,6 +35,8 @@ export interface KadamManifest {
   readonly version?: string | undefined;
   /** Language version, e.g. "0.1". */
   readonly kadam?: string | undefined;
+  /** D-50: kadam.json says "0.4" (or there is none): files without a version line are paragraphs. */
+  readonly paragraphs?: boolean | undefined;
   /** Declared pages in the project. */
   readonly pages: readonly ManifestPageEntry[];
   /** Declared component sources, relative to the project root. */
@@ -83,6 +85,20 @@ export interface ManifestFont {
   readonly style: "normal" | "italic";
   /** Preset stack used while the font loads, or when it is missing. */
   readonly fallback: "sans serif" | "serif" | "monospace";
+  /** D-51: a built-in or `fonts/` family: its real name, files and weights. */
+  readonly family?: string | undefined;
+  readonly fallbackStack?: string | undefined;
+  readonly weights?: readonly number[] | undefined;
+  readonly faces?: readonly ManifestFontFace[] | undefined;
+}
+
+/** D-51: one file of a family, read from `file` and written to `path` in the build. */
+export interface ManifestFontFace {
+  readonly file: string;
+  readonly path: string;
+  readonly weight: string;
+  readonly style: "normal" | "italic";
+  readonly unicodeRange?: string | undefined;
 }
 
 export interface LoadedManifest {
@@ -130,7 +146,10 @@ export function loadManifest(
   if (manifestTextOverride !== undefined) {
     text = manifestTextOverride;
   } else {
-    if (!existsSync(manifestPath)) {
+    // D-50: without kadam.json, the pages folder is the site.
+    if (!existsSync(manifestPath) && discoverPages(projectRoot).length > 0) {
+      text = JSON.stringify({ kadam: "0.4", name: basename(resolve(projectRoot)) });
+    } else if (!existsSync(manifestPath)) {
       const span: Span = {
         file: manifestPath,
         start: { line: 1, column: 1, offset: 0 },
@@ -140,7 +159,7 @@ export function loadManifest(
         "KDM4001",
         `missing project manifest 'kadam.json' in ${projectRoot}`,
         span,
-        "create a kadam.json manifest listing project pages",
+        "create a kadam.json manifest listing project pages, or put kadam 0.4 pages in a pages folder",
       );
       return {
         manifest: null,
@@ -150,7 +169,7 @@ export function loadManifest(
       };
     }
 
-    try {
+    else try {
       text = readFileSync(manifestPath, "utf8");
     } catch (error) {
       const span: Span = {
@@ -217,6 +236,32 @@ export function loadManifest(
   }
 
   const raw = parsedJson as Record<string, unknown>;
+
+  // D-50: a kadam 0.4 project builds its pages through the 0.3 block form.
+  const paragraphs = raw.kadam === "0.4";
+  if (raw.kadam === "0.4") raw.kadam = "0.3";
+  // D-50: file routes. Without a pages list, pages/*.kdm are the pages.
+  if (!("pages" in raw)) {
+    const found = discoverPages(projectRoot);
+    if (found.length > 0) raw.pages = found;
+  }
+  // D-50: data/*.json are the data files: data/products.json is `products`.
+  if (!("data" in raw) && existsSync(join(projectRoot, "data"))) {
+    const found: Record<string, string> = {};
+    for (const name of readdirSync(join(projectRoot, "data")).sort()) {
+      if (!name.endsWith(".json")) continue;
+      const key = name.slice(0, -5).replace(/[-_ ]+([a-zA-Z0-9])/g, (_m, c: string) => c.toUpperCase()).replace(/^[A-Z]/, (c) => c.toLowerCase());
+      if (/^[a-z][A-Za-z0-9]{0,63}$/.test(key)) found[key] = `data/${name}`;
+    }
+    if (Object.keys(found).length > 0) raw.data = found;
+  }
+  // D-50: components.kdm at the project root is read without being listed.
+  if (existsSync(join(projectRoot, "components.kdm"))) {
+    const listed = Array.isArray(raw.components) ? raw.components : [];
+    if (!listed.some((entry) => entry === "components.kdm" || (typeof entry === "object" && entry !== null && (entry as { source?: unknown }).source === "components.kdm"))) {
+      raw.components = [...listed, "components.kdm"];
+    }
+  }
 
   // Check unknown top-level keys
   for (const key of Object.keys(raw)) {
@@ -881,6 +926,7 @@ export function loadManifest(
     name: typeof raw.name === "string" ? raw.name : "",
     version: typeof raw.version === "string" ? raw.version : undefined,
     kadam: typeof raw.kadam === "string" ? raw.kadam : undefined,
+    ...(paragraphs ? { paragraphs: true } : {}),
     pages,
     components,
     assets: typeof raw.assets === "string" ? raw.assets : "assets",
@@ -954,4 +1000,28 @@ function isSiteOrigin(value: unknown): value is string {
 
 function routeSegments(route: string): string[] {
   return route.slice(1).split("/").filter((segment) => segment !== "");
+}
+
+/**
+ * D-50: `pages/home.kdm` (or `index.kdm`) is `/`, `pages/usage.kdm` is
+ * `/usage`, and `pages/docs/intro.kdm` is `/docs/intro`. Sorted by route.
+ */
+export function discoverPages(projectRoot: string): { source: string; route: string }[] {
+  const root = join(projectRoot, "pages");
+  if (!existsSync(root)) return [];
+  const out: { source: string; route: string }[] = [];
+  const walk = (dir: string, prefix: string): void => {
+    for (const name of readdirSync(dir).sort()) {
+      if (name.startsWith(".")) continue;
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) walk(path, `${prefix}${name}/`);
+      else if (name.endsWith(".kdm")) {
+        const slug = name.slice(0, -4);
+        const route = slug === "home" || slug === "index" ? `/${prefix.replace(/\/$/, "")}` : `/${prefix}${slug}`;
+        out.push({ source: `pages/${prefix}${name}`, route });
+      }
+    }
+  };
+  walk(root, "");
+  return out.sort((a, b) => (a.route < b.route ? -1 : a.route > b.route ? 1 : 0));
 }

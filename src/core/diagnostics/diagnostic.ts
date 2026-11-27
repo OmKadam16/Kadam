@@ -115,6 +115,15 @@ export interface Diagnostic {
   readonly span: Span;
   readonly hint?: string;
   readonly related?: readonly RelatedDiagnostic[];
+  /** D-50: ways to fix it; `kadam fix` and the editor apply the one you choose. */
+  readonly fixes?: readonly DiagnosticFix[];
+}
+
+/** D-50: replace `span` with `text`; `label` is the sentence after the fix. */
+export interface DiagnosticFix {
+  readonly label: string;
+  readonly span: Span;
+  readonly text: string;
 }
 
 export interface DiagnosticSpec {

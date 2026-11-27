@@ -1,0 +1,12 @@
+kadam 0.4
+// Pieces the data-teams page uses more than once. Fill in the blanks (___) where you use them.
+
+A NavLink is a white link that says ___ and goes to page "Northwind for data teams".
+The text is not underlined. The text is 15px.
+
+A FooterLink is a white link that says ___ and goes to page "Northwind for data teams".
+The text is not underlined. The text is 14px.
+
+A FeatureCard is a card without a shadow, with a ___ title and a ___ description.
+It has a #000000 background. It has a 1px #FFFFFF33 border. It has 8px rounded corners.
+It has 24px padding. It has 16px gap between children.

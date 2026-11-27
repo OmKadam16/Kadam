@@ -1862,6 +1862,80 @@ loader1 {
 
 ---
 
+### D-50 — kadam 0.4: pages written as paragraphs (before F9)
+
+**Status:** Approved by the user on 2026-11-26 (with the plan that set its
+four choices: fixes are offered, never guessed; 0.4 sits beside the block
+form; the file name is the route; all four effect groups).
+
+**Problem.** A block page is exact but long, and it does not read the way
+people describe a page: "the logo top left, a Get Started button top right,
+then a 200px gap, then a big heading". Reusable pieces need a manifest entry
+and a file each, and creative motion means knowing many separate sentences.
+
+**Proposal.** A file that starts with `kadam 0.4` is written as paragraphs.
+Reading order is layout order. Each sentence that names a thing makes an
+element; sentences that start with "It", "Its", "The background", "The
+text" or "When" describe the thing just named, or the section they are in.
+A line ending in `:` (`Hero section:`, `Nav bar:`, `Footer:`) opens a group
+for the indented lines under it. `After that, a 50px gap.` spaces the next
+element.
+
+```kdm
+kadam 0.4
+
+Hero section:
+    The background is a blue to white gradient from left to right.
+    A big heading says "Meet Lumen, the most effective agent you can run."
+    After that, a 50px gap.
+    Small gray text, 18px, says "Lumen helps you get the most out of AI."
+    After that, a 70px gap.
+    A big black button called download says "Download for macOS".
+```
+
+- **One meaning, many orders.** Describing words belong to classes (size,
+  colour, weight, length, alignment) and may come in any order. A word whose
+  meaning depends on the kind (`18px` on a box) is an error with fixes.
+- **Synonyms are vocabulary.** `pixels`, `grey`, `nav bar`, `colour`,
+  `centred`, `that says` and others are documented spellings, not guesses.
+- **The paragraph form is a front end.** It is translated to the block form,
+  line for line, with every line mapped back to its sentence, and then
+  parsed, checked and built exactly as a 0.3 file. `kadam explain --blocks
+  page.kdm` prints the translation. A block (`name { ... }`) may appear
+  in a paragraph page where exact control is wanted.
+- **Fixes, never guesses.** An unknown sentence is an error with up to
+  three fixes, worded as paragraph sentences and found deterministically
+  (edit distance over the vocabulary plus a phrase table). `kadam fix`
+  applies the fix you choose; the editor offers the same quick fixes.
+- **File routes.** Without `pages` in `kadam.json` (or without `kadam.json`),
+  `pages/home.kdm` (or `index.kdm`) is `/` and `pages/usage.kdm` is `/usage`;
+  the page title is the file name unless the page says `The page is called
+  "..."`. `components.kdm` at the project root is read automatically.
+- **Fill in the blanks.** In `components.kdm`, `A PrimaryButton is a big black
+  button with white text that says ___.` defines a component whose blanks
+  are its parameters; `A PrimaryButton says "Sign up".` uses it, and
+  `A PrimaryButton, but blue, says "Sign up".` overrides one thing.
+  `without` removes what a kind has by default (`a card without a shadow`).
+- **Effects.** Cursor (pixels, grain, glow, spotlight), button (sliding
+  fill, shine, magnetic pull, drawn border, ripple), scroll and page (tilt
+  on scroll, parallax, reveal, page enter and cross-page transitions) and
+  text (typing, word by word, gradient text, scramble, highlight sweep), each
+  one sentence, each off with reduced motion, cursor effects off on touch.
+  They are available to block files too.
+
+**Not included.** Free-form English that the compiler interprets; a sentence
+is either in the language or an error with fixes.
+
+**Alternatives considered.**
+1. Applying the closest match automatically: faster to write, but a typo
+   can change the page without anyone noticing (rejected by the user).
+2. Replacing the block form: breaks every existing project and the
+   byte-identity guarantee.
+3. An AI step in the compiler: output would differ between runs and
+   machines, and builds would need the network.
+
+---
+
 ## Approval checklist
 
 | ID | Decision | Blocks | Recommendation | Status |
@@ -1915,6 +1989,7 @@ loader1 {
 | D-47 | 3D models with a generated, self-hosted WebGL viewer | F8 | Approve | Approved |
 | D-48 | Build-time images with an installed tool (vips, ImageMagick, sips) | F8 | Approve | Approved |
 | D-49 | Lottie subset with a generated SVG player | F8 | Review scope | Approved |
+| D-50 | kadam 0.4: pages written as paragraphs; fixes offered, never guessed; file routes; fill-in-the-blank components; effects | Before F9 | Approve | Approved — implemented |
 
 Approving D-01 through D-05 is sufficient to begin M1. D-06 and D-13 are needed
 before M2. D-08, D-09, and D-14 are needed before M3. D-10 and D-19 through
@@ -1922,3 +1997,67 @@ D-22 are approved for M6. D-23 through D-28 are post-M6.1 language follow-ups
 and are implemented. D-29 through D-31 are implemented: the CLI is the only
 distribution path, the v0.2 core lowers to a portable IR, and the TypeScript and
 Python core adapters pass executable conformance tests.
+
+---
+
+### D-51 — Fonts: 150 built in, every free font one command away
+
+**Status:** Approved by the user on 2026-11-26 (one-time add command; about
+150 built-in families).
+
+**Problem.** A page can use only the three system stacks (sans serif, serif,
+monospace), or a font file listed by hand in `kadam.json`. Other languages
+and design tools make a font one word away. Kadam should too, without
+breaking the rule that builds never use the network (D-41).
+
+**Proposal.** Four layers, looked up in this order:
+
+1. **The project's `fonts/` folder.** Any `.woff2`, `.woff`, `.ttf` or `.otf`
+   file is picked up with no `kadam.json` entry. The family is the file name
+   before its style suffix (`Acme Sans-Bold.woff2` is "Acme Sans", weight
+   700). Paid fonts are installed this way. `kadam.json` `fonts` keeps working.
+2. **Built-in fonts.** About 150 of the most popular free families (Google
+   Fonts popularity, through Fontsource, OFL and Apache licensed) ship in the
+   package under `library/fonts/`. `The page font is Lora.` works with no
+   setup. Variable fonts ship one file per alphabet and style; the page gets
+   one `@font-face` per file with its `unicode-range`, so visitors download
+   only the alphabets the page uses. Chinese, Japanese and Korean families are
+   several megabytes each and are not built in; they come from layer 3.
+3. **The catalog.** The package ships a list of every Fontsource family
+   (about 2,100: name, category, weights, styles, alphabets, licence).
+   `kadam fonts add "Bricolage Grotesque"` downloads that family once into
+   `fonts/`, with its licence. That command is the only one that uses the
+   network; builds stay offline and identical. `kadam fonts list [--category
+   serif]` and `kadam fonts info Lora` read the catalog.
+4. **System stacks.** `sans serif`, `serif`, `monospace` as today, plus
+   `rounded`, `system` and `handwriting` stacks.
+
+**Sentences.** `The page font is Lora.`, `The heading font is Playfair
+Display.`, `The font is "Space Grotesk".` (quotes optional for a known
+name), and in blocks `the font is "Lora"`. The fallback stack follows the
+font's category (serif, sans serif, monospace, display, handwriting).
+Only families the pages use are copied into the build.
+
+**Fixes, never guesses.**
+- An unknown name is `KDM3005` with up to three closest names as fixes.
+- A catalog font that isn't installed is `KDM3005` with the exact
+  `kadam fonts add` command.
+- A weight the font does not have (`the text weight is 300` on a 400–700
+  font) is a warning listing the weights it has.
+
+**Not included.** Fetching fonts during a build; hot-linking Google's CDN
+(it leaks visitors' addresses to a third party); subsetting fonts to the
+characters a page uses (later); colour and icon fonts.
+
+**Alternatives considered.**
+1. Download during build: simplest to write, but builds need the network and
+   change when the source changes.
+2. Built-in set only: no network ever, but most families out of reach.
+3. All 2,100 families in the package: several gigabytes.
+
+**Implemented 2026-11-27.** 150 families (43 MB, `library/fonts/`), the
+catalog of 2,095 families, `kadam fonts list|info|add`, the `fonts/` folder,
+`the page font is "..."` and `the heading font is "..."` settings, single-file
+builds, and the docs site's Fonts page. The `rounded`, `system` and
+`handwriting` system stacks are not added; a handwriting font's fallback is a
+handwriting stack.

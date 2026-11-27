@@ -343,6 +343,8 @@ the page font is sans serif
 | `the page font is sans serif` | System sans-serif stack |
 | `the page font is serif` | System serif stack |
 | `the page font is monospace` | System monospace stack |
+| `the page font is "Lora"` | A named font (*kadam 0.3*, D-51; see 17.3b) |
+| `the heading font is "Playfair Display"` | A named font for every heading (*kadam 0.3*, D-51) |
 
 Page settings are **not** a CSS cascade. They are lowered into explicit
 defaults: `the page text` supplies the default color for headings, paragraphs,
@@ -910,10 +912,11 @@ Background images are copied like other assets.
 | `the text is uppercase` / `lowercase` / `capitalized` | `text-transform` |
 | `the text is at most 65 characters wide` (10 to 200) | `max-width: 65ch` |
 | `it shows at most 2 lines` (1 to 10) | line clamp; one line is an ellipsis |
-| `the font is "Inter"` | a custom font from `kadam.json` |
+| `the font is "Inter"` | a built-in font, one in `fonts/`, or one from `kadam.json` (D-51) |
 
-A custom font must be declared in `kadam.json` `fonts` (a local `.woff2` or
-`.woff` file; no remote fonts), or the sentence is `KDM3005`. It applies to
+A named font is one of the 150 built-in families, a family in the project's
+`fonts/` folder, or one declared in `kadam.json` `fonts` (a local `.woff2` or
+`.woff` file; no remote fonts); otherwise the sentence is `KDM3005`. See 17.3b. It applies to
 text kinds and to containers, whose text inherits it. The page stylesheet gets
 an `@font-face` rule with `font-display: swap`, and the fallback stack is used
 while the font loads.
@@ -2591,6 +2594,377 @@ navigation, or click action. A button is allowed to have no click action. The
 canonical example assumes a second project page titled `About`; without it, the
 two navigation statements would correctly fail with `KDM3007` in a single-file
 check.
+
+---
+
+## 17. Pages written as paragraphs (*kadam 0.4*, D-50)
+
+A file that starts with `kadam 0.4` describes the page in paragraphs, top to
+bottom. It is translated line for line into the block form of kadam 0.3 and
+then checked and built exactly like a 0.3 file, so everything in sections 5
+to 16 still holds. `kadam explain --blocks page.kdm` prints the translation.
+
+```kdm
+kadam 0.4
+
+The page is called "Lumen".
+
+Nav bar:
+    The Lumen logo shows "assets/lumen.svg" on the left. It is 32px tall.
+    A small black button says "Get Started" on the right.
+
+Hero section:
+    The background is a #BFDBFE to white gradient from left to right.
+    After that, a 200px gap.
+    A big heading says "Meet Lumen, the most effective agent you can run."
+    After that, a 50px gap.
+    Small #4B5563 text, 18px, says "Lumen helps you get the most out of AI."
+    After that, a 70px gap.
+    A PrimaryButton called download says "Download for macOS".
+```
+
+### 17.1 Sentences
+
+- A sentence ends with a full stop outside quotes, or with a quote that ends
+  in `.`, `!` or `?` followed by a capital letter (`says "Hi." It ...`).
+- **A sentence that names a thing makes it**, in reading order:
+  `[a | an | the] [describing words] <thing> [called <name>] [says "..."]
+  [shows "..."] [on the left | on the right] [with ...] [without ...]`.
+- **Things:** heading (the first *big* heading is the page's main heading;
+  later big headings are 40px section headings; a *small* heading is a minor
+  heading), title, text, paragraph, button, link, image, picture, photo, logo,
+  icon, video, card, box, container, panel, row, column, grid, list, item,
+  divider, line, badge, tag, form, input, text field, checkbox, dropdown,
+  section, header, footer, sidebar, article, nav bar (navigation bar, navbar).
+- **Describing words**, in any order: a size (`tiny`, `small`, `big`,
+  `large`, `huge`, `giant`; a size on a button sets its padding too), a length
+  (`18px`, the text size, on text and buttons; on a box it is an error with
+  fixes), a colour (the text colour on text, the background on buttons,
+  badges and boxes), `bold`, `semibold`, `light`, `italic`, `uppercase`,
+  `underlined`, `centered`, `rounded`, `pill`, `shadowed`, `outlined`,
+  `decorative`. An exact length wins over a size word for the text.
+- **with:** `with white text`, `with 18px text`, `with rounded corners`, `with
+  a soft shadow`, `with 24px padding`, `with a 1px gray border`, or any `has
+  ...` sentence of the block form.
+- **without:** `without a shadow`, `without a border`, `without a top border`
+  (or `top line`, and the other sides), `without a background`, `without
+  rounded corners`, `without an underline`.
+- **Sentences about the thing just named** start with `It`, `Its`, `When`,
+  `The background`, `The text`, `The gradient` or `The words`, and are any
+  sentence of the block form (`It has 24px padding.`, `When hovered, it lifts
+  by 2px.`). Before anything is named in a section they describe the section.
+- **The page:** sentences that start with `The page` are page settings;
+  `The page is called "..."` sets the title (otherwise the file name, so
+  `pages/my-usage.kdm` is titled "My usage").
+- **Gaps:** `After that, a 50px gap.` sets the space before the next thing.
+  It may start with `After that`, `After it`, `Below that`, `Under it`, `Then`
+  or `Next`, may say `leave`, `add` or `there is`, may say `50 pixels` and
+  `50px of space`, and may name a size: `a tiny gap` (8px), `small` (16px),
+  `medium` (32px), `big` or `large` (64px), `huge` (120px).
+- **Sections:** a line that ends in `:` opens a section of the indented lines
+  under it. Its words name its kind (`Nav bar:`, `Footer:`, `Pricing card:`)
+  or, if none, it is a section; the other words name it (`Hero section:` is
+  `hero1`).
+- **Layout headers:** `Side by side:`, `In a row:`, `Stacked:`, `In 3
+  columns:`, `Centered:` and `with a 24px gap` open a plain box laid out that
+  way, and may be combined with a name (`Plans, side by side with 24px gap:`,
+  `Hero section, centered:`). A plural header (`Cards:`, `Buttons:`) is a
+  plain box too. Side by side wraps when there is no room; columns step down
+  to 2 on tablets (from 3 or more) and to 1 on phones; side by side and
+  columns have 16px between things unless the header says a gap; the text in
+  a centered group is centered unless it says how it is aligned.
+- **On the right:** several things on the right sit together at the end; the
+  first of them is the one that pushes.
+- **Readable defaults:** `gray` text is #6B7280, which is readable on white
+  (CSS's own gray, #808080, is not; write the hex to get it), and on a page
+  that turns dark it is #9CA3AF in dark mode. An `outlined` button is white
+  with a 1px #D1D5DB border and #111827 text.
+- **Pictures fit:** an image or video is at most 100% of its box wide unless
+  it says `at most ... wide` or `full width`, so a grid of photos never runs
+  off the page. A picture `shaped like a circle` keeps a square shape and
+  fills it, so the circle is round.
+- **Rows:** side by side stretches its things to the same height (unless
+  centered); in a row, `full width` (and `It takes the rest of the space.`)
+  means `it grows to fill the space`, so a main area sits beside a sidebar.
+- **Links need room:** a box with two or more links directly inside it has
+  8px between its things unless it says a gap (WCAG 2.2 target size). A
+  navigation bar keeps its own spacing.
+- **Badges:** a colored badge (green, red, yellow, orange, blue, purple,
+  pink, gray) is a pale tint with dark text of the same hue.
+- **Tables:** `A table of recent orders:` (or `Orders table:`) names the
+  table, which is its caption. Inside a table, `A row:` and `A header row:`
+  are table rows, and `A row says "#1042", "Paid".` is a row with one cell
+  per quote.
+- **Doing things, in words:** `When clicked, it toggles the menu.`, `It
+  opens the waitlist dialog.`, `It shows the menu.`, `It hides the menu.`,
+  `It moves focus to the search box.`, `It closes the dialog.` (`When
+  clicked,` may be left out). A thing is found by its `called` name or by the
+  words of its header (`Menu:`, `Waitlist dialog:`), anywhere on the page.
+  Opening a dialog opens it as a dialog; a name that nothing has is
+  `KDM3012`, listing the names on the page and offering close ones as fixes.
+- **Hidden at first:** `It starts hidden.`, `It is hidden at first.`, and
+  `The menu starts hidden.` for a thing named elsewhere.
+- **Questions:** a line that ends in `?` with indented lines under it is a
+  question that opens to show them (an expandable section titled by the
+  line).
+- **A line in quotes** (`"We will email you."`) is a paragraph.
+- **Kinds for panels:** `menu`, `drawer`, `note`, `callout` and `tip` are
+  plain boxes; `dialog`, `modal` and `popup` are dialogs.
+- **Nested headers:** a header that names no kind is a section at the top of
+  the page and a plain box inside a section (`Note:`).
+- **Blanks** in components.kdm may have any name; `label` (14px gray) and
+  `value` or `number` (32px bold) have a style, other new names are text.
+- **Several things in one sentence:** `It has rounded corners, a soft shadow
+  and 24px padding.` is three sentences; an `and` starts a new one only
+  before a number, `a`/`an`, `no`, `rounded`, `fully` or `square`, so `24px
+  padding on the top and bottom and 16px padding on the left and right` is
+  two.
+- **The word "Lumen"** (or `the words "..."`), when not followed by `are` or
+  `is`, is a short text: `The word "Lumen" in bold on the left.`
+- **Colors** may be two words when CSS names them as one: `dark gray`, `light
+  blue`, `medium purple`.
+- **Names:** `called download` names a thing; otherwise names come from the
+  thing and its position (`heading1`, `button2`).
+- **Spellings:** `pixels` and `pixel` for `px`, `grey` for `gray`, `colour`,
+  `centred`, `that says`, `saying` and `reads` for `says`.
+- **Blocks:** a line `name {` starts a block in the block form, up to its
+  closing `}`, copied as written.
+
+### 17.2 Components with blanks
+
+`components.kdm` at the project root is read without being listed. In kadam
+0.4 it holds definitions; the sentences after one describe it:
+
+```kdm
+kadam 0.4
+
+A PrimaryButton is a big black button with white text that says ___.
+It has fully rounded corners. When hovered, it lifts by 2px.
+
+A FeatureCard is a card without a shadow, with a ___ title and a ___ description.
+It has 24px padding.
+```
+
+- `says ___` is the blank `label`, filled by `says "..."` where it is used.
+- `with a ___ title` adds a child and a blank of that name. `title`,
+  `heading` and `name` are minor headings; `quote` is italic, `price`,
+  `value` and `number` are 32px bold, `label`, `note` and `caption` are small;
+  any other name is plain text.
+- Using one: `A FeatureCard with the title "Fast" and the description "...".`
+  An unknown blank is `KDM3023` with the close names as fixes.
+- **Changing one where it is used:** `A FeatureCard, but rounded, ...` and
+  `A FeatureCard without a border ...` copy the component's body there with
+  the change, which replaces what the component said about the same property.
+  This works for components from components.kdm; for others, `kadam eject`
+  one first.
+- A gap before a component goes on a box around it, because a component takes
+  only its blanks.
+
+### 17.3 File routes
+
+Without `pages` in kadam.json, or without kadam.json at all, `pages/home.kdm`
+(or `index.kdm`) is `/`, `pages/usage.kdm` is `/usage`, and
+`pages/docs/intro.kdm` is `/docs/intro`. `"kadam": "0.4"` in kadam.json means
+the same as `"0.3"` for everything kadam.json configures.
+
+### 17.3a Data lists
+
+`data/*.json` files are the data files when kadam.json does not list `data`:
+`data/products.json` is `products`. A list is written either way:
+
+```kdm
+In 3 columns:
+    For each product in products:
+        Sorted by the year of the product, newest first.
+        A card:
+            A heading says "{the name of the product}".
+            Gray text says "${the price of the product}".
+
+A ProductCard for each product in products, with the name of the product and the price of the product.
+Only where the featured of the product is true.
+Showing at most 2.
+```
+
+- `For each <record> in <data>:` repeats the lines under it once per record.
+  It is built as a component the page makes for itself, whose blanks are the
+  fields its lines read (`{the name of the product}`, or `{name}`); a field
+  read as `shows "{the picture of the product}"` is a picture.
+- `A <Component> for each <record> in <data>, with the <blank> of the
+  <record> ...` repeats a component; `with the title "..."` still gives every
+  copy the same value.
+- Lines that shape a list, inside the group or right after the component
+  sentence: `Only where the <field> of the <record> is <value>.` (also `Only
+  if`), `Sorted by the <field> of the <record>.` (also `Ordered by`; `newest
+  first` or `from highest to lowest` reverses it), `Showing at most 3.` (also
+  `Show at most 3.`). They mean the lines of section 6.20.
+
+### 17.3b Fonts (D-51)
+
+```kdm
+The page font is Lora.
+The heading font is Playfair Display.
+Text says "Note". The font is Caveat.
+```
+
+In a paragraph page a font name needs no quotes; in blocks it is quoted
+(`the font is "Lora"`). A name is looked up, ignoring case, spaces and
+hyphens, in this order:
+
+1. `kadam.json` `fonts`.
+2. The project's `fonts/` folder: a family installed with `kadam fonts add`
+   (a folder with `font.json`), or loose `.woff2`, `.woff`, `.ttf` and `.otf`
+   files. A loose file's family is its name before the style suffix:
+   `Acme Sans-BoldItalic.woff2` is "Acme Sans", weight 700, italic;
+   `AcmeSans[wght].woff2` is a variable font from 100 to 900.
+3. The 150 built-in families (the most popular free fonts, with Devanagari,
+   Arabic, Hebrew, Bengali, Tamil and other world scripts). `kadam fonts list
+   --built-in` lists them; the docs site's Fonts page shows each one.
+
+The build copies only the families pages use, to `fonts/<family>/`, with one
+`@font-face` per file and its `unicode-range`, so a visitor downloads only the
+alphabets the page shows. The fallback stack follows the font's style: serif,
+sans serif, monospace, or a handwriting stack.
+
+| Problem | Diagnostic |
+| --- | --- |
+| A name that is no font (`"Robotto"`) | `KDM3005`, with the closest names as fixes |
+| A free font that is not installed (`Noto Sans JP`) | `KDM3005`: `run: kadam fonts add "Noto Sans JP"` |
+| A weight the font lacks (`the text weight is 200` on Lora) | `KDM3005` warning listing its weights |
+
+Builds never use the network. Chinese, Japanese and Korean families are several
+megabytes each and are not built in; `kadam fonts add` installs them (see
+`docs/tooling.md`).
+
+### 17.4 Effects
+
+Each is one sentence, works in the block form too (lower case, no full stop),
+and stops for people who prefer reduced motion. Cursor effects need a mouse or
+pen; on touch screens they stay off.
+
+| Sentence | Built with |
+| --- | --- |
+| `When the cursor moves over it, white pixels pop out around the cursor.` | runtime spans, CSS animation |
+| `When the cursor moves over it, grain surrounds the cursor within 10px.` | a masked noise layer at the cursor |
+| `When the cursor moves over it, a [color] glow follows the cursor.` | a radial gradient at the cursor |
+| `When the cursor moves over it, a spotlight follows the cursor.` | a darkening radial gradient |
+| `When hovered, a [color] fill slides in from the left.` (or right, top, bottom) | a `::before` layer |
+| `When hovered, a shine sweeps across it.` | a `::before` layer |
+| `When hovered, its border draws itself.` | a `::before` layer |
+| `It pulls toward the cursor.` / `It ripples when pressed.` | runtime |
+| `It tilts as you scroll.` / `It moves slower than the page.` / `It appears as you scroll.` | scroll-driven CSS behind `@supports` |
+| `The page fades in when it opens.` / `The page slides up when it opens.` | CSS on `body` |
+| `Pages fade into each other when you move between them.` | `@view-transition` |
+| `It types itself.` / `It appears word by word.` | CSS (one span per word) |
+| `It scrambles into place.` | runtime; the real text is the accessible name throughout |
+| `Its text is a blue to purple gradient.` | `background-clip: text` |
+| `A [color] highlight sweeps under "words".` | a `<mark>` with an animated background |
+
+The fill, the shine and the drawn border share one layer, so an element has
+at most one of them (`KDM3004`); likewise one text motion, and a text gradient
+replaces the text colour.
+
+### 17.5 Fixes
+
+The compiler never picks a meaning. An unknown word, kind or sentence is an
+error, and when something in the vocabulary is close (a small edit distance)
+the error carries up to three fixes, worded as sentences:
+
+```
+error[KDM2001]: I don't know "blck" in: A big blck button says "Go"
+ = fix 1: A big black button says "Go"
+```
+
+`kadam fix` asks which fix to apply for each problem; `kadam fix --first`
+applies fix 1 everywhere and lists what it changed. The editor offers the same
+fixes as quick fixes. Nothing is built until the file is valid.
+
+### 17.5a A first page with mistakes
+
+The checker is written for people new to Kadam. Each of these is one error
+with a fix that `kadam fix` applies:
+
+| Mistake | The error says | Fix |
+| --- | --- | --- |
+| no `kadam 0.4` line in a single file | this file is written as paragraphs; its first line must be kadam 0.4 | adds the line |
+| `says "Welcome" Text says ...` | a new sentence seems to start at "Text" | adds the full stop |
+| `Hero section` with indented lines under it | the lines under it are indented, but it does not end with a colon | `Hero section:` |
+| `A card.` with indented lines under it | the same | `A card:` |
+| `A heading says Welcome.` | the words after says go in quotes | `A heading says "Welcome"` |
+| `A button says "Unclosed.` | a quote is opened on this line but never closed | closes it |
+| `A buton says "Go".` | I don't know "buton" | `A button ...` |
+
+In a site whose kadam.json says `"kadam": "0.4"`, or that has no kadam.json,
+the `kadam 0.4` line is optional: a file with no blocks is read as
+paragraphs. A section with no heading inside it to name it is built as a
+plain box (an unnamed region is not a landmark), so `Hero section:` with only
+a button in it is fine.
+
+### 17.6 Other ways to say it
+
+These are fixed rewrites, listed here so they are vocabulary, not guesses.
+Each says exactly the block sentence on the right.
+
+| You can write | It means |
+| --- | --- |
+| `The background is a gradient with blue on the left and white on the right.` | `has a blue and white gradient`, `the gradient goes from left to right` |
+| `The background is blue on the left fading to white on the right.` | the same |
+| `It has a background image "assets/a.jpg".` | `has a "assets/a.jpg" background image` |
+| `Its children are centered.` / `Everything in it is centered.` | `it centers its children` |
+| `Its children sit side by side.` (or are in a row, next to each other) | `it arranges its children in a row` |
+| `Its children are stacked.` | `it arranges its children in a column` |
+| `Its children are in 3 columns.` | `it arranges its children in 3 columns` |
+| `It takes the full width.` / `A full-width photo ...` | `it is full width` |
+| `It has a border.` / `It has a shadow.` | `has a 1px #6B728040 border` / `has a soft shadow` |
+| `It has big rounded corners.` / `small rounded corners` | `has 16px rounded corners` / `has 4px rounded corners` |
+| `It is hidden on phones.` (any sentence, then `on phones`, `on tablets` or `on desktops`) | `on phones, it is hidden` |
+| `When hovered, it gets bigger.` / `it shrinks a little` | `when hovered, it scales to 105%` / `95%` |
+| `When hovered, its background turns black.` | `when hovered, the background turns black` |
+| `When clicked, it goes to the pricing page.` / `It goes to page "Docs".` | `when clicked, go to page "Pricing"` / `"Docs"` |
+| `It opens "https://..." in a new tab when clicked.` / `It links to "https://..."` | `when clicked, open "https://..." in a new tab` |
+| `It slides in from the left.` / `It fades in.` | `... when the page loads` |
+| `A link says "Plans" that goes to the pricing page.` | a link with `when clicked, go to page "Pricing"` |
+| `A button says "Go" and opens "https://...".` | a button that opens the address |
+| `A text field labelled "Email".` / `An input says "Email".` | `the label says "Email"` |
+| `Gray text in 14px says "x".` | `in` joins describing words |
+| `A row with 16px gap.` | `it has 16px gap between children` |
+| `grain surrounds the cursor with a radius of 10px`, `pixels pop out of it`, `a grainy texture surrounds the cursor` | the cursor effects in 17.4 |
+| `It has some padding.` / `a little padding` / `plenty of padding` | `it has 16px padding` / `8px` / `48px` |
+| `Add "assets/hero.jpg" as the background.` / `Put the image "..." in the background.` / `The background is the image "..."` | `has a "assets/hero.jpg" background image` |
+| `the mouse`, `the pointer` | `the cursor` |
+| `When the cursor goes over that section, ...` (goes, hovers, passes or is over it, this or that section) | `when the cursor moves over it, ...` |
+| `... on hover.`, `On hover, ...`, `When you hover over it, ...` | `when hovered, ...` |
+| `It lifts on hover.` | `when hovered, it lifts by 4px` |
+| `It has a sliding animation on hover.` | `when hovered, a fill slides in from the left` |
+| `It ripples when you click it.` | `it ripples when pressed` |
+| `It tilts when you scroll.` | `it tilts as you scroll` |
+| `It appears when you scroll to it.` / `It fades in as you scroll.` | `it appears as you scroll` |
+| `It slides in from the left as you scroll.` | `it slides in from the left when it scrolls into view` |
+| `It types itself out.` / `Its words appear one by one.` | `it types itself` / `it appears word by word` |
+| `It is magnetic.` / `It follows the cursor.` | `it pulls toward the cursor` |
+
+**Instructions** say the same as descriptions:
+
+| You can write | It means |
+| --- | --- |
+| `Add a big heading that says "Hi".` (also `Put`, `Place`, `Show`, `Insert`, `There is`) | `A big heading that says "Hi".` |
+| `Add an image of a desk from "assets/desk.jpg".` | `... shows "assets/desk.jpg"` |
+| `Make sure it tilts as you scroll.` | `It tilts as you scroll.` |
+| `Make it bold.` / `Make it 300px wide.` | `It is bold.` / `It is 300px wide.` |
+| `Make the text bold.` / `Make the background black.` | `The text is bold.` / `The background is black.` |
+| `Give it rounded corners.` / `Give it 24px padding.` | `It has rounded corners.` / `It has 24px padding.` |
+| `Center it.` / `Center the text.` / `Center everything in it.` | `It is centered.` / `The text is centered.` / `it centers its children` |
+| `Hide it on phones.` | `on phones, it is hidden` |
+
+**Number words** that measure something become digits: `a fifty pixel gap`
+is `a 50px gap`, `twenty-four`, `two hundred`, and `In three columns:`. Words
+in quotes, and `one after another`, are left alone.
+
+A word of the language cannot name something (`called email`); the error
+offers `called email1` and `called emailField` as fixes.
+
+When a sentence about a thing is not known, the error lists up to three
+sentences that share its words (`It has a glowing border` suggests `It has no
+border | It has a white border | ...`).
 
 ---
 

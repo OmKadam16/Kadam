@@ -196,13 +196,15 @@ function checkPageSettingDuplicate(
 ): void {
   // kadam 0.3: theme colors are keyed by name; dark-mode settings are separate.
   const dark = "dark" in setting && setting.dark === true ? " in dark mode" : "";
-  const what = setting.property === "color token" ? `${setting.name} color` : `page ${setting.property}`;
+  const what = setting.property === "color token" ? `${setting.name} color`
+    : setting.property === "custom font" ? (setting.target === "headings" ? "heading font" : "page font")
+    : `page ${setting.property}`;
   const key = `${what}${dark}`;
   const previous = seen.get(key);
   if (previous !== undefined) {
     diagnostics.error(
       "KDM3004",
-      setting.property === "color token" ? `duplicate ${what}${dark}` : `duplicate page ${setting.property} setting${dark}`,
+      setting.property === "color token" || setting.property === "custom font" ? `duplicate ${what}${dark}` : `duplicate page ${setting.property} setting${dark}`,
       setting.span,
       "each page setting may appear at most once",
       [{ span: previous, message: "first declared here" }],
@@ -731,6 +733,15 @@ function checkCapability(
     case "embed":
       if (kindName !== "container" && kindName !== "card") reject("an embed goes in a container or card");
       return;
+    case "cursor-effect":
+      if (!CONTAINERS.has(kindName) && kindName !== "button" && kindName !== "image") reject("a cursor effect goes on a section, container, card, button or image");
+      return;
+    case "button-effect":
+      if (kindName !== "button" && kindName !== "link" && kindName !== "card" && kindName !== "container") reject("this effect goes on a button, link, card or container");
+      return;
+    case "text-effect":
+      if (!TEXT_BEARING.has(kindName)) reject("text effects go on headings, paragraphs, links and buttons");
+      return;
     case "custom-font":
       // A font on a container is inherited by the text inside it.
       if (!TEXT_BEARING.has(kindName) && !CONTAINERS.has(kindName)) {
@@ -1075,6 +1086,12 @@ function describeStatement(statement: StatementNode): string {
       return "a named icon statement";
     case "embed":
       return "an it embeds statement";
+    case "cursor-effect":
+      return "a cursor effect statement";
+    case "button-effect":
+      return statement.effect === "magnetic" ? "an it pulls toward the cursor statement" : statement.effect === "ripple" ? "an it ripples when pressed statement" : "a hover effect statement";
+    case "text-effect":
+      return statement.effect === "gradient" ? "a text gradient statement" : "a text effect statement";
     case "generative-background":
       return `${statement.style === "aurora" ? "an aurora" : "a mesh"} background statement`;
     case "pattern":
@@ -1168,7 +1185,7 @@ function checkDuplicates(
   }
 }
 
-function propertyKeys(statement: StatementNode): string[] {
+export function propertyKeys(statement: StatementNode): string[] {
   switch (statement.type) {
     case "size":
       switch (statement.mode) {
@@ -1320,6 +1337,13 @@ function propertyKeys(statement: StatementNode): string[] {
       return ["image-source"];
     case "embed":
       return ["embed", "click"];
+    case "cursor-effect":
+      return ["cursor-effect"];
+    case "button-effect":
+      // The fill, the shine and the drawn border share the element's ::before layer.
+      return statement.effect === "magnetic" ? ["magnetic"] : statement.effect === "ripple" ? ["ripple"] : ["hover-layer"];
+    case "text-effect":
+      return statement.effect === "gradient" ? ["text-gradient", "text-color"] : ["text-motion"];
     case "generative-background":
       return ["background"];
     case "pattern":

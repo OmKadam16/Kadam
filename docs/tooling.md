@@ -40,6 +40,24 @@ kadam explain                # every code, by area
 kadam explain KDM3005 --json
 ```
 
+## `kadam fix`
+
+The checker never guesses what a sentence means. When something close is in
+the vocabulary, an error carries numbered fixes. `kadam fix` shows each
+problem and asks which fix to apply; `kadam fix --first` applies fix 1 for
+every problem and lists the changes. Without a terminal and without `--first`
+it only lists them. The language server offers the same fixes as quick fixes.
+
+## Hover in a paragraph page
+
+In a kadam 0.4 page, hovering a sentence in the editor shows the block
+sentences it is built as, so the meaning of every sentence is visible.
+
+## `kadam explain --blocks`
+
+`kadam explain --blocks pages/home.kdm` prints a kadam 0.4 paragraph page in
+the block form it is built from (spec section 17).
+
 ## `kadam eject`
 
 `kadam eject Card` copies a standard library component (D-46) into the
@@ -47,6 +65,34 @@ project's `components/` folder, lists the copy in `kadam.json`, and removes
 `from kadam` from its uses, so the project owns it from then on. `kadam explain
 Card` describes a library component first; `kadam explain --library` lists
 them. See `docs/components.md`.
+
+## `kadam fonts`
+
+Fonts (D-51). 150 free families are built in; `The page font is Lora.` needs no
+setup. The catalog lists every free family Fontsource publishes (about 2,100).
+
+```bash
+kadam fonts list --category serif
+```
+
+```bash
+kadam fonts info "Noto Sans JP"
+```
+
+```bash
+kadam fonts add "Noto Sans JP" --weights 400,700
+```
+
+`list` takes `--category`, `--built-in` and `--search`. `add` downloads a
+family once into the project's `fonts/<family>/` folder with its licence and a
+`font.json`; `--weights` limits a family that is not variable and
+`--alphabets latin,devanagari` limits the alphabets. It is the only Kadam
+command that uses the network; commit the folder and every build stays offline
+and identical. Paid fonts you own go in `fonts/` as files.
+
+Maintainers refresh the catalog and the built-in families (listed in
+`library/fonts/built-in.txt`) with `node scripts/bundle-fonts.mjs` after
+`npm run build`.
 
 ## `kadam lsp`
 

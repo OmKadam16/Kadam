@@ -1,0 +1,20 @@
+kadam 0.4
+
+Docs section:
+    Give it 48px padding. It is at most 720px wide.
+    A big heading says "Getting started".
+    Text says "Install the command line tool:".
+    A code block says "npm install -g kadam".
+    A heading says "What you get".
+    A list:
+        An item says "Static HTML and CSS".
+        An item says "Checked accessibility".
+        An item says "Fixes for typos".
+    A numbered list:
+        An item says "Write a page".
+        An item says "Run kadam dev".
+    Note:
+        It has 16px padding. The background is #FEF3C7. It has rounded corners.
+        Text says "Kadam never guesses what a sentence means."
+    A divider.
+    Small gray text says "Last updated in 2026".

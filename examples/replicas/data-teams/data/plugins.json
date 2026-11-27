@@ -1,0 +1,182 @@
+[
+  {
+    "name": "Data",
+    "note": "Built by Northwind",
+    "logo": "assets/logos/data.svg"
+  },
+  {
+    "name": "Ledger BI",
+    "note": " ",
+    "logo": "assets/logos/ledger-bi.svg"
+  },
+  {
+    "name": "Pulse",
+    "note": " ",
+    "logo": "assets/logos/pulse.svg"
+  },
+  {
+    "name": "Cloud Analytics",
+    "note": " ",
+    "logo": "assets/logos/cloud-analytics.svg"
+  },
+  {
+    "name": "Tabula",
+    "note": " ",
+    "logo": "assets/logos/tabula.svg"
+  },
+  {
+    "name": "Glacier",
+    "note": " ",
+    "logo": "assets/logos/glacier.svg"
+  },
+  {
+    "name": "Spark Genie",
+    "note": " ",
+    "logo": "assets/logos/spark-genie.svg"
+  },
+  {
+    "name": "Columnar",
+    "note": " ",
+    "logo": "assets/logos/columnar.svg"
+  },
+  {
+    "name": "QueryBase",
+    "note": " ",
+    "logo": "assets/logos/querybase.svg"
+  },
+  {
+    "name": "Duckpond",
+    "note": " ",
+    "logo": "assets/logos/duckpond.svg"
+  },
+  {
+    "name": "Funnel",
+    "note": " ",
+    "logo": "assets/logos/funnel.svg"
+  },
+  {
+    "name": "Modelr",
+    "note": " ",
+    "logo": "assets/logos/modelr.svg"
+  },
+  {
+    "name": "Watchdog Tests",
+    "note": " ",
+    "logo": "assets/logos/watchdog-tests.svg"
+  },
+  {
+    "name": "Spotter",
+    "note": " ",
+    "logo": "assets/logos/spotter.svg"
+  },
+  {
+    "name": "Sigil",
+    "note": " ",
+    "logo": "assets/logos/sigil.svg"
+  },
+  {
+    "name": "Omnia",
+    "note": " ",
+    "logo": "assets/logos/omnia.svg"
+  },
+  {
+    "name": "Docstore",
+    "note": " ",
+    "logo": "assets/logos/docstore.svg"
+  },
+  {
+    "name": "Flame",
+    "note": " ",
+    "logo": "assets/logos/flame.svg"
+  },
+  {
+    "name": "Nebula DB",
+    "note": " ",
+    "logo": "assets/logos/nebula-db.svg"
+  },
+  {
+    "name": "Notepad",
+    "note": " ",
+    "logo": "assets/logos/notepad.svg"
+  },
+  {
+    "name": "Statly",
+    "note": " ",
+    "logo": "assets/logos/statly.svg"
+  },
+  {
+    "name": "Catalog",
+    "note": " ",
+    "logo": "assets/logos/catalog.svg"
+  },
+  {
+    "name": "Hedgehog",
+    "note": " ",
+    "logo": "assets/logos/hedgehog.svg"
+  },
+  {
+    "name": "Hexa",
+    "note": " ",
+    "logo": "assets/logos/hexa.svg"
+  },
+  {
+    "name": "Metric",
+    "note": " ",
+    "logo": "assets/logos/metric.svg"
+  },
+  {
+    "name": "Cachet",
+    "note": " ",
+    "logo": "assets/logos/cachet.svg"
+  },
+  {
+    "name": "Reviews",
+    "note": " ",
+    "logo": "assets/logos/reviews.svg"
+  },
+  {
+    "name": "Wisdom",
+    "note": " ",
+    "logo": "assets/logos/wisdom.svg"
+  },
+  {
+    "name": "VillageQL",
+    "note": " ",
+    "logo": "assets/logos/villageql.svg"
+  },
+  {
+    "name": "Drive",
+    "note": " ",
+    "logo": "assets/logos/drive.svg"
+  },
+  {
+    "name": "Webtraffic",
+    "note": " ",
+    "logo": "assets/logos/webtraffic.svg"
+  },
+  {
+    "name": "Pointshare",
+    "note": " ",
+    "logo": "assets/logos/pointshare.svg"
+  },
+  {
+    "name": "Chat",
+    "note": " ",
+    "logo": "assets/logos/chat.svg"
+  },
+  {
+    "name": "Mail",
+    "note": " ",
+    "logo": "assets/logos/mail.svg"
+  },
+  {
+    "name": "Meet",
+    "note": " ",
+    "logo": "assets/logos/meet.svg"
+  },
+  {
+    "name": "Repo",
+    "note": " ",
+    "logo": "assets/logos/repo.svg"
+  }
+]

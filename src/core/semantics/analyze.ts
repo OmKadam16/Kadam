@@ -9,6 +9,7 @@ import type {
   TextStatement,
 } from "../ast/nodes.js";
 import { checkRuntime } from "./runtime-check.js";
+import { catalogFont, closestFontNames } from "../../fonts/catalog.js";
 import {
   DiagnosticBag,
   type Diagnostic,
@@ -26,8 +27,10 @@ export interface SemanticOptions {
   readonly pages?: readonly SemanticPage[];
   /** The project manifest declares a siteUrl (needed for share images). */
   readonly hasSiteUrl?: boolean;
-  /** kadam 0.3: custom font names declared in kadam.json. */
+  /** kadam 0.3: custom font names declared in kadam.json, built in or in fonts/ (D-51). */
   readonly fonts?: ReadonlySet<string>;
+  /** D-51: the weights each named font has, to warn about one it lacks. */
+  readonly fontWeights?: ReadonlyMap<string, readonly number[]>;
 }
 
 const TEXT_CONTENT_KINDS: ReadonlySet<BuiltinKindName> = new Set([
@@ -64,7 +67,12 @@ export function analyzeDocument(
   }
   if (document.languageVersion !== "0.1") {
     analyzeF1Page(page, routes, diagnostics);
-    checkCustomFonts(page.elements, options.fonts ?? new Set(), diagnostics);
+    checkCustomFonts(page.elements, options.fonts ?? new Set(), diagnostics, options.fontWeights ?? new Map());
+    for (const setting of page.settings) {
+      if (setting.property === "custom font" && !(options.fonts ?? new Set()).has(setting.name)) {
+        unknownFont(setting.name, setting.nameSpan, options.fonts ?? new Set(), diagnostics);
+      }
+    }
     // F4 step 2 (D-36): events and bindings name real elements and typed state.
     checkRuntime(page.elements, diagnostics, page.externals ?? []);
     for (const setting of page.settings) {
@@ -82,28 +90,71 @@ export function analyzeDocument(
   return diagnostics.sorted();
 }
 
-/** Every `the font is "Name"` must name a font declared in kadam.json. */
+/** Every `the font is "Name"` must name a font that is declared, built in, or in fonts/ (D-51). */
 function checkCustomFonts(
   elements: readonly ElementNode[],
   fonts: ReadonlySet<string>,
   diagnostics: DiagnosticBag,
+  weights: ReadonlyMap<string, readonly number[]>,
 ): void {
   for (const element of elements) {
+    let used: string | null = null;
     for (const statement of element.statements) {
       const inner = statement.type === "responsive" || statement.type === "scoped" ? statement.statement : statement;
-      if (inner.type === "custom-font" && !fonts.has(inner.name)) {
-        diagnostics.error(
-          "KDM3005",
-          `unknown font ${JSON.stringify(inner.name)}`,
-          inner.nameSpan,
-          fonts.size === 0
-            ? `declare it in kadam.json: "fonts": { "${inner.name}": { "source": "assets/fonts/${inner.name.replaceAll(" ", "")}.woff2" } }`
-            : `declared fonts: ${[...fonts].map((name) => JSON.stringify(name)).join(", ")}`,
-        );
+      if (inner.type === "custom-font") {
+        if (fonts.has(inner.name)) used = inner.name;
+        else unknownFont(inner.name, inner.nameSpan, fonts, diagnostics);
       }
     }
-    checkCustomFonts(element.children, fonts, diagnostics);
+    // D-51: a weight the font does not have is drawn by the browser's nearest; say so.
+    const has = used === null ? undefined : weights.get(used);
+    if (has !== undefined && has.length > 0) {
+      for (const statement of element.statements) {
+        if (statement.type === "typography" && statement.property === "weight") {
+          const value = typeof statement.value === "number" ? statement.value : (NAMED_WEIGHTS[statement.value] ?? 400);
+          if (!has.includes(value)) {
+            diagnostics.warning("KDM3005", `the font ${JSON.stringify(used)} has no weight ${value}`, statement.span,
+              `its weights are ${has.join(", ")}`);
+          }
+        }
+      }
+    }
+    checkCustomFonts(element.children, fonts, diagnostics, weights);
   }
+}
+
+const NAMED_WEIGHTS: Readonly<Record<string, number>> = { light: 300, regular: 400, medium: 500, semibold: 600, bold: 700 };
+
+/** D-51: fixes, never guesses: close names, or the command that installs a catalog font. */
+function unknownFont(name: string, span: Span, fonts: ReadonlySet<string>, diagnostics: DiagnosticBag): void {
+  const known = catalogFont(name);
+  if (known !== null) {
+    diagnostics.add({
+      code: "KDM3005",
+      severity: "error",
+      message: `the font ${JSON.stringify(known.family)} is not installed`,
+      span,
+      hint: `run: kadam fonts add "${known.family}"`,
+    });
+    return;
+  }
+  const close = closestFontNames(name, fonts);
+  // A fix replaces the name only where the span is exactly the name as written.
+  const width = span.end.offset - span.start.offset;
+  const quoted = width === JSON.stringify(name).length;
+  const exact = quoted || width === name.length;
+  diagnostics.add({
+    code: "KDM3005",
+    severity: "error",
+    message: `unknown font ${JSON.stringify(name)}`,
+    span,
+    hint: close.length > 0
+      ? `did you mean ${close.map((option) => JSON.stringify(option)).join(" or ")}?`
+      : `put the font's .woff2 files in the project's fonts/ folder, or see every free font with: kadam fonts list`,
+    ...(exact && close.length > 0
+      ? { fixes: close.map((option) => ({ label: `the font is "${option}"`, span, text: quoted ? JSON.stringify(option) : option })) }
+      : {}),
+  });
 }
 
 function analyzeElement(

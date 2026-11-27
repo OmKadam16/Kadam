@@ -1,0 +1,27 @@
+[
+  {
+    "company": "Skyline Air",
+    "title": "Skyline Air sharpens customer journeys with Northwind Work",
+    "picture": "assets/skyline-air.svg"
+  },
+  {
+    "company": "Kumo Group",
+    "title": "Kumo pairs data with AI to unlock customer insights and value",
+    "picture": "assets/kumo-group.svg"
+  },
+  {
+    "company": "Lumi\u00e8re",
+    "title": "Data-driven beauty: how Lumi\u00e8re unlocks insights with Northwind",
+    "picture": "assets/lumiere.svg"
+  },
+  {
+    "company": "Banco Azul",
+    "title": "Banco Azul puts AI in the hands of every team",
+    "picture": "assets/banco-azul.svg"
+  },
+  {
+    "company": "River City FC",
+    "title": "River City FC uses Northwind to scale impact on and off the pitch",
+    "picture": "assets/river-city-fc.svg"
+  }
+]

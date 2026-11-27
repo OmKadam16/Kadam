@@ -1,0 +1,7 @@
+kadam 0.4
+
+A Feature is a card without a shadow, with a ___ title and a ___ description.
+Give it 24px padding. It has a border.
+
+A Quote is a card with a ___ quote and a ___ name.
+It has a soft shadow.

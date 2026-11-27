@@ -60,6 +60,7 @@ export function startLanguageServer(input: NodeJS.ReadableStream = process.stdin
             hoverProvider: true,
             definitionProvider: true,
             documentFormattingProvider: true,
+            codeActionProvider: { codeActionKinds: ["quickfix"] },
           },
           serverInfo: { name: "kadam" },
         });
@@ -109,6 +110,23 @@ export function startLanguageServer(input: NodeJS.ReadableStream = process.stdin
         const path = pathOf(params.textDocument.uri);
         const found = definition(path, open.get(path) ?? "", params.position);
         reply(message.id!, found === null ? null : { uri: pathToFileURL(found.path).href, range: found.range });
+        return;
+      }
+      case "textDocument/codeAction": {
+        // D-50: the fixes the checker offers, as quick fixes.
+        const uri = params.textDocument.uri as string;
+        const path = pathOf(uri);
+        const line = params.range?.start?.line ?? 0;
+        const actions = (published.get(path) ?? [])
+          .filter((diagnostic) => diagnostic.range.start.line <= line && diagnostic.range.end.line >= line)
+          .flatMap((diagnostic) => (diagnostic.data?.fixes ?? []).map((fix, index) => ({
+            title: fix.title,
+            kind: "quickfix",
+            diagnostics: [diagnostic],
+            isPreferred: index === 0,
+            edit: { changes: { [uri]: [{ range: fix.range, newText: fix.newText }] } },
+          })));
+        reply(message.id!, actions);
         return;
       }
       case "textDocument/formatting": {

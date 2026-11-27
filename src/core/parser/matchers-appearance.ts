@@ -36,6 +36,15 @@ import {
 export function matchPageSetting(
   tokens: readonly Token[],
 ): StatementMatchBody | null {
+  // D-51: `the heading font is "Playfair Display"`
+  if (isKeyword(tokens[0], "the") && (isKeyword(tokens[1], "heading") || isKeyword(tokens[1], "headings"))
+    && isKeyword(tokens[2], "font") && (isKeyword(tokens[3], "is") || isKeyword(tokens[3], "are"))) {
+    const name = tokens[4];
+    if (tokens.length === 5 && name?.kind === "string" && String(name.value).trim() !== "") {
+      return { statement: { type: "page-setting", property: "custom font", target: "headings", name: String(name.value).trim(), nameSpan: name.span, span: spanFromTokens(tokens) }, diagnostics: [] };
+    }
+    return { statement: null, diagnostics: [{ code: "KDM3005", message: "the heading font needs a font name in quotes", span: spanFromTokens(tokens), hint: 'for example: the heading font is "Playfair Display"' }] };
+  }
   if (
     !isKeyword(tokens[0], "the") ||
     !isKeyword(tokens[1], "page") ||
@@ -57,6 +66,10 @@ export function matchPageSetting(
   const diagnostics: DiagnosticSpec[] = [];
 
   if (isKeyword(property, "font")) {
+    // D-51: `the page font is "Lora"`
+    if (rest.length === 1 && rest[0]!.kind === "string" && String(rest[0]!.value).trim() !== "") {
+      return { statement: { type: "page-setting", property: "custom font", target: "page", name: String(rest[0]!.value).trim(), nameSpan: rest[0]!.span, span }, diagnostics };
+    }
     const family = normalizeWords(rest);
     if (family === "sans serif" || family === "serif" || family === "monospace") {
       return {
@@ -73,7 +86,7 @@ export function matchPageSetting(
       code: "KDM3005",
       message: `invalid page font ${JSON.stringify(describeTokens(rest))}`,
       span: rest.length > 0 ? spanFromTokens(rest) : span,
-      hint: "use sans serif, serif, or monospace",
+      hint: 'use sans serif, serif, monospace, or a font name in quotes: the page font is "Lora"',
     });
     return { statement: null, diagnostics };
   }

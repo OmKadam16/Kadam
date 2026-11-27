@@ -68,7 +68,9 @@ export function usesRuntime(elements: readonly ElementNode[]): boolean {
         element.statements.some((statement) => {
           if (statement.type === "scoped" && statement.scope.kind === "state") return true;
           const type = inner(statement).type;
-          return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden" || type === "data-load" || type === "form-state" || type === "background-play" || type === "lightbox" || type === "embed";
+          return type === "event" || type === "remember" || type === "text-binding" || type === "visibility-binding" || type === "starts-hidden" || type === "data-load" || type === "form-state" || type === "background-play" || type === "lightbox" || type === "embed" || type === "cursor-effect" ||
+            (statement.type === "button-effect" && (statement.effect === "magnetic" || statement.effect === "ripple")) ||
+            (statement.type === "text-effect" && statement.effect === "scramble");
         }) ||
         visit(element.children),
     );

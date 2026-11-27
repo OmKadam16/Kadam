@@ -1,4 +1,8 @@
+import { readFileSync } from "node:fs";
+
 import { CODE_EXPLANATIONS, explainCode } from "../core/diagnostics/explanations.js";
+import { parseText } from "../core/parser/parser.js";
+import { isProseSource } from "../core/prose/translate.js";
 import { libraryComponentNames } from "../compiler/project.js";
 import { describeLibraryComponent, isLibraryComponent, printLibraryComponent, printLibraryList } from "./library-command.js";
 
@@ -10,6 +14,29 @@ import { describeLibraryComponent, isLibraryComponent, printLibraryComponent, pr
 export function runExplainCommand(args: readonly string[]): number {
   const json = args.includes("--json");
   const wanted = args.filter((arg) => arg !== "--json" && arg !== "--library");
+  // D-50: `kadam explain --blocks page.kdm` prints a paragraph page in the block form.
+  const blocksAt = args.indexOf("--blocks");
+  if (blocksAt !== -1) {
+    const path = args[blocksAt + 1];
+    if (path === undefined) {
+      console.error("kadam explain: --blocks needs a kadam 0.4 page, for example kadam explain --blocks pages/home.kdm");
+      return 2;
+    }
+    let text: string;
+    try {
+      text = readFileSync(path, "utf8");
+    } catch {
+      console.error(`kadam explain: cannot read ${path}`);
+      return 2;
+    }
+    if (!isProseSource(text)) {
+      console.error(`kadam explain: ${path} is not a kadam 0.4 page; it is already in the block form`);
+      return 2;
+    }
+    const parsed = parseText(path, text, { validate: false, allowComponentKinds: true });
+    process.stdout.write(parsed.prose?.text ?? "");
+    return 0;
+  }
   // D-46: `kadam explain --library` lists the standard components.
   if (args.includes("--library")) {
     if (json) console.log(JSON.stringify(libraryNames().map(describeLibraryComponent), null, 2));

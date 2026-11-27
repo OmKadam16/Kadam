@@ -41,6 +41,22 @@ component SiteHeader {
                     when hovered, the text turns #2747C9
                     when clicked, go to page "Getting started"
                 }
+                paragraphs1 {
+                    a link
+                    the text says "Paragraphs"
+                    the text is muted
+                    the text is not underlined
+                    when hovered, the text turns #2747C9
+                    when clicked, go to page "Paragraphs"
+                }
+                fonts1 {
+                    a link
+                    the text says "Fonts"
+                    the text is muted
+                    the text is not underlined
+                    when hovered, the text turns #2747C9
+                    when clicked, go to page "Fonts"
+                }
                 sentences1 {
                     a link
                     the text says "Sentences"

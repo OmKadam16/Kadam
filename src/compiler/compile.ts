@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { collectFontNames, resolveFonts } from "../fonts/resolve.js";
 import type { ManifestFont } from "./manifest.js";
 import { checkContrast } from "./contrast.js";
 import {
@@ -113,8 +115,17 @@ function compileWithSource(
   const escapeHatches = document.page === null ? [] : collectEscapeHatches(document.page);
   if (options.strict === true) banEscapeHatches(escapeHatches, documentDiagnostics);
   diagnostics.addAll(documentDiagnostics.sorted());
+  // D-51: a single file can use the built-in fonts too.
+  const namedFonts = new Set<string>();
+  if (document.page !== null && document.languageVersion !== "0.1") collectFontNames(document.page, namedFonts);
+  const resolvedFonts = resolveFonts(options.fonts ?? {}, namedFonts, null);
+  const fonts = resolvedFonts.fonts;
   if (document.page !== null) {
-    diagnostics.addAll(analyzeDocument(document, { pages, fonts: new Set(Object.keys(options.fonts ?? {})) }));
+    diagnostics.addAll(analyzeDocument(document, {
+      pages,
+      fonts: new Set(Object.keys(fonts)),
+      fontWeights: new Map(Object.entries(fonts).flatMap(([name, font]) => (font.weights === undefined ? [] : [[name, font.weights] as const]))),
+    }));
   }
   const checked = diagnostics.sorted();
   if (checked.some((diagnostic) => diagnostic.severity === "error")) {
@@ -127,7 +138,7 @@ function compileWithSource(
       route,
       pageRoutes,
       basePath: options.basePath,
-      fonts: options.fonts,
+      fonts,
     });
     const files: readonly OutputFile[] = [
       {
@@ -146,6 +157,7 @@ function compileWithSource(
         kind: "css",
       },
       ...runtimeFiles(page),
+      ...resolvedFonts.files.map((face): OutputFile => ({ path: face.path, contents: readFileSync(face.file), kind: "asset" })),
     ];
     // D-39: contrast warnings for kadam 0.3 pages; they never block output.
     if (document.languageVersion !== "0.1") {

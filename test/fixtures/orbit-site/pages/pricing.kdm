@@ -1,0 +1,7 @@
+kadam 0.4
+
+Pricing section:
+    Give it 64px padding.
+    A big heading says "Pricing".
+    Text says "One plan: $4 a month." A highlight sweeps under "$4 a month".
+    A black button says "Back home". When clicked, go to page "Orbit".

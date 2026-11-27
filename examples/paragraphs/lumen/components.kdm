@@ -1,0 +1,8 @@
+kadam 0.4
+// Fill in the blanks (___) when you use them.
+
+A PrimaryButton is a big black button with white text that says ___.
+It has fully rounded corners. When hovered, it lifts by 2px.
+
+A FeatureCard is a card without a shadow and without a top border, with a ___ title and a ___ description.
+It has 24px padding. It has a 1px #6B728040 border on the bottom.

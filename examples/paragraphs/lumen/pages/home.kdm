@@ -1,0 +1,25 @@
+kadam 0.4
+
+The page is called "Lumen".
+The page background is white.
+
+Nav bar:
+    The Lumen logo shows "assets/lumen.svg" on the left. It is 32px tall.
+    A small black button says "Get Started" on the right. It has rounded corners.
+
+Hero section:
+    The background is a #BFDBFE to white gradient from left to right.
+    It has 24px padding on the left and right. It has 120px padding on the bottom.
+
+    After that, a 200px gap.
+    A big heading says "Meet Lumen, the most effective agent you can run."
+    After that, a 50px gap.
+    Small #4B5563 text, 18px, says "Lumen helps you get the most out of AI for the least spent."
+    After that, a 70px gap.
+    A PrimaryButton called download says "Download for macOS".
+
+Features section:
+    It has 64px padding. It has 16px gap between children.
+    A heading says "Why Lumen".
+    A FeatureCard with the title "Fast" and the description "Answers in seconds, not minutes.".
+    A FeatureCard, but rounded, with the title "Cheap" and the description "It picks the smallest model that can do the job.".

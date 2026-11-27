@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "n
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DocumentNode, ElementNode } from "../core/ast/nodes.js";
+import { collectFontNames, resolveFonts } from "../fonts/resolve.js";
 import {
   DiagnosticBag,
   type Diagnostic,
@@ -17,7 +18,8 @@ import {
   validatePageComponents,
 } from "../core/components/validate.js";
 import { parseComponentSource } from "../core/parser/component.js";
-import { parseSource } from "../core/parser/parser.js";
+import { parseSource, remapSpans, titleFromPath } from "../core/parser/parser.js";
+import { isProseSource, translateProseComponents, type ProseComponentInfo } from "../core/prose/translate.js";
 import { parseThemeSource, type ThemeColor } from "../core/parser/theme.js";
 import { checkContrast } from "./contrast.js";
 import { validateDocument } from "../core/parser/validate.js";
@@ -39,7 +41,7 @@ import {
 } from "../core/semantics/analyze.js";
 import {
   createSourceFile,
-  type SourceFile,
+  SourceFile,
   type Span,
 } from "../core/source/source-file.js";
 import { baseCssUsage, emitBaseCss, emitPageCss } from "./emit-css.js";
@@ -272,6 +274,10 @@ export function compileProject(
     return documents.get(path)!;
   };
 
+  const madeComponents: { path: string; source: SourceFile; name: string; text: string; lineSpans: readonly (Span | null)[] }[] = [];
+  // D-50: what kadam 0.4 pages may use, read before any page is translated.
+  const proseComponents = readProseComponentInfos(projectRoot, manifest.components, options.sourceOverrides, manifest.paragraphs === true);
+
   for (const pageEntry of manifest.pages) {
     const sourcePath = pageEntry.source;
     const source = loadProjectSource({
@@ -294,9 +300,14 @@ export function compileProject(
       defaultLanguageVersion,
       breakpoints,
       colorTokens,
+      proseTitle: pageEntry.title ?? titleFromPath(sourcePath),
+      paragraphsByDefault: manifest.paragraphs === true,
+      proseComponents,
     });
     diagnostics.addAll(parsed.diagnostics);
 
+    // D-50: components a paragraph page made for its `For each` groups.
+    for (const made of parsed.prose?.components ?? []) madeComponents.push({ path: sourcePath, source, ...made });
     reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
     if (parsed.document.page === null) continue;
 
@@ -347,6 +358,16 @@ export function compileProject(
   // Step 3: read and parse every declared component. Parser diagnostics stay
   // on each ComponentFile because buildComponentCatalog() owns merging them.
   const componentFiles: ComponentFile[] = [];
+  for (const made of madeComponents) {
+    const blocks = parseComponentSource(new SourceFile(made.path, made.text), { defaultLanguageVersion: "0.3", breakpoints, colorTokens });
+    const remap = (span: Span): Span => (span.file === made.path ? made.lineSpans[span.start.line] ?? span : span);
+    componentFiles.push({
+      source: made.source,
+      namespace: null,
+      document: remapSpans(blocks.document, remap),
+      diagnostics: blocks.diagnostics.map((diagnostic) => ({ ...diagnostic, span: remap(diagnostic.span) })),
+    });
+  }
   for (const entry of manifest.components) {
     const sourcePath = entry.source;
     const source = entry.library === "kadam" ? loadLibrarySource(sourcePath, diagnostics, sources) : loadProjectSource({
@@ -362,6 +383,23 @@ export function compileProject(
       sources,
     });
     if (source === null) continue;
+
+    // D-50: a kadam 0.4 components.kdm holds many definitions; each is one component.
+    if (isProseSource(source.text, manifest.paragraphs === true)) {
+      const translated = translateProseComponents(source, colorTokens);
+      diagnostics.addAll(translated.diagnostics);
+      for (const definition of translated.definitions) {
+        const blocks = parseComponentSource(new SourceFile(sourcePath, definition.text), { defaultLanguageVersion: "0.3", breakpoints, colorTokens });
+        const remap = (span: Span): Span => (span.file === sourcePath ? definition.lineSpans[span.start.line] ?? span : span);
+        componentFiles.push({
+          source,
+          namespace: entry.namespace,
+          document: remapSpans(blocks.document, remap),
+          diagnostics: blocks.diagnostics.map((diagnostic) => ({ ...diagnostic, span: remap(diagnostic.span) })),
+        });
+      }
+      continue;
+    }
 
     const parsed = parseComponentSource(source, { defaultLanguageVersion, breakpoints, colorTokens });
     reportVersionMismatch(parsed.document, manifest.kadam, sourcePath, diagnostics);
@@ -489,6 +527,13 @@ export function compileProject(
     };
   }
 
+  // D-51: the fonts pages name, from kadam.json, fonts/ or the built-in set.
+  const namedFonts = new Set<string>();
+  for (const loaded of expandedPages) collectFontNames(loaded.document.page!, namedFonts);
+  const resolvedFonts = resolveFonts(manifest.fonts ?? {}, namedFonts, projectRoot);
+  const fonts = resolvedFonts.fonts;
+  const fontWeights = new Map(Object.entries(fonts).flatMap(([name, font]) => (font.weights === undefined ? [] : [[name, font.weights] as const])));
+
   // Step 7: semantic analysis uses the complete project route table, so a
   // navigation target may point at any declared page.
   for (const loaded of expandedPages) {
@@ -496,7 +541,8 @@ export function compileProject(
       analyzeDocument(loaded.document, {
         pages: semanticPages,
         hasSiteUrl: manifest.siteUrl !== undefined,
-        fonts: new Set(Object.keys(manifest.fonts ?? {})),
+        fonts: new Set(Object.keys(fonts)),
+        fontWeights,
       }),
     );
   }
@@ -505,7 +551,7 @@ export function compileProject(
   const references = new Map<string, Span>();
   const downloads = new Set<string>();
   for (const loaded of expandedPages) {
-    collectAssetReferences(loaded.document.page!.elements, references, manifest.fonts ?? {}, downloads);
+    collectAssetReferences(loaded.document.page!.elements, references, fonts, downloads);
     for (const setting of loaded.document.page!.settings) {
       if ((setting.property === "icon" || setting.property === "share image") && !references.has(setting.value)) {
         references.set(setting.value, setting.valueSpan);
@@ -588,7 +634,7 @@ export function compileProject(
           pageRoutes,
           basePath,
           siteUrl: manifest.siteUrl,
-          fonts: manifest.fonts,
+          fonts,
           themeColors,
         }),
       );
@@ -633,6 +679,11 @@ export function compileProject(
         contents: readAssetContents(asset, options.sourceOverrides),
         kind: "asset",
       });
+    }
+    // D-51: the files of the built-in and fonts/ families pages use.
+    for (const face of resolvedFonts.files) {
+      if (files.some((file) => file.path === face.path)) continue;
+      files.push({ path: face.path, contents: readFileSync(face.file), kind: "asset" });
     }
 
     // F8: embeds load in frames from these origins once clicked.
@@ -920,7 +971,7 @@ function collectAssetReferences(
       }
       if (statement.type === "custom-font") {
         const source = fonts[statement.name]?.source;
-        if (source !== undefined && !out.has(source)) out.set(source, statement.nameSpan);
+        if (source !== undefined && source !== "" && !out.has(source)) out.set(source, statement.nameSpan);
       }
     }
     for (const statement of element.statements) {
@@ -1050,3 +1101,40 @@ function loadLibrarySource(sourcePath: string, diagnostics: DiagnosticBag, sourc
   sources.push(created.source);
   return created.source;
 }
+
+/**
+ * D-50: the components a kadam 0.4 page may name, with their blanks: from a
+ * kadam 0.4 components.kdm, from block component files, and from the library.
+ */
+function readProseComponentInfos(
+  projectRoot: string,
+  entries: KadamManifest["components"],
+  overrides: ReadonlyMap<string, string | Uint8Array> | undefined,
+  paragraphs = false,
+): Map<string, ProseComponentInfo> {
+  const infos = new Map<string, ProseComponentInfo>();
+  for (const entry of entries) {
+    const path = entry.library === "kadam" ? join(LIBRARY_ROOT, entry.source.slice("kadam/".length)) : resolve(projectRoot, entry.source);
+    const override = entry.library === "kadam" ? undefined : overrides?.get(entry.source);
+    let text: string | undefined = override === undefined ? undefined : typeof override === "string" ? override : new TextDecoder().decode(override);
+    if (text === undefined) {
+      try {
+        text = readFileSync(path, "utf8");
+      } catch {
+        continue;
+      }
+    }
+    if (isProseSource(text, paragraphs)) {
+      for (const definition of translateProseComponents(new SourceFile(entry.source, text)).definitions) infos.set(definition.name, definition.info);
+      continue;
+    }
+    const component = parseComponentSource(new SourceFile(entry.source, text)).document.component;
+    if (component === null) continue;
+    const blanks = component.parameters.map((parameter) => parameter.name);
+    const texts = component.parameters.filter((parameter) => parameter.valueType === "text").map((parameter) => parameter.name);
+    const saysBlank = ["label", "text", "title", "message"].find((name) => texts.includes(name)) ?? null;
+    infos.set(component.name, { saysBlank, blanks, ...(entry.library === "kadam" ? { library: true } : {}) });
+  }
+  return infos;
+}
+

@@ -12,6 +12,7 @@ const SOURCES = {
   marketing: "examples/reference/marketing",
   shop: "examples/reference/shop",
   server: "test/fixtures/server-shop",
+  paragraphs: "examples/paragraphs/lumen",
 };
 const DESCRIPTIONS = {
   minimal: "One page with a heading, a paragraph and a button",
@@ -21,6 +22,7 @@ const DESCRIPTIONS = {
   marketing: "A landing page and a pricing page with a comparison table",
   shop: "Products loaded at run time, with filters and paging",
   server: "Pages that load from and send forms to a kadam 0.2 server module",
+  paragraphs: "A landing page written as paragraphs (kadam 0.4), with components.kdm and file routes",
 };
 const MINIMAL = {
   "kadam.json": `${JSON.stringify({ kadam: "0.3", name: "my-site", pages: [{ source: "pages/home.kdm", route: "/" }] }, null, 2)}\n`,

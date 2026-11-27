@@ -1,0 +1,27 @@
+kadam 0.4
+
+Nav bar:
+    The word "Orbit" in bold on the left.
+    A button says "Menu" on the right. When clicked, it toggles the menu.
+
+Menu:
+    It starts hidden. Give it 16px padding. The background is #F3F4F6.
+    A link says "Pricing" that goes to the pricing page.
+    A link says "Docs" that goes to page "Home".
+
+Hero section:
+    A big heading says "Plan your week."
+    A black button says "Join the waitlist". It opens the waitlist dialog.
+
+Waitlist dialog:
+    A heading says "Join the waitlist".
+    "We will email you when Orbit opens."
+    A button says "Close". It closes the dialog.
+
+Questions section:
+    A heading says "Questions".
+    Is Orbit free?
+        "Yes. The basic plan is free forever."
+    Does it work offline?
+        "Yes. Your plan is stored on your device."
+

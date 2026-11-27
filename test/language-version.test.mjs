@@ -37,9 +37,9 @@ const TABLE = [...STATEMENT_TEMPLATES, GLOW];
 test("kadam 0.3 is an accepted directive; unknown versions are rejected", () => {
   const ok = parseText("a.kdm", 'kadam 0.3\npage "P" {\n}\n');
   assert.deepEqual(codes(ok), []);
-  const bad = parseText("b.kdm", 'kadam 0.4\npage "P" {\n}\n');
+  const bad = parseText("b.kdm", 'kadam 0.5\npage "P" {\n}\n');
   assert.deepEqual(codes(bad), ["KDM4004"]);
-  assert.match(bad.diagnostics[0].message, /0\.1 and 0\.3/);
+  assert.match(bad.diagnostics[0].message, /0\.1 and 0\.3 \(blocks\) and 0\.4 \(paragraphs\)/);
 });
 
 test("a template newer than the file version is claimed and rejected with KDM2013", () => {
@@ -69,14 +69,16 @@ test("version gating also applies inside a responsive scope", () => {
 test("every 0.1 template stays 0.1; only frontend-track templates are 0.3", () => {
   const newer = STATEMENT_TEMPLATES.filter((t) => (t.since ?? "0.1") !== "0.1").map((t) => t.id);
   assert.deepEqual(newer.sort(), [
-    "adjustment", "aspect-ratio", "auto-dark", "backdrop-blur", "background-image", "background-image-rule", "background-play",
-    "caption", "captions", "child-rule", "click-effects", "color-filter", "color-token", "column-span", "content-width", "corner-radius",
-    "custom-font", "custom-shadow", "data-load", "data-shape", "data-state", "document-source", "effect", "embed", "external", "f1-field-type", "f1-state", "f4-click", "field-error", "flex-rule",
-    "fluid-text", "form-action", "form-state", "generative-background", "gradient-angle", "gradient-stops", "grain", "grid", "image-fit",
-    "image-focus", "key-event", "lightbox", "line-clamp", "loading", "loop", "masonry", "media-source", "named-icon", "no-speech", "options",
-    "outline", "overflow", "overlay", "page-metadata", "pattern", "percent-size", "position", "poster", "property", "raw-css", "remember",
-    "scroll-effect", "scroll-entrance", "self-center", "shape", "size-limit", "snap", "stagger", "starts-hidden", "starts-open", "state", "sticky", "styled-border", "stylesheet-class", "submit",
-    "summary", "text-binding", "text-span", "text-style", "visibility-binding",
+    "adjustment", "aspect-ratio", "auto-dark", "backdrop-blur", "background-image", "background-image-rule", "background-play", "caption",
+    "captions", "child-rule", "click-effects", "color-filter", "color-token", "column-span", "content-width", "corner-radius",
+    "cursor-effect", "custom-font", "custom-shadow", "data-load", "data-shape", "data-state", "document-source", "effect", "embed",
+    "external", "f1-field-type", "f1-state", "f4-click", "field-error", "flex-rule", "fluid-text", "form-action", "form-state",
+    "generative-background", "gradient-angle", "gradient-stops", "grain", "grid", "heading-font", "highlight", "hover-effect", "image-fit", "image-focus",
+    "key-event", "lightbox", "line-clamp", "loading", "loop", "masonry", "media-source", "named-icon", "no-speech", "options", "outline",
+    "overflow", "overlay", "page-metadata", "page-motion", "pattern", "percent-size", "position", "poster", "press-effect", "property",
+    "raw-css", "remember", "scroll-effect", "scroll-entrance", "scroll-motion", "self-center", "shape", "size-limit", "snap", "stagger",
+    "starts-hidden", "starts-open", "state", "sticky", "styled-border", "stylesheet-class", "submit", "summary", "text-binding",
+    "text-effect", "text-span", "text-style", "visibility-binding",
   ]);
 });
 

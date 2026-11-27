@@ -28,6 +28,9 @@ export function formatDiagnostic(
   if (diagnostic.hint !== undefined) {
     lines.push(`${pad} = hint: ${diagnostic.hint}`);
   }
+  (diagnostic.fixes ?? []).forEach((fix, index) => {
+    lines.push(`${pad} = fix ${index + 1}: ${fix.label}`);
+  });
   return lines.join("\n");
 }
 

@@ -8,6 +8,7 @@ import type {
   RepeatClause,
   StatementNode,
 } from "../ast/nodes.js";
+import { isProseSource, looksLikeParagraphs, PROSE_SENTENCES, translateProse, type ProseComponentInfo, type ProseTranslation } from "../prose/translate.js";
 import { DiagnosticBag, type Diagnostic } from "../diagnostics/diagnostic.js";
 import { lex } from "../lexer/lexer.js";
 import type { Token } from "../lexer/token.js";
@@ -22,7 +23,8 @@ import {
   isUiLanguageVersion,
   type UiLanguageVersion,
 } from "../../version.js";
-import { matchLine } from "./registry.js";
+import { matchLine, STATEMENT_TEMPLATES } from "./registry.js";
+import { editDistance } from "./suggest.js";
 import { matchRepeatModifier } from "./repeat.js";
 import { matchPropertyBinding } from "./property.js";
 import type { TemplateContext } from "./statement-types.js";
@@ -36,6 +38,8 @@ export interface ParseResult {
   readonly comments: readonly Token[];
   readonly document: DocumentNode;
   readonly diagnostics: readonly Diagnostic[];
+  /** D-50: present when the source was a kadam 0.4 paragraph page. */
+  readonly prose?: ProseTranslation;
 }
 
 export interface ParseOptions {
@@ -52,6 +56,12 @@ export interface ParseOptions {
   readonly breakpoints?: ReadonlyMap<string, number> | undefined;
   /** kadam 0.3 theme color names from the project theme (D-38). */
   readonly colorTokens?: ReadonlySet<string> | undefined;
+  /** D-50: the title of a kadam 0.4 page that does not name itself (its file name). */
+  readonly proseTitle?: string | undefined;
+  /** D-50: files without a version line are paragraphs (a kadam 0.4 site). */
+  readonly paragraphsByDefault?: boolean | undefined;
+  /** D-50: components a kadam 0.4 page may use. */
+  readonly proseComponents?: ReadonlyMap<string, ProseComponentInfo> | undefined;
 }
 
 export interface LogicalLine {
@@ -88,6 +98,26 @@ export function parseSource(
   source: SourceFile,
   options: ParseOptions = {},
 ): ParseResult {
+  // D-50: a kadam 0.4 page is paragraphs, translated to the block form first.
+  if (isProseSource(source.text, options.paragraphsByDefault === true)) return parseProseSource(source, options);
+  // A file written as paragraphs, without the line that says so.
+  if (!/^\s*(?:\/\/[^\n]*\n\s*)*kadam\s/.test(source.text) && looksLikeParagraphs(source.text)) {
+    const start = source.span(0, 0);
+    return {
+      source,
+      tokens: [],
+      comments: [],
+      document: { type: "document", version: null, versionSpan: null, languageVersion: "0.3", page: null, component: null, span: start } as unknown as DocumentNode,
+      diagnostics: [{
+        code: "KDM4004",
+        severity: "error",
+        message: "this file is written as paragraphs; its first line must be kadam 0.4",
+        span: source.span(0, Math.min(source.text.indexOf("\n") === -1 ? source.text.length : source.text.indexOf("\n"), source.text.length)),
+        hint: "add kadam 0.4 as the first line (in a site whose kadam.json says \"kadam\": \"0.4\", or that has no kadam.json, the line is optional)",
+        fixes: [{ label: "kadam 0.4 as the first line", span: start, text: "kadam 0.4\n\n" }],
+      }],
+    };
+  }
   const lexed = lex(source);
   const diagnostics = new DiagnosticBag();
   diagnostics.addAll(lexed.diagnostics);
@@ -355,7 +385,7 @@ class Parser {
     } else {
       this.#error(
         "KDM4004",
-        `language version ${version} is not supported; this compiler implements ${UI_LANGUAGE_VERSIONS.join(" and ")}`,
+        `language version ${version} is not supported; this compiler implements ${UI_LANGUAGE_VERSIONS.join(" and ")} (blocks) and 0.4 (paragraphs)`,
         tokens[1]!.span,
         `change the directive to: kadam ${LANGUAGE_VERSION}`,
       );
@@ -625,6 +655,10 @@ class Parser {
     if (builder === undefined) {
       if (node.type === "page-setting") {
         const page = this.#page!;
+        if (node.property === "custom font" && this.#languageVersion === "0.1") {
+          this.#error("KDM2013", "a named page or heading font requires kadam 0.3", node.span, 'change the first line to "kadam 0.3"');
+          return;
+        }
         page.settings.push(node);
         // A theme color is usable on the lines after its declaration (D-38).
         if (node.property === "color token") this.#colorTokens.add(node.name);
@@ -864,4 +898,126 @@ function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   }
   if (a.code !== b.code) return a.code < b.code ? -1 : 1;
   return a.message < b.message ? -1 : a.message > b.message ? 1 : 0;
+}
+
+/** D-50: translate a paragraph page, parse the blocks, and point everything back at the sentences. */
+function parseProseSource(source: SourceFile, options: ParseOptions): ParseResult {
+  const translation = translateProse(source, {
+    title: options.proseTitle ?? titleFromPath(source.path),
+    ...(options.colorTokens === undefined ? {} : { colorTokens: options.colorTokens }),
+    ...(options.proseComponents === undefined ? {} : { components: options.proseComponents }),
+  });
+  const blocks = new SourceFile(source.path, translation.text);
+  const parsed = parseSource(blocks, { ...options, defaultLanguageVersion: "0.3" });
+  const remap = (span: Span): Span => (span.file === source.path ? translation.lineSpans[span.start.line] ?? span : span);
+  const diagnostics = [
+    ...translation.diagnostics,
+    ...parsed.diagnostics.map((diagnostic) => ({
+      ...diagnostic,
+      span: remap(diagnostic.span),
+      // The sentence as the author wrote it, not the block line it became,
+      // with close paragraph sentences instead of block ones.
+      ...(diagnostic.message.startsWith("unrecognized statement ")
+        ? (() => {
+            const written = source.text.slice(remap(diagnostic.span).start.offset, remap(diagnostic.span).end.offset);
+            const near = closeProseSentences(written);
+            return {
+              message: `I don't know the sentence: ${written}`,
+              hint: near.length > 0 ? `sentences like it: ${near.join(" | ")}` : "see the sentences in the language spec, section 17",
+            };
+          })()
+        : {}),
+      ...proseFixes(diagnostic, remap(diagnostic.span)),
+      ...(diagnostic.related === undefined ? {} : { related: diagnostic.related.map((related) => ({ ...related, span: remap(related.span) })) }),
+    })),
+  ];
+  return {
+    ...parsed,
+    source,
+    document: remapSpans(parsed.document, remap),
+    diagnostics: dedupe(diagnostics).sort(compareDiagnostics),
+    prose: translation,
+  };
+}
+
+/** `pages/my-usage.kdm` is titled "My usage"; `home` and `index` are "Home". */
+export function titleFromPath(path: string): string {
+  const base = (path.split("/").at(-1) ?? path).replace(/\.kdm$/, "");
+  const words = base === "index" ? "home" : base.replace(/[-_]+/g, " ");
+  return `${words[0]?.toUpperCase() ?? ""}${words.slice(1)}` || "Home";
+}
+
+export function remapSpans<T>(value: T, remap: (span: Span) => Span): T {
+  if (Array.isArray(value)) return value.map((item) => remapSpans(item, remap)) as T;
+  if (value === null || typeof value !== "object") return value;
+  const record = value as Record<string, unknown>;
+  if (typeof record.file === "string" && typeof record.start === "object" && typeof record.end === "object") return remap(value as unknown as Span) as unknown as T;
+  const out: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(record)) out[key] = remapSpans(item, remap);
+  return out as T;
+}
+
+/** Two generated lines from one sentence can report the same problem. */
+function dedupe(list: readonly Diagnostic[]): Diagnostic[] {
+  const seen = new Set<string>();
+  return list.filter((diagnostic) => {
+    const key = `${diagnostic.code}|${diagnostic.message}|${diagnostic.span.start.offset}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * D-50: the block grammar's "did you mean" sentences, worded as paragraph
+ * sentences, replace the sentence the author wrote.
+ */
+function proseFixes(diagnostic: Diagnostic, span: Span): { fixes: NonNullable<Diagnostic["fixes"]> } | Record<string, never> {
+  const hint = diagnostic.hint ?? "";
+  if (!hint.startsWith("did you mean: ")) return {};
+  // Only close sentences are fixes; a far one is a guess.
+  const written = diagnostic.message.match(/"(.*)"$/)?.[1] ?? "";
+  const fixes = hint.slice("did you mean: ".length).replace(/\?$/, "").split(" | ")
+    .filter((option) => written !== "" && editDistance(option.replace(/"[^"]*"/g, '"…"'), written.replace(/"[^"]*"/g, '"…"')) <= Math.max(2, Math.floor(written.length * 0.3)))
+    .map((option) => {
+      const sentence = /^has /.test(option) ? `It ${option}` : `${option[0]!.toUpperCase()}${option.slice(1)}`;
+      return { label: sentence, span, text: sentence };
+    });
+  return fixes.length === 0 ? {} : { fixes };
+}
+
+let proseSentencePool: readonly string[] | null = null;
+
+/** Every sentence a paragraph page can say about a thing, in the paragraph form. */
+function prosePool(): readonly string[] {
+  if (proseSentencePool !== null) return proseSentencePool;
+  const pool = new Set<string>(PROSE_SENTENCES.map((sentence) => sentence.text));
+  for (const template of STATEMENT_TEMPLATES) {
+    for (const example of template.examples ?? []) {
+      if (/^(it|its|when|the|has|on|in)\b/.test(example) && !example.startsWith("the page")) {
+        const sentence = example.startsWith("has ") ? `It ${example}` : `${example[0]!.toUpperCase()}${example.slice(1)}`;
+        pool.add(sentence);
+      }
+    }
+  }
+  proseSentencePool = [...pool];
+  return proseSentencePool;
+}
+
+/** Up to three sentences that share the most meaningful words with `written`. */
+function closeProseSentences(written: string): string[] {
+  const filler = new Set(["it", "its", "the", "a", "an", "is", "are", "has", "of", "to", "in", "on", "when", "and", "by"]);
+  const wordsOf = (text: string): Set<string> => new Set(text.toLowerCase().replace(/"[^"]*"/g, " ").split(/[^a-z0-9%]+/).filter((word) => word !== "" && !filler.has(word)));
+  const mine = wordsOf(written);
+  if (mine.size === 0) return [];
+  const scored = prosePool()
+    .map((sentence) => {
+      const theirs = wordsOf(sentence);
+      let shared = 0;
+      for (const word of mine) if (theirs.has(word) || [...theirs].some((other) => other.length > 3 && editDistance(other, word) <= 1)) shared += 1;
+      return { sentence, shared };
+    })
+    .filter((entry) => entry.shared > 0)
+    .sort((a, b) => b.shared - a.shared || a.sentence.length - b.sentence.length || (a.sentence < b.sentence ? -1 : 1));
+  return scored.slice(0, 3).map((entry) => entry.sentence);
 }

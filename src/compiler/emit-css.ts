@@ -413,6 +413,7 @@ export function emitPageCss(page: PageIR): string {
         ["font-weight", font.weight],
         ["font-style", font.style],
         ["font-display", "swap"],
+        ...(font.unicodeRange === undefined ? [] : [["unicode-range", font.unicodeRange] as Declaration]),
       ]),
     ),
     cssRule("body", [
@@ -422,7 +423,10 @@ export function emitPageCss(page: PageIR): string {
     // it shares the page text color and font through .kdm-page-landmark.
     cssRule(hasPageLandmarks(page) ? ".kdm-page,\n.kdm-page-landmark" : ".kdm-page", [
       ["color", formatColor(page.pageStyle.text)],
-      ["font-family", FONT_STACKS[page.pageStyle.font]],
+      ["font-family", page.pageStyle.fontStack ?? FONT_STACKS[page.pageStyle.font]],
+    ]),
+    ...(page.pageStyle.headingFontStack === undefined ? [] : [
+      cssRule(":where(.kdm-page, .kdm-page-landmark) :is(.kdm-kind-main-heading, .kdm-kind-section-heading, .kdm-kind-minor-heading)", [["font-family", page.pageStyle.headingFontStack]]),
     ]),
     ...themeBlocks(page),
   ];
@@ -438,6 +442,27 @@ export function emitPageCss(page: PageIR): string {
   for (const [className, value] of [...wordColors].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     blocks.push(cssRule(`.${className}`, [["color", value]]));
   }
+  // D-50: highlights that sweep under words, one rule per color.
+  const highlights = new Map<string, string>();
+  for (const element of flatten(page.elements)) {
+    for (const segment of element.text?.segments ?? []) {
+      if (segment.type === "highlight" && !highlights.has(segment.className)) highlights.set(segment.className, segment.color);
+    }
+  }
+  if (highlights.size > 0) {
+    blocks.push(cssRule(".kdm-highlight", [["padding", "0 0.1em"], ["color", "inherit"], ["background-color", "transparent"], ["background-repeat", "no-repeat"],
+      ["background-position", "0 88%"], ["background-size", "100% 42%"], ["animation", "kdm-highlight-sweep 900ms ease-out 300ms both"]]));
+    blocks.push(keyframes("kdm-highlight-sweep", [["from", [["background-size", "0% 42%"]]]]));
+    for (const [className, value] of [...highlights].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+      blocks.push(cssRule(`.${className}`, [["background-image", `linear-gradient(${value}, ${value})`]]));
+    }
+  }
+  // D-50: how the page comes in, and the page-to-page transition.
+  if (page.meta?.enter !== undefined) {
+    blocks.push(cssRule("body", [["animation", `kdm-page-${page.meta.enter} 500ms ease-out both`]]));
+    blocks.push(keyframes(`kdm-page-${page.meta.enter}`, page.meta.enter === "fade" ? [["from", [["opacity", "0"]]]] : [["from", [["opacity", "0"], ["translate", "0 16px"]]]]));
+  }
+  if (page.meta?.transition === "cross-fade") blocks.push("@view-transition {\n  navigation: auto;\n}");
   for (const element of elements) {
     blocks.push(...baseRules(element));
     for (const rule of element.rules ?? []) {
@@ -550,6 +575,14 @@ export function emitPageCss(page: PageIR): string {
         cssRule(`.${element.className} .kdm-field-input`, [["transition", "none"]]),
       );
     }
+  }
+  // D-50: the highlight shows at once, and pages come in without moving.
+  if (flatten(page.elements).some((element) => (element.text?.segments ?? []).some((segment) => segment.type === "highlight"))) {
+    reducedMotionRules.push(cssRule(".kdm-highlight", [["animation", "none"]]));
+  }
+  if (page.meta?.enter !== undefined) reducedMotionRules.push(cssRule("body", [["animation", "none"]]));
+  if (page.meta?.transition === "cross-fade") {
+    reducedMotionRules.push(cssRule("::view-transition-group(*),\n::view-transition-old(*),\n::view-transition-new(*)", [["animation", "none !important"]]));
   }
   if (reducedMotionRules.length > 0) {
     blocks.push(

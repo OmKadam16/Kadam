@@ -55,6 +55,11 @@
     "examples": "it shows the icon \"arrow right\""
   },
   {
+    "name": "Button hover effect",
+    "version": "0.3",
+    "examples": "when hovered, a white fill slides in from the left   ·   when hovered, a shine sweeps across it   ·   when hovered, its border draws itself"
+  },
+  {
     "name": "Center the box in its parent",
     "version": "0.3",
     "examples": "it is centered"
@@ -108,6 +113,11 @@
     "name": "Corner radius",
     "version": "0.1",
     "examples": "has rounded corners   ·   has 12px rounded corners   ·   has fully rounded corners"
+  },
+  {
+    "name": "Cursor effect",
+    "version": "0.3",
+    "examples": "when the cursor moves over it, white pixels pop out around the cursor   ·   when the cursor moves over it, grain surrounds the cursor within 10px   ·   when the cursor moves over it, a glow follows the cursor"
   },
   {
     "name": "Custom font",
@@ -180,6 +190,11 @@
     "examples": "the font is sans serif"
   },
   {
+    "name": "Font for every heading on the page (D-51)",
+    "version": "0.3",
+    "examples": "the heading font is \"Playfair Display\""
+  },
+  {
     "name": "Form destination",
     "version": "0.3",
     "examples": "it sends to \"https://example.com/subscribe\""
@@ -228,6 +243,11 @@
     "name": "Hidden until shown by an effect",
     "version": "0.3",
     "examples": "it starts hidden"
+  },
+  {
+    "name": "Highlight sweeping under words",
+    "version": "0.3",
+    "examples": "a highlight sweeps under \"least spent\"   ·   a yellow highlight sweeps under \"least spent\""
   },
   {
     "name": "Hover effect",
@@ -305,6 +325,11 @@
     "examples": "it spins forever   ·   it pulses every 2s   ·   it floats forever"
   },
   {
+    "name": "Magnetic pull or ripple",
+    "version": "0.3",
+    "examples": "it pulls toward the cursor   ·   it ripples when pressed"
+  },
+  {
     "name": "Markdown document shown inside the element",
     "version": "0.3",
     "examples": "it shows the document \"content/intro.md\""
@@ -347,12 +372,17 @@
   {
     "name": "Page default font family",
     "version": "0.1",
-    "examples": "the page font is sans serif"
+    "examples": "the page font is sans serif   ·   the page font is \"Lora\""
   },
   {
     "name": "Page default text color",
     "version": "0.1",
     "examples": "the page text is #171717"
+  },
+  {
+    "name": "Page entrance and page-to-page transition",
+    "version": "0.3",
+    "examples": "the page fades in when it opens   ·   the page slides up when it opens   ·   pages fade into each other when you move between them"
   },
   {
     "name": "Page metadata",
@@ -480,6 +510,11 @@
     "examples": "the placeholder says \"you@example.com\""
   },
   {
+    "name": "Text motion or gradient",
+    "version": "0.3",
+    "examples": "it types itself   ·   it appears word by word   ·   it scrambles into place"
+  },
+  {
     "name": "Text typography",
     "version": "0.1",
     "examples": "the text is 18px   ·   the text is blue   ·   the text is semibold"
@@ -488,6 +523,11 @@
     "name": "Theme color",
     "version": "0.3",
     "examples": "the brand color is #FF0066"
+  },
+  {
+    "name": "Tilt, parallax or reveal on scroll",
+    "version": "0.3",
+    "examples": "it tilts as you scroll   ·   it moves slower than the page   ·   it appears as you scroll"
   },
   {
     "name": "Truncation",

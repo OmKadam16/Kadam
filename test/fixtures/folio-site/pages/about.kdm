@@ -1,0 +1,10 @@
+kadam 0.4
+
+About section:
+    Give it 64px padding.
+    Side by side with 48px gap:
+        A photo of Mira smiling shows "assets/me.png". It is 320px wide. It is shaped like a circle.
+        Stacked:
+            A big heading says "About me".
+            Text says "I have designed products for ten years."
+            Text says "Before that I studied architecture in Porto."

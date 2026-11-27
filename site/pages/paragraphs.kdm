@@ -1,0 +1,44 @@
+kadam 0.4
+
+The page is called "Paragraphs".
+The page background is paper.
+The page text is ink.
+The page is dark when the system is dark.
+
+A SiteHeader.
+
+Guide section:
+    It is full width. It is at most 760px wide. It is centered.
+    It has 40px padding on the top and bottom and 24px padding on the left and right.
+    It has 14px gap between children.
+
+    A big heading says "Write pages as paragraphs". The text is between 2rem and 2.5rem.
+    Muted text, 18px, says "Start a file with kadam 0.4 and describe the page from top to bottom. The order you write things in is the order they appear."
+
+    A heading says "Things and words".
+    "A sentence that names a thing makes it. Words that describe it can come in any order, and sentences that start with It describe the thing you just named."
+    A code block says "A big heading says \"Meet Lumen.\"\nAfter that, a 50px gap.\nSmall gray text, 18px, says \"Get more for less.\"\nA big black button called download says \"Download\". It has rounded corners."
+
+    A heading says "Sections".
+    "A line that ends with a colon holds the indented lines under it. Its words say what it is, or how its lines are laid out."
+    A code block says "Hero section, centered:\n    A big heading says \"Plan your week.\"\n\nIn 3 columns:\n    A Feature with the title \"Fast\" and the description \"Seconds.\""
+
+    A heading says "Fill-in-the-blank components".
+    "Write components once in components.kdm. Each blank is filled where you use it, and but changes one thing."
+    A code block says "A PrimaryButton is a big black button with white text that says ___.\n\nA PrimaryButton says \"Sign up\".\nA PrimaryButton, but blue, says \"Learn more\"."
+
+    A heading says "Fonts".
+    "150 free fonts are built in, so naming one is enough. Every other free font is one command away, and your own font files go in the fonts folder."
+    A code block says "The page font is Lora.\nThe heading font is Playfair Display.\nText says \"Note\". The font is Caveat."
+
+    A heading says "Effects".
+    "Each effect is one sentence, and each one stops for people who prefer reduced motion."
+    A code block says "When the cursor moves over it, white pixels pop out around the cursor.\nWhen hovered, a white fill slides in from the left.\nIt appears word by word.\nIt tilts as you scroll."
+
+    A heading says "Fixes, never guesses".
+    "When a sentence is not one Kadam knows, the error says why and offers fixes. Run kadam fix to choose one, or kadam fix --first to take the first fix everywhere."
+    A code block says "error[KDM2001]: I don't know \"blck\" in: A big blck button says \"Go\"\n = fix 1: A big black button says \"Go\""
+
+    Note:
+        It has 16px padding. The background is tint. It has rounded corners.
+        "The full list of sentences is in the language spec, section 17, and kadam explain --blocks page.kdm shows what any page is built from."

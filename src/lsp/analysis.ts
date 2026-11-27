@@ -12,6 +12,8 @@ import { PROPERTIES } from "../core/parser/properties.js";
 import { matchLine, STATEMENT_TEMPLATES } from "../core/parser/registry.js";
 import { SourceFile } from "../core/source/source-file.js";
 import { compileV02Text } from "../v02/compile.js";
+import { parseText } from "../core/parser/parser.js";
+import { isProseSource, PROSE_SENTENCES } from "../core/prose/translate.js";
 
 /**
  * F7: what the language server knows, built only from the compiler's own
@@ -34,6 +36,8 @@ export interface LspDiagnostic {
   readonly code: string;
   readonly source: "kadam";
   readonly message: string;
+  /** D-50: the fixes, as edits, for code actions. */
+  readonly data?: { readonly fixes: readonly { readonly title: string; readonly range: LspRange; readonly newText: string }[] };
 }
 
 export interface FileDiagnostics {
@@ -106,6 +110,17 @@ function toLsp(diagnostic: Diagnostic, lines: readonly string[]): LspDiagnostic 
     code: diagnostic.code,
     source: "kadam",
     message: diagnostic.hint === undefined ? diagnostic.message : `${diagnostic.message}\nhint: ${diagnostic.hint}`,
+    ...(diagnostic.fixes === undefined || diagnostic.fixes.length === 0
+      ? {}
+      : {
+          data: {
+            fixes: diagnostic.fixes.map((fix) => ({
+              title: `Fix: ${fix.label}`,
+              range: { start: position(fix.span.start.line, fix.span.start.column), end: position(fix.span.end.line, fix.span.end.column) },
+              newText: fix.text,
+            })),
+          },
+        }),
   };
 }
 
@@ -148,7 +163,9 @@ export function complete(file: string, text: string, position: LspPosition): Com
   const typed = before.trimStart().toLowerCase();
   const range = { start: { line: position.line, character: indent }, end: { line: position.line, character: line.length } };
   const items: CompletionItem[] = [];
-  for (const sentence of allSentences()) {
+  // D-50: a paragraph page is completed with paragraph sentences.
+  const sentences = isProseSource(text) ? PROSE_SENTENCES : allSentences();
+  for (const sentence of sentences) {
     if (!sentence.text.toLowerCase().startsWith(typed)) continue;
     items.push({ label: sentence.text, detail: sentence.detail, kind: 15, textEdit: { range, newText: sentence.text }, filterText: sentence.text });
   }
@@ -171,7 +188,12 @@ function lineTokens(line: string): Token[] {
 export function hover(text: string, position: LspPosition, diagnostics: readonly LspDiagnostic[]): string | null {
   const line = (text.split("\n")[position.line] ?? "").trim();
   const parts: string[] = [];
-  if (line !== "" && !line.endsWith("{") && line !== "}" && !line.startsWith("//") && !line.startsWith("kadam ")) {
+  // D-50: a paragraph sentence is explained by the block sentences it means.
+  if (isProseSource(text)) {
+    const meant = proseMeaning(text, position);
+    if (meant !== null) parts.push(meant);
+  }
+  if (!isProseSource(text) && line !== "" && !line.endsWith("{") && line !== "}" && !line.startsWith("//") && !line.startsWith("kadam ")) {
     const result = matchLine(lineTokens(line));
     const template = result.selected?.template;
     if (template !== undefined) {
@@ -280,4 +302,27 @@ function projectPages(file: string): { title: string; path: string; line: number
     });
   }
   return out;
+}
+
+/** The block sentences that the sentence under the cursor became, as Markdown. */
+function proseMeaning(text: string, position: LspPosition): string | null {
+  const translation = parseText("page.kdm", text, { validate: false, allowComponentKinds: true }).prose;
+  if (translation === undefined) return null;
+  const generated = translation.text.split("\n");
+  const line = position.line + 1;
+  const lines: string[] = [];
+  let sentence: string | null = null;
+  translation.lineSpans.forEach((span, index) => {
+    if (span === null || index === 0 || span.start.line > line || span.end.line < line) return;
+    // Within the line, only the sentence the cursor is on.
+    const column = position.character + 1;
+    if (span.start.line === line && span.start.column > column + 1) return;
+    if (span.end.line === line && span.end.column < column) return;
+    const written = (generated[index - 1] ?? "").trim();
+    if (written === "" || written === "}" || written === "kadam 0.3" || written.startsWith("page ")) return;
+    sentence ??= text.slice(span.start.offset, span.end.offset);
+    lines.push(written.endsWith("{") ? `// named ${written.slice(0, -1).trim()}` : written);
+  });
+  if (lines.length === 0) return null;
+  return `**Means** (kadam 0.4 is built as these block sentences):\n\n\`\`\`kdm\n${lines.join("\n")}\n\`\`\``;
 }

@@ -68,6 +68,8 @@ export function createWatcher(options: WatcherOptions): Watcher {
 
   function isRelevant(path: string): boolean {
     if (isIgnoredChange(path, outDirRelative)) return false;
+    // D-50: a new page in pages/, or components.kdm, may add to a site that lists no pages.
+    if ((path.startsWith("pages/") && path.endsWith(".kdm")) || path === "components.kdm") return true;
     if (relevant.size > 0) return relevant.has(path);
     if (path === "kadam.json") return true;
     if (path.endsWith(".kdm")) return true;
@@ -165,7 +167,8 @@ export function createWatcher(options: WatcherOptions): Watcher {
         }
         const previous = observed.get(path);
         observed.set(path, key);
-        if (report && previous !== key && previous !== undefined) {
+        // After the first scan, a new file is a change too (a new page or asset).
+        if (report && previous !== key) {
           enqueue(path);
         }
       }

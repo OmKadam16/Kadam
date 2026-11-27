@@ -150,7 +150,7 @@ export function lowerDocument(
   const routes =
     options.pageRoutes ?? new Map<string, string>([[pageNode.title, route]]);
 
-  const pageStyle = lowerPageStyle(pageNode.settings);
+  const pageStyle = withNamedFonts(lowerPageStyle(pageNode.settings), pageNode.settings, options.fonts ?? {});
   const labels = collectSectionLabels(
     pageNode.elements,
     (element) => identityFor(element, slug).nodeId,
@@ -187,7 +187,7 @@ export function lowerDocument(
     firstImage: document.languageVersion === "0.1" ? null : firstImage(pageNode.elements),
     anchors: anchorTargets(pageNode.elements, slug),
     fontStacks: new Map(
-      Object.entries(options.fonts ?? {}).map(([name, font]) => [name, FONT_STACKS[font.fallback]]),
+      Object.entries(options.fonts ?? {}).map(([name, font]) => [name, fullFontStack(name, font)]),
     ),
   };
   const elements = pageNode.elements.map((element) =>
@@ -208,7 +208,7 @@ export function lowerDocument(
     usesMotion: elements.some(usesMotion),
     basePath: basePath || undefined,
     ...(meta === undefined ? {} : { meta }),
-    ...fontFaces(pageNode.elements, options.fonts ?? {}, basePath),
+    ...fontFaces(pageNode.elements, options.fonts ?? {}, basePath, pageNode.settings),
     ...colorTokens(options.themeColors ?? [], pageNode.settings),
     ...(runtime === null ? {} : { runtime: runtime.runtime }),
     ...stylesheetLinks(pageNode.elements, basePath),
@@ -428,6 +428,7 @@ function lowerElement(element: ElementNode, context: LowerContext, parent: F2Par
     ...(runtimeAttributes === undefined ? {} : { attributes: runtimeAttributes }),
     ...(element.runtimeList === undefined ? {} : { template: true as const }),
     ...embedOf(element),
+    ...(element.statements.some((statement) => statement.type === "text-effect" && statement.effect === "words") ? { wordByWord: true as const } : {}),
   };
 }
 
@@ -483,13 +484,36 @@ function colorTokens(
   return { colorTokens: [...tokens].map(([name, value]) => ({ name, ...value })) };
 }
 
+/** `"Lora", ui-serif, Georgia, ...` for a named font. */
+function fullFontStack(name: string, font: ManifestFont): string {
+  return `"${(font.family ?? name).replaceAll('"', "")}", ${font.fallbackStack ?? FONT_STACKS[font.fallback]}`;
+}
+
+/** D-51: `the page font is "Lora"` and `the heading font is "..."` as stacks. */
+function withNamedFonts(
+  style: IrPageStyle,
+  settings: readonly import("../core/ast/nodes.js").PageSettingNode[],
+  fonts: Readonly<Record<string, ManifestFont>>,
+): IrPageStyle {
+  let out = style;
+  for (const setting of settings) {
+    if (setting.property !== "custom font") continue;
+    const font = fonts[setting.name];
+    const stack = font === undefined ? `"${setting.name.replaceAll('"', "")}", ${FONT_STACKS["sans serif"]}` : fullFontStack(setting.name, font);
+    out = setting.target === "page" ? { ...out, fontStack: stack } : { ...out, headingFontStack: stack };
+  }
+  return out;
+}
+
 /** @font-face entries for the custom fonts a page uses, in first-use order. */
 function fontFaces(
   elements: readonly ElementNode[],
   fonts: Readonly<Record<string, ManifestFont>>,
   basePath: string,
+  settings: readonly import("../core/ast/nodes.js").PageSettingNode[] = [],
 ): { fonts?: readonly IrFontFace[] } {
   const used: string[] = [];
+  for (const setting of settings) if (setting.property === "custom font" && !used.includes(setting.name)) used.push(setting.name);
   const visit = (list: readonly ElementNode[]): void => {
     for (const element of list) {
       for (const statement of allStatements(element)) {
@@ -502,6 +526,16 @@ function fontFaces(
   const faces = used.flatMap((name): IrFontFace[] => {
     const font = fonts[name];
     if (font === undefined) return [];
+    if (font.faces !== undefined) {
+      return font.faces.map((face): IrFontFace => ({
+        family: font.family ?? name,
+        url: assetUrl(face.path, basePath),
+        format: fontFormat(face.path),
+        weight: face.weight,
+        style: face.style,
+        ...(face.unicodeRange === undefined ? {} : { unicodeRange: face.unicodeRange }),
+      }));
+    }
     return [{
       family: name,
       url: assetUrl(font.source, basePath),
@@ -1495,4 +1529,9 @@ function embedOf(element: ElementNode): { embed?: { url: string; title: string; 
   const statement = element.statements.find((candidate) => candidate.type === "embed");
   if (statement === undefined || statement.type !== "embed") return {};
   return { embed: { url: statement.url, title: statement.title, host: new URL(statement.url).host } };
+}
+
+function fontFormat(path: string): IrFontFace["format"] {
+  const lower = path.toLowerCase();
+  return lower.endsWith(".woff2") ? "woff2" : lower.endsWith(".woff") ? "woff" : lower.endsWith(".otf") ? "opentype" : "truetype";
 }
